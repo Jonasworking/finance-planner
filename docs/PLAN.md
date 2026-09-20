@@ -8,8 +8,8 @@
 - [x] **Phase 0** – Setup, Tokens, Layout-Shell — abgeschlossen 2026-09-20 (Branch `phase-0-setup`, in `main`), Notizen unten
 - [x] **Phase 1** – Datenmodell, Kernlogik, Tests — abgeschlossen und abgenommen 2026-09-20 (Branch `phase-1-data-logic`, in `main`), Notizen unten
 - [ ] **Phase 2** – Einkommen & Ausgaben — vom Nutzer in zwei Teile geteilt:
-  - [x] **2a** – QuickAdd-Sheet mit Numpad, Ausgabenliste mit Swipe-to-delete + Undo, Bearbeiten-Sheet, Kategorienverwaltung, Tags mit Autocomplete, Vercel-Anbindung — fertig 2026-09-20 (Branch `phase-2a-expenses`), _wartet auf Abnahme – Nutzer testet am iPhone; Merge nach `main` erst nach ausdrücklicher Abnahme_, Notizen unten
-  - [ ] **2b** – Daueraufträge (UI + Materialisierung beim App-Start), „Woche abschließen", Onboarding (inkl. Startguthaben), Dashboard v1 — _wartet auf Freigabe_
+  - [x] **2a** – QuickAdd-Sheet mit Numpad, Ausgabenliste mit Swipe-to-delete + Undo, Bearbeiten-Sheet, Kategorienverwaltung, Tags mit Autocomplete, Vercel-Anbindung — fertig 2026-09-20 (Branch `phase-2a-expenses`), **abgenommen 2026-09-20 (am iPhone getestet), in `main`**, Notizen unten
+  - [x] **2b** – Daueraufträge (weekly/fortnightly/monthly) inkl. Materialisierung, „Woche abschließen" mit Warteschlange + „Woche wieder öffnen", Onboarding (Standard-Einkommen, Budget, Startguthaben, trackingSince), Dashboard v1 mit Empty-States und klarem nächsten Schritt — fertig 2026-09-20 (Branch `phase-2b-weekly-flow`), _wartet auf Abnahme_, Notizen unten
 - [ ] **Phase 3** – Budget & Spartöpfe
 - [ ] **Phase 4** – Analyse & Charts
 - [ ] **Phase 5** – Tasks, Insights, Was-wäre-wenn
@@ -54,6 +54,20 @@
 - **Dev-Werkzeuge:** Einstellungen zeigen im Dev-Build „Demo-Daten laden" / „Alles löschen" (in Production-Builds nicht enthalten).
 - **Bundle:** Start-Chunk 260 KB gzip (Dexie, date-fns, dexie-react-hooks und die neuen Screens kamen dazu); Backup/zod wurde in einen Lazy-Chunk (28 KB) ausgelagert. Ziel < 250 KB bleibt Aufgabe von Phase 6 (Lazy-Routes, `LazyMotion`).
 - **Nicht gebaut (gehört zu 2b):** Daueraufträge-UI, Materialisierung beim App-Start, Wochenabschluss, Onboarding, Dashboard v1 – das Dashboard zeigt weiter die statische Vorschau mit Beispielwerten.
+
+## Phase 2b – Ergebnis & Abweichungen vom Plan
+
+**Geprüft:** typecheck · lint · build grün · **478 Testläufe** (239 Tests × 2 Zeitzonen), neu: `lib/dashboard` + `describeRecurrence`, Repo-Tests für Onboarding (atomar, idempotent, Eingabeprüfung) und `recurring.restore`, RTL-Tests gegen die echte DB-Schicht für **CloseWeek** (Abschluss, Minus-Woche, Warteschlange, Bearbeiten/Wiederöffnen), **Onboarding** (3 Wege) und **Dashboard** (Tag eins, offene Wochen, laufender Betrieb) · Coverage `src/lib` 99,8 % · **21 Browser-Checks im echten Chrome**: Onboarding → Dashboard Tag eins → erste Ausgabe → Dauerauftrag (sofort gebucht) → Woche abschließen → Erfolgsansicht → „Letzte Wochen" → wieder öffnen mit Undo; zweiter Weg „ab letzter Woche" → offene Woche abschließen; Kartenbreiten im Viewport; Konsole fehlerfrei. Production-Deep-Links liefern seit dem 2a-Merge HTTP 200.
+
+- **Dashboard ohne leere Karten (Nutzerwunsch):** Hero mit Budget-Ring und „Voraussichtlich gespart" auf Basis des Standard-Einkommens (trägt ab Minute eins), genau ein „Nächster Schritt" (offene Wochen → erste Ausgabe → laufende Woche am Sa/So abschließen → Dauerauftrag anlegen, nur in den ersten zwei Wochen → „Alles erledigt" mit nächstem Abschlusstag), „Nur gespart" erklärt sich selbst, bis gebucht wurde; „Zuletzt ausgegeben" erscheint nur mit Inhalt; statt einer leeren Wochenliste zeigt die Karte „So läuft deine Woche" mit abgehaktem ersten Schritt.
+- **„Reserviert" schon jetzt im Hero:** noch nicht gebuchte Daueraufträge der Woche zählen im Ring und in der Prognose mit (Logik existierte seit Phase 1; der animierte Ring und Warnungen bleiben Phase 3).
+- **Laufende Woche abschließbar:** der nächste Schritt bietet das ab Samstag an; nachträgliche Ausgaben ziehen die Buchung automatisch nach. Abgeschlossene Wochen lassen sich über „Letzte Wochen" bearbeiten (Einkommen ändern) oder wieder öffnen (mit Rückgängig).
+- **Onboarding** speichert in EINER Transaktion; der gewählte Budgetwert überschreibt auch die geseedete Standardzeile, sonst gälte für die Wochen nach dem Seed weiter A$400. Startguthaben mit fester ID → doppeltes Abschließen zahlt nicht doppelt ein.
+- **Neuer Dauerauftrag bucht sofort**, was fällig ist (auch rückwirkend ab „Erste Fälligkeit", frühestens ab Tracking-Beginn); Rhythmusänderung/Fortsetzen holt nichts nach. Löschen mit Rückgängig (`recurring.restore`).
+- **Im Browser-Test gefundener Layoutfehler:** Grid-Spalten ohne `minmax(0,1fr)`/`min-w-0` liefen durch lange nicht umbrechende Zeilen über den Bildschirmrand (Karten abgeschnitten). Behoben; Regel + Prüfmethode in `CLAUDE.md`. Meine alte Overflow-Prüfung konnte das nicht sehen, weil `main` den Überstand abschneidet – das Skript misst jetzt die Kartenbreiten.
+- **Refactor aus 2a:** Kategorien-Raster als `CategoryGrid` extrahiert (Ausgabe + Dauerauftrag).
+- **Bundle:** Start-Chunk 270 KB gzip (Ziel < 250 KB bleibt Phase 6: Lazy-Routes, `LazyMotion`).
+- **Offen / Merker:** Die Browser-Journeys liegen weiter nur im Scratchpad (Vorschlag: als E2E-Smoke-Skript ins Repo, spätestens Phase 6). Dev-Werkzeuge (Demo-Daten) gibt es nur im Dev-Build.
 
 ---
 
