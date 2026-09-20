@@ -141,6 +141,14 @@ export default defineConfig([
     },
   },
 
+  // Tests build fixtures and fake clocks, so they may construct Dates directly.
+  {
+    files: ['src/**/*.test.{ts,tsx}', 'src/test/**/*.{ts,tsx}'],
+    rules: {
+      'no-restricted-syntax': 'off',
+    },
+  },
+
   // Generated shadcn/ui code: exports variants next to components by design.
   {
     files: ['src/shared/ui/**/*.{ts,tsx}'],
