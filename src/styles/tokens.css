@@ -1,0 +1,120 @@
+/*
+ * Design tokens – single source of truth for colors, elevation and shape.
+ * Dark is the default; light overrides via [data-theme='light'] on <html>.
+ * Components must only use these tokens (via Tailwind utilities), never raw hex values.
+ */
+
+:root {
+  color-scheme: dark;
+
+  /* Surfaces */
+  --bg: #0b0c0f;
+  --surface-1: #14161a; /* card */
+  --surface-2: #1b1e24; /* sheet / popover */
+  --surface-3: #252932; /* input / hover */
+  --border: rgb(255 255 255 / 0.08);
+  --border-strong: rgb(255 255 255 / 0.14);
+
+  /* Text */
+  --fg: #f5f6f8;
+  --fg-muted: #9aa1ae;
+  --fg-subtle: #6a7180;
+
+  /* Semantic money colors */
+  --saved: #3ee0a8; /* mint = saved + primary CTA */
+  --saved-soft: rgb(62 224 168 / 0.14);
+  --on-saved: #04231a;
+  --spent: #ff6f61; /* coral = expenses */
+  --spent-soft: rgb(255 111 97 / 0.14);
+  --income: #8aa4ff; /* periwinkle = earned */
+  --income-soft: rgb(138 164 255 / 0.14);
+  --warning: #ffb84d;
+  --warning-soft: rgb(255 184 77 / 0.14);
+  --danger: #ff5a52;
+
+  /* Category palette (validated with the dataviz skill in phase 4) */
+  --cat-1: #8aa4ff;
+  --cat-2: #b58cff;
+  --cat-3: #ff8fc7;
+  --cat-4: #ffb84d;
+  --cat-5: #5cd6e8;
+  --cat-6: #ff9466;
+  --cat-7: #a3e07a;
+  --cat-8: #e8d36a;
+  --cat-9: #7fd1b9;
+  --cat-10: #9aa1ae;
+
+  /* Elevation */
+  --elev-card: inset 0 1px 0 rgb(255 255 255 / 0.04), 0 8px 24px rgb(0 0 0 / 0.35);
+  --elev-sheet: 0 -8px 40px rgb(0 0 0 / 0.5);
+  --elev-glow-saved: 0 0 24px rgb(62 224 168 / 0.25);
+
+  /* Layout */
+  --tabbar-height: 64px;
+  --sidebar-width: 260px;
+}
+
+[data-theme='light'] {
+  color-scheme: light;
+
+  --bg: #f4f5f7;
+  --surface-1: #ffffff;
+  --surface-2: #ffffff;
+  --surface-3: #eceef2;
+  --border: rgb(10 12 16 / 0.08);
+  --border-strong: rgb(10 12 16 / 0.16);
+
+  --fg: #0e1014;
+  --fg-muted: #5b6270;
+  --fg-subtle: #8a909c;
+
+  --saved: #0fa877;
+  --saved-soft: rgb(15 168 119 / 0.12);
+  --on-saved: #ffffff;
+  --spent: #e5483b;
+  --spent-soft: rgb(229 72 59 / 0.1);
+  --income: #4463e6;
+  --income-soft: rgb(68 99 230 / 0.1);
+  --warning: #c77a00;
+  --warning-soft: rgb(199 122 0 / 0.12);
+  --danger: #d92d20;
+
+  --elev-card: 0 1px 2px rgb(16 24 40 / 0.06), 0 8px 24px rgb(16 24 40 / 0.06);
+  --elev-sheet: 0 -8px 40px rgb(16 24 40 / 0.16);
+  --elev-glow-saved: 0 0 24px rgb(15 168 119 / 0.2);
+}
+
+/* shadcn/ui semantic variables mapped onto our tokens (resolve per theme on <html>) */
+:root {
+  --background: var(--bg);
+  --foreground: var(--fg);
+  --card: var(--surface-1);
+  --card-foreground: var(--fg);
+  --popover: var(--surface-2);
+  --popover-foreground: var(--fg);
+  --primary: var(--saved);
+  --primary-foreground: var(--on-saved);
+  --secondary: var(--surface-3);
+  --secondary-foreground: var(--fg);
+  --muted: var(--surface-3);
+  --muted-foreground: var(--fg-muted);
+  --accent: var(--surface-3);
+  --accent-foreground: var(--fg);
+  --destructive: var(--danger);
+  --input: var(--border-strong);
+  --ring: var(--saved);
+  --chart-1: var(--income);
+  --chart-2: var(--spent);
+  --chart-3: var(--saved);
+  --chart-4: var(--warning);
+  --chart-5: var(--cat-2);
+  --radius: 0.875rem;
+  --sidebar: var(--surface-1);
+  --sidebar-foreground: var(--fg);
+  --sidebar-primary: var(--saved);
+  --sidebar-primary-foreground: var(--on-saved);
+  --sidebar-accent: var(--surface-3);
+  --sidebar-accent-foreground: var(--fg);
+  --sidebar-border: var(--border);
+  --sidebar-ring: var(--saved);
+}
