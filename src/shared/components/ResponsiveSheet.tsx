@@ -46,7 +46,15 @@ export function ResponsiveSheet({
   if (isDesktop) {
     return (
       <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className={cn('rounded-xl bg-surface-2 sm:max-w-md', className)}>
+        <DialogContent
+          className={cn('rounded-xl bg-surface-2 sm:max-w-md', className)}
+          // Focus the dialog itself, not its first button: no stray focus ring on open, and
+          // keyboard input (amount digits, Enter) goes to the form instead of toggling a button.
+          onOpenAutoFocus={(event) => {
+            event.preventDefault()
+            if (event.currentTarget instanceof HTMLElement) event.currentTarget.focus()
+          }}
+        >
           <DialogHeader>
             <DialogTitle className="text-h2 font-semibold">{title}</DialogTitle>
             {description ? <DialogDescription>{description}</DialogDescription> : null}
