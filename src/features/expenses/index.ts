@@ -1,4 +1,6 @@
 export { CategoriesPage } from './CategoriesPage'
 export { ExpensesPage } from './ExpensesPage'
+export { RecurringPage } from './RecurringPage'
 export { EditExpenseSheet } from './components/EditExpenseSheet'
 export { QuickAddSheet } from './components/QuickAddSheet'
+export { useMaterializeRecurring } from './hooks/useMaterializeRecurring'
