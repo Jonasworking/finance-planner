@@ -17,3 +17,12 @@ export function stubDesktopViewport(): void {
       dispatchEvent: () => false,
     }) as MediaQueryList
 }
+
+/** jsdom has no ResizeObserver; Radix sliders measure their thumb with one. */
+export function stubResizeObserver(): void {
+  window.ResizeObserver = class {
+    observe() {}
+    unobserve() {}
+    disconnect() {}
+  }
+}

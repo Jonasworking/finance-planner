@@ -1,5 +1,7 @@
+import { motion, useReducedMotion } from 'motion/react'
 import type { ReactNode } from 'react'
 import { cn } from '@/shared/lib/utils'
+import { spring } from '@/shared/motion'
 
 type RingTone = 'saved' | 'warning' | 'spent' | 'income'
 
@@ -13,6 +15,11 @@ const strokeClass: Record<RingTone, string> = {
 export interface ProgressRingProps {
   /** Progress from 0 to 1; values outside are clamped. */
   value: number
+  /**
+   * Share that is planned but not used yet (e.g. reserved standing orders), drawn as a fainter
+   * arc continuing after `value`. Counts towards the announced percentage.
+   */
+  reserved?: number
   /** Accessible name, e.g. "Wochenbudget verbraucht". */
   label: string
   size?: number
@@ -22,8 +29,11 @@ export interface ProgressRingProps {
   children?: ReactNode
 }
 
+const clamp = (value: number) => Math.min(1, Math.max(0, value))
+
 export function ProgressRing({
   value,
+  reserved = 0,
   label,
   size = 160,
   strokeWidth = 12,
@@ -31,9 +41,28 @@ export function ProgressRing({
   className,
   children,
 }: ProgressRingProps) {
-  const clamped = Math.min(1, Math.max(0, value))
+  const reduceMotion = useReducedMotion()
+  const used = clamp(value)
+  const committed = clamp(value + Math.max(0, reserved))
   const radius = (size - strokeWidth) / 2
   const circumference = 2 * Math.PI * radius
+
+  // Arcs sweep in on mount and follow every change; with reduced motion they just appear.
+  const arc = (share: number, extraClass?: string) => (
+    <motion.circle
+      cx={size / 2}
+      cy={size / 2}
+      r={radius}
+      fill="none"
+      strokeWidth={strokeWidth}
+      strokeLinecap="round"
+      strokeDasharray={circumference}
+      initial={reduceMotion ? false : { strokeDashoffset: circumference }}
+      animate={{ strokeDashoffset: circumference * (1 - share) }}
+      transition={reduceMotion ? { duration: 0 } : spring.soft}
+      className={cn(strokeClass[tone], extraClass)}
+    />
+  )
 
   return (
     <div
@@ -41,7 +70,7 @@ export function ProgressRing({
       aria-label={label}
       aria-valuemin={0}
       aria-valuemax={100}
-      aria-valuenow={Math.round(clamped * 100)}
+      aria-valuenow={Math.round(committed * 100)}
       className={cn('relative inline-grid place-items-center', className)}
       style={{ width: size, height: size }}
     >
@@ -54,20 +83,9 @@ export function ProgressRing({
           strokeWidth={strokeWidth}
           className="stroke-surface-3"
         />
-        <circle
-          cx={size / 2}
-          cy={size / 2}
-          r={radius}
-          fill="none"
-          strokeWidth={strokeWidth}
-          strokeLinecap="round"
-          strokeDasharray={circumference}
-          strokeDashoffset={circumference * (1 - clamped)}
-          className={cn(
-            'transition-[stroke-dashoffset] duration-700 ease-out-soft motion-reduce:transition-none',
-            strokeClass[tone],
-          )}
-        />
+        {/* A round cap would paint a dot even for an empty arc, so empty arcs are left out. */}
+        {committed > used ? arc(committed, 'opacity-35') : null}
+        {used > 0 ? arc(used) : null}
       </svg>
       {children ? <div className="absolute inset-0 grid place-items-center">{children}</div> : null}
     </div>

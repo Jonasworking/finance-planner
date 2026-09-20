@@ -4,13 +4,9 @@ import { toast } from 'sonner'
 import { repos } from '@/db'
 import type { Category, CategoryGroup } from '@/lib/types'
 import { CategoryIcon } from '@/shared/components/CategoryIcon'
+import { ColorPicker } from '@/shared/components/ColorPicker'
+import { IconPicker } from '@/shared/components/IconPicker'
 import { ResponsiveSheet } from '@/shared/components/ResponsiveSheet'
-import {
-  CATEGORY_COLORS,
-  CATEGORY_ICON_NAMES,
-  iconFor,
-  solidClass,
-} from '@/shared/lib/categoryStyle'
 import { errorMessage } from '@/shared/lib/errorMessages'
 import { cn } from '@/shared/lib/utils'
 import { Button } from '@/shared/ui/button'
@@ -91,51 +87,8 @@ function CategoryForm({ category, onDone }: CategoryFormProps) {
         </div>
       </fieldset>
 
-      <fieldset>
-        <legend className="pb-2 text-caption text-fg-subtle uppercase">Farbe</legend>
-        <div className="flex flex-wrap gap-2.5">
-          {CATEGORY_COLORS.map((color) => (
-            <button
-              key={color}
-              type="button"
-              aria-label={`Farbe ${color.replace('cat-', '')}`}
-              aria-pressed={draft.color === color}
-              onClick={() => patch({ color })}
-              className={cn(
-                'size-9 rounded-full outline-none focus-visible:ring-3 focus-visible:ring-ring/50',
-                solidClass(color),
-                draft.color === color && 'ring-2 ring-fg ring-offset-2 ring-offset-surface-2',
-              )}
-            />
-          ))}
-        </div>
-      </fieldset>
-
-      <fieldset>
-        <legend className="pb-2 text-caption text-fg-subtle uppercase">Icon</legend>
-        <div className="grid max-h-44 grid-cols-7 gap-1.5 overflow-y-auto pr-1 sm:grid-cols-8">
-          {CATEGORY_ICON_NAMES.map((iconName) => {
-            const Icon = iconFor(iconName)
-            return (
-              <button
-                key={iconName}
-                type="button"
-                aria-label={iconName}
-                aria-pressed={draft.icon === iconName}
-                onClick={() => patch({ icon: iconName })}
-                className={cn(
-                  'grid aspect-square place-items-center rounded-sm outline-none focus-visible:ring-3 focus-visible:ring-ring/50',
-                  draft.icon === iconName
-                    ? 'bg-saved-soft text-saved'
-                    : 'bg-surface-3 text-fg-muted',
-                )}
-              >
-                <Icon className="size-5" strokeWidth={1.75} aria-hidden />
-              </button>
-            )
-          })}
-        </div>
-      </fieldset>
+      <ColorPicker value={draft.color} onChange={(color) => patch({ color })} />
+      <IconPicker value={draft.icon} onChange={(icon) => patch({ icon })} />
 
       <div className="flex gap-2">
         {category ? (
