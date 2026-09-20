@@ -1,8 +1,9 @@
 import { CircleCheck } from 'lucide-react'
-import { levelFor, type ReservedItem } from '@/lib/budget'
+import { Link } from 'react-router'
+import type { ReservedItem, Usage } from '@/lib/budget'
 import type { WeekProjection } from '@/lib/dashboard'
 import { formatDayLabel } from '@/lib/dates'
-import { formatAUD, ratio } from '@/lib/money'
+import { formatAUD } from '@/lib/money'
 import type { WeekSummary } from '@/lib/savings'
 import type { ISODate } from '@/lib/types'
 import { GlassCard } from '@/shared/components/GlassCard'
@@ -11,6 +12,8 @@ import { ProgressRing } from '@/shared/components/ProgressRing'
 
 export interface WeekHeroProps {
   summary: WeekSummary
+  /** The running week against its budget (`runningWeekBudget`); null without a budget. */
+  usage: Usage | null
   projection: WeekProjection
   reserved: { totalCents: number; items: ReservedItem[] }
   daysLeft: number
@@ -20,40 +23,45 @@ export interface WeekHeroProps {
 const RING_TONE = { ok: 'saved', warn: 'warning', over: 'spent' } as const
 
 /** The running week at a glance. Works from day one: the projection assumes the default income. */
-export function WeekHero({ summary, projection, reserved, daysLeft, today }: WeekHeroProps) {
-  const limit = summary.totalLimitCents
-  const committed = summary.spentCents + reserved.totalCents
-  const used = limit === null ? 0 : ratio(committed, limit)
-  const remaining = limit === null ? null : limit - committed
+export function WeekHero({ summary, usage, projection, reserved, daysLeft, today }: WeekHeroProps) {
+  const limit = usage?.limitCents ?? null
+  const remaining = usage?.remainingCents ?? null
   const nextReserved = reserved.items[0]
 
   return (
     <GlassCard className="flex flex-col gap-5 sm:flex-row sm:items-center sm:gap-8">
-      <ProgressRing
-        value={used}
-        label="Wochenbudget verbraucht"
-        tone={RING_TONE[levelFor(used)]}
-        size={168}
-        className="mx-auto shrink-0"
+      {/* The whole ring is the way to the budget – a touch target nobody can miss. */}
+      <Link
+        to="/budget"
+        aria-label="Budget anpassen"
+        className="mx-auto shrink-0 rounded-full outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
       >
-        <div className="text-center">
-          {remaining === null ? (
-            <Money cents={summary.spentCents} decimals={false} className="text-h1" />
-          ) : (
-            <>
-              <p className="text-caption text-fg-subtle uppercase">
-                {remaining >= 0 ? 'Rest' : 'Drüber'}
-              </p>
-              <Money
-                cents={Math.abs(remaining)}
-                decimals={false}
-                tone={remaining >= 0 ? 'default' : 'spent'}
-                className="text-h1"
-              />
-            </>
-          )}
-        </div>
-      </ProgressRing>
+        <ProgressRing
+          value={usage?.spentRatio ?? 0}
+          reserved={usage?.reservedRatio ?? 0}
+          label="Wochenbudget verbraucht"
+          tone={RING_TONE[usage?.level ?? 'ok']}
+          size={168}
+        >
+          <div className="text-center">
+            {remaining === null ? (
+              <Money cents={summary.spentCents} decimals={false} className="text-h1" />
+            ) : (
+              <>
+                <p className="text-caption text-fg-subtle uppercase">
+                  {remaining >= 0 ? 'Rest' : 'Drüber'}
+                </p>
+                <Money
+                  cents={Math.abs(remaining)}
+                  decimals={false}
+                  tone={remaining >= 0 ? 'default' : 'spent'}
+                  className="text-h1"
+                />
+              </>
+            )}
+          </div>
+        </ProgressRing>
+      </Link>
 
       <div className="flex min-w-0 flex-1 flex-col gap-3">
         <div>

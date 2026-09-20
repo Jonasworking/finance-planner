@@ -59,23 +59,39 @@ export interface Usage {
   remainingCents: Cents | null
   /** (spent + reserved) / limit – what ring, colors and warnings go by. */
   ratio: number
+  /** spent / limit – the solid part of the ring. */
+  spentRatio: number
+  /** reserved / limit – the fainter part of the ring that continues after it. */
+  reservedRatio: number
   level: BudgetLevel
 }
 
 function usage(spentCents: Cents, reservedCents: Cents, limitCents: Cents | null): Usage {
   if (limitCents === null) {
-    return { spentCents, reservedCents, limitCents, remainingCents: null, ratio: 0, level: 'ok' }
+    return {
+      spentCents,
+      reservedCents,
+      limitCents,
+      remainingCents: null,
+      ratio: 0,
+      spentRatio: 0,
+      reservedRatio: 0,
+      level: 'ok',
+    }
   }
   const committedCents = spentCents + reservedCents
   // A zero limit with any spending is "over", not a division by zero.
-  const usedRatio =
-    limitCents > 0 ? ratio(committedCents, limitCents) : committedCents > 0 ? Infinity : 0
+  const of = (cents: Cents) =>
+    limitCents > 0 ? ratio(cents, limitCents) : cents > 0 ? Infinity : 0
+  const usedRatio = of(committedCents)
   return {
     spentCents,
     reservedCents,
     limitCents,
     remainingCents: limitCents - committedCents,
     ratio: usedRatio,
+    spentRatio: of(spentCents),
+    reservedRatio: of(reservedCents),
     level: levelFor(usedRatio),
   }
 }

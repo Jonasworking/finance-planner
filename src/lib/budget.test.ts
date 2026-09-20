@@ -115,6 +115,8 @@ describe('budgetUsage', () => {
       level: 'warn',
     })
     expect(usage.total.ratio).toBeCloseTo(0.8625)
+    expect(usage.total.spentRatio).toBeCloseTo(0.3) // the solid part of the ring …
+    expect(usage.total.reservedRatio).toBeCloseTo(0.5625) // … and the fainter one after it
     expect(usage.byCategory['cat:fun']).toMatchObject({
       spentCents: 0,
       reservedCents: 4_500,

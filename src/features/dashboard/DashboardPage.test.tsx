@@ -3,6 +3,7 @@ import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { db, repos } from '@/db'
+import { addWeeksISO } from '@/lib/dates'
 import { useUiStore } from '@/shared/stores/uiStore'
 import { DashboardPage } from './DashboardPage'
 
@@ -50,6 +51,13 @@ describe('DashboardPage', () => {
     // No hollow sections:
     expect(screen.queryByText('Letzte Wochen')).not.toBeInTheDocument()
     expect(screen.queryByText('Zuletzt ausgegeben')).not.toBeInTheDocument()
+    expect(screen.queryByText('Streak')).not.toBeInTheDocument()
+    // The ring leads to the budget, "Nur gespart" to its pot:
+    expect(screen.getByRole('link', { name: 'Budget anpassen' })).toHaveAttribute('href', '/budget')
+    expect(screen.getByRole('link', { name: /Nur gespart/ })).toHaveAttribute(
+      'href',
+      '/pots/pot%3Aprimary',
+    )
 
     await user.click(screen.getByRole('button', { name: 'Ausgabe erfassen' }))
     expect(useUiStore.getState().quickAddOpen).toBe(true)
@@ -108,6 +116,9 @@ describe('DashboardPage', () => {
     expect(screen.getByText('Zuletzt ausgegeben')).toBeInTheDocument()
     expect(screen.getByText('Coles')).toBeInTheDocument()
 
+    // The week before went over budget → no streak, and the card says why.
+    expect(screen.getByText('Noch kein Streak')).toBeInTheDocument()
+
     expect(screen.getByText('Letzte Wochen')).toBeInTheDocument()
     expect(screen.getByText(/über Budget · Sparquote 78 %/)).toBeInTheDocument()
     expect(screen.getByText(/Zuletzt \+A\$1\.550,00/)).toBeInTheDocument()
@@ -119,5 +130,28 @@ describe('DashboardPage', () => {
       closeWeekOpen: true,
       closeWeekStart: '2026-09-14',
     })
+  })
+
+  it('counts the streak over every closed week, however long ago – a changed budget does not rewrite it', async () => {
+    await onboard('2026-06-29')
+    // Twelve closed weeks, all under the A$400 that applied; the oldest lie far back.
+    for (let index = 0; index < 12; index++) {
+      const monday = addWeeksISO('2026-06-29', index)
+      await repos.expenses.add({ date: monday, amountCents: 35_000, categoryId: 'cat:groceries' })
+      await repos.weeks.close(monday, { incomeCents: 200_000 })
+    }
+    await repos.budgets.set('2026-09-23', { totalLimitCents: 30_000 }) // tighter from today on
+    renderPage()
+
+    expect(await screen.findByText('12 Wochen im Budget')).toBeInTheDocument()
+    expect(screen.getByText(/Das ist dein Rekord/)).toBeInTheDocument()
+  })
+
+  it('pauses the streak while finished weeks are still open', async () => {
+    await onboard('2026-09-07')
+    await repos.weeks.close('2026-09-07', { incomeCents: 200_000 }) // 09-14 is still pending
+    renderPage()
+
+    expect(await screen.findByText('Streak pausiert')).toBeInTheDocument()
   })
 })

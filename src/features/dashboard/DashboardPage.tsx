@@ -1,16 +1,18 @@
 import { useLiveQuery } from 'dexie-react-hooks'
 import { db, loadDashboard } from '@/db'
-import { reservedThisWeek, resolveBudget } from '@/lib/budget'
+import { resolveBudget, runningWeekBudget } from '@/lib/budget'
 import { nextStep, projectWeek, weekProgress } from '@/lib/dashboard'
 import { formatWeekRange, weekStartOf } from '@/lib/dates'
-import { expensesInWeek } from '@/lib/expenses'
+import { groupByWeek } from '@/lib/expenses'
 import { pendingWeeks, summarizeWeek } from '@/lib/savings'
+import { computeStreak } from '@/lib/streak'
 import { Page } from '@/shared/components/Page'
 import { useToday } from '@/shared/hooks/useToday'
 import { Skeleton } from '@/shared/ui/skeleton'
 import { NextStepCard } from './components/NextStepCard'
 import { RecentExpensesCard } from './components/RecentExpensesCard'
 import { SavingsCard } from './components/SavingsCard'
+import { StreakCard } from './components/StreakCard'
 import { WeekHero } from './components/WeekHero'
 import { WeeksCard } from './components/WeeksCard'
 
@@ -35,19 +37,26 @@ export function DashboardPage() {
   }
 
   const { settings } = data
+  const expensesByWeek = groupByWeek(data.expenses)
   const summarize = (weekStart: string) =>
     summarizeWeek({
       weekStart,
       week: data.weeks.find((week) => week.id === weekStart),
-      expenses: data.expenses,
+      expenses: expensesByWeek.get(weekStart) ?? [],
       budget: resolveBudget(data.budgets, weekStart),
     })
 
   const summary = summarize(currentWeek)
   const weekRow = data.weeks.find((week) => week.id === currentWeek)
-  const reserved = summary.closed
-    ? { totalCents: 0, items: [] }
-    : reservedThisWeek(data.templates, currentWeek, today)
+  // Same calculation as the budget screen and the warnings – they can never disagree.
+  const { usage, reserved } = runningWeekBudget({
+    budgets: data.budgets,
+    weekExpenses: expensesByWeek.get(currentWeek) ?? [],
+    templates: data.templates,
+    weekStart: currentWeek,
+    today,
+    weekClosed: summary.closed,
+  })
   const projection = projectWeek({
     incomeCents: weekRow?.incomeCents ?? null,
     defaultIncomeCents: settings.defaultWeeklyIncomeCents,
@@ -58,8 +67,8 @@ export function DashboardPage() {
   const closedWeeks = data.weeks
     .filter((week) => week.closedAt !== null)
     .sort((a, b) => (a.id < b.id ? 1 : -1))
-    .slice(0, RECENT_WEEKS)
     .map((week) => summarize(week.id))
+  const streak = computeStreak(closedWeeks, today)
 
   const step = nextStep({
     today,
@@ -70,7 +79,7 @@ export function DashboardPage() {
     closedWeeks: data.weeks.filter((week) => week.closedAt !== null).length,
   })
 
-  const recentExpenses = expensesInWeek(data.expenses, currentWeek)
+  const recentExpenses = [...(expensesByWeek.get(currentWeek) ?? [])]
     .sort((a, b) => (a.date === b.date ? b.createdAt - a.createdAt : a.date < b.date ? 1 : -1))
     .slice(0, RECENT_EXPENSES)
 
@@ -81,6 +90,7 @@ export function DashboardPage() {
         <div className="flex min-w-0 flex-col gap-4">
           <WeekHero
             summary={summary}
+            usage={usage?.total ?? null}
             projection={projection}
             reserved={reserved}
             daysLeft={weekProgress(today).daysLeft}
@@ -100,7 +110,11 @@ export function DashboardPage() {
             balanceCents={data.primaryBalanceCents}
             lastClosed={closedWeeks[0] ?? null}
           />
-          <WeeksCard closedWeeks={closedWeeks} hasAnyExpense={data.hasAnyExpense} />
+          {closedWeeks.length > 0 ? <StreakCard streak={streak} /> : null}
+          <WeeksCard
+            closedWeeks={closedWeeks.slice(0, RECENT_WEEKS)}
+            hasAnyExpense={data.hasAnyExpense}
+          />
         </div>
       </div>
     </Page>
