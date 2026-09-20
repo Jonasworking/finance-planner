@@ -2,11 +2,19 @@ import { describe, expect, it } from 'vitest'
 import { makeBudget, makeExpense, makeRecurring } from '@/test/fixtures'
 import {
   budgetUsage,
+  cleanCategoryLimits,
+  dueBudgetWarnings,
   levelFor,
   reservedThisWeek,
   resolveBudget,
+  roundToBudgetStep,
+  sameBudget,
+  sliderMaxCents,
   thresholdCrossed,
+  TOTAL_SCOPE,
   unallocatedCents,
+  withAnnounced,
+  type ReservedItem,
 } from './budget'
 
 describe('resolveBudget (effective-dated)', () => {
@@ -83,6 +91,41 @@ describe('budgetUsage', () => {
     expect(usage.byCategory['cat:zero']?.level).toBe('over')
   })
 
+  it('treats reserved standing orders as used already – overall and per category', () => {
+    const rent: ReservedItem = {
+      recurringId: 'rent',
+      title: 'Miete',
+      categoryId: 'cat:rent',
+      date: '2026-09-25',
+      amountCents: 18_000,
+    }
+    const gym: ReservedItem = {
+      ...rent,
+      recurringId: 'gym',
+      categoryId: 'cat:fun',
+      amountCents: 4_500,
+    }
+    const usage = budgetUsage([makeExpense('2026-09-21', 12_000)], budget, [rent, gym])
+
+    expect(usage.total).toMatchObject({
+      spentCents: 12_000,
+      reservedCents: 22_500,
+      remainingCents: 5_500,
+      level: 'warn',
+    })
+    expect(usage.total.ratio).toBeCloseTo(0.8625)
+    expect(usage.byCategory['cat:fun']).toMatchObject({
+      spentCents: 0,
+      reservedCents: 4_500,
+      remainingCents: 500,
+      level: 'warn',
+    })
+    // no limit for rent, but it still shows up with what is reserved
+    expect(usage.byCategory['cat:rent']).toMatchObject({ reservedCents: 18_000, level: 'ok' })
+    // without reserved items nothing is reserved
+    expect(budgetUsage([], budget).total.reservedCents).toBe(0)
+  })
+
   it('maps ratios to levels at exactly 80 % and 100 %', () => {
     expect([0, 0.7999, 0.8, 0.9999, 1, 3].map(levelFor)).toEqual([
       'ok',
@@ -103,6 +146,93 @@ describe('thresholdCrossed', () => {
     expect(thresholdCrossed(0.95, 1)).toBe('over')
     expect(thresholdCrossed(1, 1.4)).toBeNull()
     expect(thresholdCrossed(1.1, 0.5)).toBeNull()
+  })
+})
+
+describe('dueBudgetWarnings – exactly once per threshold and week', () => {
+  const budget = {
+    effectiveFrom: '2026-08-03',
+    totalLimitCents: 40_000,
+    categoryLimits: { 'cat:groceries': 10_000, 'cat:fun': 5_000 },
+  }
+  const usageWith = (...amounts: [number, string?][]) =>
+    budgetUsage(
+      amounts.map(([cents, categoryId = 'cat:rent']) =>
+        makeExpense('2026-09-21', cents, { categoryId }),
+      ),
+      budget,
+    )
+
+  it('is quiet below 80 %', () => {
+    expect(dueBudgetWarnings(usageWith([31_999]), {})).toEqual([])
+  })
+
+  it('announces 80 % once, then 100 % once, and never again', () => {
+    const atWarn = dueBudgetWarnings(usageWith([32_000]), {})
+    expect(atWarn.map((warning) => [warning.scope, warning.level])).toEqual([[TOTAL_SCOPE, 'warn']])
+    expect(atWarn[0]?.usage.remainingCents).toBe(8_000)
+
+    let announced = withAnnounced({}, atWarn)
+    expect(dueBudgetWarnings(usageWith([39_000]), announced)).toEqual([])
+
+    const atOver = dueBudgetWarnings(usageWith([40_000]), announced)
+    expect(atOver.map((warning) => warning.level)).toEqual(['over'])
+
+    announced = withAnnounced(announced, atOver)
+    expect(dueBudgetWarnings(usageWith([55_000]), announced)).toEqual([])
+  })
+
+  it('does not warn again when an expense is deleted and added back', () => {
+    const announced = withAnnounced({}, dueBudgetWarnings(usageWith([33_000]), {}))
+    expect(dueBudgetWarnings(usageWith([10_000]), announced)).toEqual([]) // dropped below
+    expect(dueBudgetWarnings(usageWith([33_000]), announced)).toEqual([]) // …and back above
+  })
+
+  it('announces only "over" when 80 % is skipped, and never the skipped 80 % later', () => {
+    const due = dueBudgetWarnings(usageWith([45_000]), {})
+    expect(due.map((warning) => warning.level)).toEqual(['over'])
+    expect(dueBudgetWarnings(usageWith([33_000]), withAnnounced({}, due))).toEqual([])
+  })
+
+  it('warns per category with a limit – overall first, then the furthest gone', () => {
+    const current = usageWith([9_000, 'cat:groceries'], [6_000, 'cat:fun'], [20_000])
+    expect(dueBudgetWarnings(current, {}).map((warning) => [warning.scope, warning.level])).toEqual(
+      [
+        [TOTAL_SCOPE, 'warn'],
+        ['cat:fun', 'over'],
+        ['cat:groceries', 'warn'],
+      ],
+    )
+    // categories without a limit never warn, whatever is spent there
+    expect(dueBudgetWarnings(usageWith([5_000]), {})).toEqual([])
+  })
+})
+
+describe('budget editor helpers', () => {
+  it('snaps to A$5 steps and never below zero', () => {
+    expect([0, 249, 250, 12_740, 12_760, -900].map(roundToBudgetStep)).toEqual([
+      0, 0, 500, 12_500, 13_000, 0,
+    ])
+  })
+
+  it('gives sliders headroom above the current value', () => {
+    expect(sliderMaxCents(40_000, 100_000)).toBe(100_000)
+    expect(sliderMaxCents(90_000, 100_000)).toBe(140_000)
+    expect(sliderMaxCents(0, 40_000)).toBe(40_000)
+  })
+
+  it('stores no entry for "no limit"', () => {
+    expect(cleanCategoryLimits({ a: 5_000, b: 0, c: null, d: undefined })).toEqual({ a: 5_000 })
+  })
+
+  it('recognises budgets that behave the same', () => {
+    const base = { totalLimitCents: 40_000, categoryLimits: { a: 5_000 } }
+    expect(sameBudget(base, { totalLimitCents: 40_000, categoryLimits: { a: 5_000, b: 0 } })).toBe(
+      true,
+    )
+    expect(sameBudget(base, { totalLimitCents: 45_000, categoryLimits: { a: 5_000 } })).toBe(false)
+    expect(sameBudget(base, { totalLimitCents: 40_000, categoryLimits: { a: 5_500 } })).toBe(false)
+    expect(sameBudget(base, { totalLimitCents: 40_000, categoryLimits: {} })).toBe(false)
   })
 })
 
