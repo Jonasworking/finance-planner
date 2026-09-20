@@ -8,6 +8,7 @@ import {
   createSettingsRepo,
   createTasksRepo,
 } from './misc'
+import { createOnboardingRepo } from './onboarding'
 import { createPotsRepo } from './pots'
 import { createRecurringRepo } from './recurring'
 import { createWeeksRepo } from './weeks'
@@ -44,6 +45,7 @@ export function createRepos(db: FinanceDB, clock: Clock = systemClock) {
     budgets: createBudgetsRepo(ctx),
     tasks: createTasksRepo(ctx),
     settings: createSettingsRepo(ctx),
+    onboarding: createOnboardingRepo(ctx),
     backup: lazyBackupRepo(ctx),
   }
 }
@@ -51,6 +53,7 @@ export function createRepos(db: FinanceDB, clock: Clock = systemClock) {
 export type Repos = ReturnType<typeof createRepos>
 export type { Clock } from './context'
 export type { ExpenseInput, ExpensePatch } from './expenses'
+export type { OnboardingInput } from './onboarding'
 export type { PotInput, PotPatch } from './pots'
 export type { RecurringInput, RecurringPatch } from './recurring'
 export type { CategoryInput, CategoryPatch, SettingsPatch, TaskInput, TaskPatch } from './misc'

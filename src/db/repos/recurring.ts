@@ -106,6 +106,15 @@ export function createRecurringRepo(ctx: RepoContext) {
         await db.recurringExpenses.put({ ...previous, deletedAt: now, updatedAt: now })
       }),
 
+    /** Undo of `remove`. The watermark is kept, so nothing is back-filled for the meantime. */
+    restore: (id: string): Promise<void> =>
+      inLedger(async () => {
+        const previous = await db.recurringExpenses.get(id)
+        if (!previous) throw new DomainError('not-found')
+        if (isActive(previous)) return
+        await db.recurringExpenses.put({ ...previous, deletedAt: null, updatedAt: clock.now() })
+      }),
+
     /**
      * Generates all due instances up to `today`. Safe to call from app start AND
      * visibilitychange AND a second tab at once: the watermark is read INSIDE the transaction,

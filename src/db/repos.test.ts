@@ -512,3 +512,81 @@ describe('soft delete', () => {
     expect((await db.expenses.toArray()).filter(isActive)).toHaveLength(1)
   })
 })
+
+describe('onboarding', () => {
+  const input = {
+    defaultWeeklyIncomeCents: 210_000,
+    totalLimitCents: 45_000,
+    openingBalanceCents: 850_000,
+    trackingSince: '2026-08-31',
+  }
+
+  it('stores settings, the budget and the opening balance in one go', async () => {
+    await repos.onboarding.complete(input, '2026-09-23')
+
+    expect(await repos.settings.get()).toMatchObject({
+      defaultWeeklyIncomeCents: 210_000,
+      trackingSince: '2026-08-31',
+      onboardingDone: true,
+    })
+    // Every tracked week resolves to the chosen limit – including weeks after the seeded row.
+    const budgets = await db.budgets.toArray()
+    expect(budgets.map((budget) => budget.totalLimitCents)).toEqual(budgets.map(() => 45_000))
+    expect(budgets.some((budget) => budget.id === '2026-08-31')).toBe(true)
+    expect(await db.potTransactions.get('opening-balance')).toMatchObject({
+      potId: PRIMARY_POT_ID,
+      amountCents: 850_000,
+      date: '2026-08-31',
+      type: 'manual-deposit',
+      note: 'Startguthaben',
+    })
+    expect(await balances()).toEqual({ [PRIMARY_POT_ID]: 850_000 })
+  })
+
+  it('is idempotent and can take the opening balance back', async () => {
+    await repos.onboarding.complete(input, '2026-09-23')
+    await repos.onboarding.complete({ ...input, openingBalanceCents: 900_000 }, '2026-09-23')
+    expect(await balances()).toEqual({ [PRIMARY_POT_ID]: 900_000 })
+    expect(await db.potTransactions.count()).toBe(1)
+
+    await repos.onboarding.complete({ ...input, openingBalanceCents: 0 }, '2026-09-23')
+    expect(await balances()).toEqual({})
+  })
+
+  it('rejects bad input without changing anything', async () => {
+    await expectCode(
+      repos.onboarding.complete({ ...input, trackingSince: '2026-09-24' }, '2026-09-23'),
+      'invalid-date',
+    )
+    await expectCode(
+      repos.onboarding.complete({ ...input, totalLimitCents: -1 }, '2026-09-23'),
+      'invalid-amount',
+    )
+    await expectCode(
+      repos.onboarding.complete({ ...input, openingBalanceCents: 1.5 }, '2026-09-23'),
+      'invalid-amount',
+    )
+    expect((await repos.settings.get()).onboardingDone).toBe(false)
+    expect(await db.potTransactions.count()).toBe(0)
+  })
+})
+
+describe('recurring restore', () => {
+  it('undoes a delete without back-filling', async () => {
+    const template = await repos.recurring.create({
+      title: 'Miete',
+      amountCents: 18_000,
+      categoryId: 'cat:rent',
+      interval: 'weekly',
+      anchorDate: '2026-09-04',
+    })
+    await repos.recurring.materialize('2026-09-06')
+    await repos.recurring.remove(template.id)
+    await repos.recurring.restore(template.id)
+    await repos.recurring.restore(template.id) // no-op
+
+    expect((await db.recurringExpenses.get(template.id))?.deletedAt).toBeNull()
+    expect(await repos.recurring.materialize('2026-09-12')).toBe(1)
+    await expectCode(repos.recurring.restore('missing'), 'not-found')
+  })
+})
