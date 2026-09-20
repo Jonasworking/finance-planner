@@ -652,6 +652,17 @@ describe('phase 3 scenario: budget change, pots and a pot-funded expense', () =>
   }
 
   it('leaves past weeks, the streak and the week’s savings untouched', async () => {
+    // Like the real app: the onboarding dates the first budget row to the first tracked week.
+    // (The seeded default row is dated by the REAL clock – never rely on where it falls.)
+    await repos.onboarding.complete(
+      {
+        defaultWeeklyIncomeCents: 200_000,
+        totalLimitCents: 40_000,
+        openingBalanceCents: 0,
+        trackingSince: BEFORE,
+      },
+      BEFORE,
+    )
     await repos.expenses.add({ date: '2026-09-08', amountCents: 38_000, categoryId: GROCERIES })
     await repos.expenses.add({ date: '2026-09-16', amountCents: 39_500, categoryId: GROCERIES })
     await repos.weeks.close(BEFORE, { incomeCents: 200_000 })
