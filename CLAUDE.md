@@ -1,0 +1,45 @@
+# Finanzplaner-PWA
+Private Ein-Nutzer-Finanz-App (AUD, wöchentlicher Rhythmus). Kein Backend, keine Auth. Ziel: installierte PWA auf iPhone + MacBook.
+Plan & Phasenstatus: `docs/PLAN.md` – **nur an der freigegebenen Phase arbeiten**, Checkboxen dort pflegen.
+
+## Stack
+Vite 8 · React 19 · **TypeScript ~6.0 (gepinnt – TS 7 erst, wenn typescript-eslint es unterstützt; kein `baseUrl`)** · Tailwind v4 (CSS-first, Tokens in `src/styles/tokens.css`) ·
+shadcn/ui (`src/shared/ui`) · Zustand (nur UI-State) · Dexie 4 + dexie-react-hooks · Recharts 3 (+ react-is) · date-fns 4 · motion (`motion/react`) ·
+sonner · lucide-react · zod · vite-plugin-pwa · Vitest + fake-indexeddb + Testing Library · react-router 8 (`react-router`, `react-router/dom`) ·
+Deployment: Vercel (statisch). Paketmanager: npm. Kein `vaul`, kein `framer-motion`, kein `react-router-dom`.
+
+## Befehle
+`npm run dev` · `npm run build` · `npm run typecheck` · `npm run lint` · `npm run test` (einzeln: `npx vitest run src/lib/dates.test.ts`)
+
+## Architektur – wo liegt was
+- `src/lib` – **gesamte Fachlogik als reine Funktionen**. Kein React, kein Dexie, kein `Date.now()`/`new Date()` ohne Parameter (`today`/`now` reinreichen). Jede Funktion hat Tests (`*.test.ts` daneben).
+- `src/db` – Dexie-Schema, Typen, Repos. **Einziger Ort mit Dexie-Schreibzugriff**; Mehr-Tabellen-Operationen in einer `rw`-Transaktion, darin nur Dexie-`await`s.
+- `src/features/<name>` – UI + Hooks. Ein `useLiveQuery`-Querier pro Screen; `undefined` = lädt, `null` = nicht gefunden. Cross-Feature-Importe nur über `index.ts`.
+- `src/shared` – `ui/` (shadcn, generiert), `components/`, `hooks/`, `stores/`. Importiert nie aus `features`.
+- Komponenten berechnen nichts Fachliches selbst – fehlt Logik, kommt sie nach `lib` (mit Test). „Heute" kommt aus `useToday()`.
+
+## Domänenregeln
+- Geld = Integer-Cents (`…Cents`); Anzeige nur über `formatAUD` / `<Money>` → `A$1.600,00`. EUR nur Anzeige (`Settings.eurRate`).
+- Kalendertage = lokale `YYYY-MM-DD`-Strings, nur über `lib/dates.ts`. **Verboten:** `new Date('YYYY-MM-DD')`, `toISOString().slice(0,10)`, Millisekunden-Arithmetik. Wochenstart fix **Montag**; `Week.id` = weekStart.
+- Jede Zeile: `id`, `createdAt`, `updatedAt`, `deletedAt` (Soft-Delete; Lesezugriffe filtern Tombstones). Sync-fähig halten.
+- Deterministische IDs: `pot:primary`, `cat:<slug>`, `auto:<weekStart>`, `fund:<expenseId>`, `tr:<id>:out|in`, `rec:<recurringId>:<date>`.
+- Wochenkennzahlen immer aus Rohdaten (`lib/savings.summarizeWeek`), keine Snapshots. Jede Mutation läuft durchs Repo-Nadelöhr → `syncWeekDerived` für alle betroffenen abgeschlossenen Wochen (alt + neu).
+- Topf-finanzierte Ausgaben (`fundedByPotId`) zählen nicht zu Budget, Streak, Wochen-Sparsumme. Topfstand = Summe vorzeichenbehafteter Buchungen.
+- Budget ist „gültig ab" (`resolveBudget`), geschrieben wird nur mit `id = aktuelle Woche`. Monats-KPIs = Donnerstags-Regel, nur abgeschlossene Wochen.
+- Recurring: `bulkGet`-Filter + `bulkAdd`, nie `bulkPut`. Wipe = `db.delete()` + Reload. Nach Import: `checkLedgerInvariants` + Reload.
+- Dexie: ausgelieferte Version nie ändern → neue `version(n+1)` + `upgrade` + Migrationstest; `SCHEMA_VERSION` + `migrateBackup` mitziehen.
+
+## Konventionen
+- Komponenten `PascalCase.tsx`, eine pro Datei, Named Exports; Hooks `useXyz.ts`; lib/Repos `camelCase.ts`; Tests `*.test.ts(x)` neben der Quelle.
+- Suffixe: `…Page` (Route), `…Sheet` (Bottom-Sheet/Dialog), `…Card`, `…List`/`…Row`. Props-Typ `XyzProps`. Kein `any`, kein Default-Export (außer lazy Routen).
+- UI-Texte Deutsch, Code/Kommentare/Commits Englisch.
+- Commits: Conventional Commits mit Feature-Scope – `feat(expenses): quick-add sheet`, `fix(lib): clamp monthly recurrence`, `test(db): closeWeek idempotency`, `chore: …`. Klein & thematisch; Logik und Test im selben Commit; vorher typecheck + lint + test grün. Branch pro Phase `phase-N-kurzname`; Push nur nach Ansage.
+
+## Design
+Dark = Default, Light via `[data-theme='light']`. Tokens **nur** aus `tokens.css` (keine Hex-Werte in Komponenten):
+bg `#0B0C0F` · surface-1/2/3 `#14161A/#1B1E24/#252932` · fg `#F5F6F8` · fg-muted `#9AA1AE` ·
+**saved/Mint `#3EE0A8`** (auch Primary-CTA) · **spent/Coral `#FF6F61`** · **income/Periwinkle `#8AA4FF`** · warning `#FFB84D` · danger `#FF5A52` · `cat-1…10`.
+Radien 10/14/20 (Card)/28 (Sheet) · 4-px-Raster, Seitenrand 16/32 px · Touch-Ziel ≥ 44 px · Inter Variable, Beträge immer `tabular-nums`, Display 44/48-700.
+Mobile-first: BottomTabs < `lg`, Sidebar ≥ `lg`; `ResponsiveSheet` statt Modals; Shell = Grid + innerer Scroller (kein `position: fixed`), Safe-Areas, `100dvh`; Inputs ≥ 16 px; Numpad-Betrag ist kein `<input>`.
+Motion: Springs aus `shared/motion.ts` (`snappy`/`soft`/`bouncy`), `whileTap scale .97`, `reducedMotion="user"`. Glas nur für Tab-Bar/Sticky-Header/Sheet-Griff.
+Listen: Swipe-to-delete immer mit Undo-Toast. Ladezustände: Skeletons, nie Spinner-Seiten. Vor Chart-Code den `dataviz`-Skill laden.

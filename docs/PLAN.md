@@ -1,0 +1,326 @@
+# Phasenstatus
+
+> Arbeitskopie des am 2026-09-20 freigegebenen Plans. Jede Phase startet erst nach ausdrücklicher Freigabe durch den Nutzer. Checkboxen nach Abschluss einer Phase pflegen; Abweichungen vom Plan hier unter der jeweiligen Phase notieren.
+
+- [x] Plan freigegeben (2026-09-20)
+- [x] `CLAUDE.md` + `docs/PLAN.md` angelegt
+- [ ] Offene Fragen §6 beantwortet (unbeantwortet = Annahme gilt)
+- [ ] **Phase 0** – Setup, Tokens, Layout-Shell — _wartet auf Freigabe_
+- [ ] **Phase 1** – Datenmodell, Kernlogik, Tests
+- [ ] **Phase 2** – Einkommen & Ausgaben
+- [ ] **Phase 3** – Budget & Spartöpfe
+- [ ] **Phase 4** – Analyse & Charts
+- [ ] **Phase 5** – Tasks, Insights, Was-wäre-wenn
+- [ ] **Phase 6** – PWA, Export, Polish
+- [ ] Phase 7 (optional) – Sync
+
+---
+
+# Plan: Finanzplaner-PWA (`finance-planner`)
+
+## Context
+
+Private Ein-Nutzer-Finanz-App für das Leben in Australien (wöchentliche Auszahlung ~A$2.000). Kern-Loop: unter der Woche Ausgaben tracken → am Wochenende **„Woche abschließen"** (Netto-Betrag bestätigen) → App bucht `Einkommen − Ausgaben` automatisch in den Primär-Topf **„Nur gespart"**. Dazu Wochenbudget mit Warnungen/Streak, Spartöpfe mit Prognose, Analyse, Was-wäre-wenn, Tasks, Insights, Backup. Kein Backend, keine Auth, installierte PWA auf iPhone (primär) + MacBook. Repo ist leer (nur `.git`, Branch `master`, keine Commits) – Greenfield. Dieser Plan wird **Phase für Phase von dir freigegeben**; gebaut wird erst nach Freigabe.
+
+**Bereits mit dir geklärt (2026-09-20):**
+
+| Thema | Entscheidung | Konsequenz im Plan |
+|---|---|---|
+| Geräte-Sync | „Später echter Sync" | Datenmodell ab v1 sync-fähig (String-IDs, `updatedAt`, Soft-Delete/Tombstones, deterministische IDs für Seeds + abgeleitete Datensätze). Sync selbst = optionale **Phase 7**; bis dahin JSON-Backup als Transportweg iPhone → MacBook. |
+| Hosting | Vercel | `createBrowserRouter` + SPA-Rewrite, kein Base-Path. |
+| Große Einmal-Ausgaben | „Aus Topf bezahlt" | `Expense.fundedByPotId` → verknüpfte Topf-Entnahme; zählt nicht gegen Budget/Streak und nicht in `gespart = Einkommen − Ausgaben` (sonst Doppelabzug). |
+| Einkommen | Ein Netto-Direktbetrag pro Woche | Eigene `WeekIncome`-Tabelle entfällt → Feld `incomeCents` auf dem `Week`-Datensatz. Stunden/Stundensatz/Brutto/Arbeitgeber gestrichen (später per Dexie-Version nachrüstbar). |
+
+Der Entwurf wurde von einem Review-Agenten gegengeprüft (Peer-Dependencies real per `npm view`, Datenmodell-Edge-Cases, iOS-Fallen); die Ergebnisse sind unten eingearbeitet.
+
+---
+
+## 0. Stack (verbindlich) + geprüfte Versionen
+
+Stand `npm view` 2026-09-20 · lokal Node 26.4 / npm 11.17 · Paketmanager **npm**.
+
+| Paket | Version | Anmerkung |
+|---|---|---|
+| vite · @vitejs/plugin-react | 8.3 · 6.1 | |
+| react / react-dom | 19.3 | |
+| **typescript** | **`~6.0.3` (nicht 7.0)** | TS 7 (nativer Compiler) hat noch keine Compiler-API → `typescript-eslint` verlangt `<6.1.0` (verifiziert); auch das aktuelle Vite-Template pinnt 6.0. `tsconfig`: nur `paths {"@/*": ["./src/*"]}`, **kein `baseUrl`** (in TS 7 ein Fehler → zukunftssicher). |
+| tailwindcss + @tailwindcss/vite | 4.3 | **v4 ist CSS-first:** Tokens als `@theme` in CSS statt `tailwind.config.ts` – das ist die v4-Entsprechung deiner „Tailwind-Config"-Anforderung und das, was shadcn erwartet. |
+| shadcn CLI | 4.21 | `npx shadcn@latest init -t vite -b radix` (Basisbibliothek ist inzwischen Init-Option → Radix laut deiner Vorgabe, siehe §6 Frage 1); `aliases.ui = "@/shared/ui"`. `style`/`baseColor` sind nach Init nicht änderbar. |
+| zustand · dexie · dexie-react-hooks | 5.0 · 4.4 · 4.4 | Zustand nur UI-State; Daten über `useLiveQuery`. |
+| recharts (+ `react-is`) · date-fns | 3.10 · 4.4 | `react-is` ist Peer von recharts → explizit installieren. Analytics-Route lazy. |
+| vite-plugin-pwa · @vite-pwa/assets-generator | 1.3 · **`^1.0.4`** | Plugin peer-t `assets-generator ^1` (v2 wäre außerhalb der Range). |
+| **motion** | 13.4 | Nachfolge-Paket von „framer-motion"; Import `motion/react`. |
+| vitest · fake-indexeddb · @testing-library/react | 5.0 · 6.2 · 16.3 | |
+
+**Ergänzungen zum Stack (klein, begründet):** `react-router` 8.4 (Routing fehlt im Stack; `createBrowserRouter` aus `react-router`, `RouterProvider` aus `react-router/dom`) · `sonner` (Toasts/Undo) · `lucide-react` (Icons) · `zod` (Backup-Validierung) · `@fontsource-variable/inter` (Font offline). **Nicht** dabei: `vaul` (seit 12/2024 ohne Release; Bottom-Sheet kommt aus dem shadcn-Drawer). Linter: was das Vite-Template mitbringt (aktuell oxlint) + `no-restricted-imports` für die Schichtenregeln; falls das dort nicht pro Ordner geht → ESLint + typescript-eslint.
+
+---
+
+## 1. Ordnerstruktur
+
+```
+src/
+  app/                  App.tsx, router.tsx, providers.tsx
+    shell/              AppShell (Grid + innerer Scroller), BottomTabs (mobile, Glas + Safe-Area), Sidebar (≥ lg), PageHeader
+  features/
+    dashboard/          Wochen-Hero (Verdient/Ausgegeben/Gespart), Ring, Streak, Insight-Karten
+    income/             CloseWeekSheet („Woche abschließen"), PendingWeeksPrompt (älteste zuerst)
+    expenses/           QuickAddSheet (Numpad), ExpenseList, Kategorien, Daueraufträge, Tags
+    budget/             Gesamt-/Kategorie-Slider, Warn-UI
+    pots/               Topfliste, Detail, Ein-/Auszahlen, Umbuchen, Prognose
+    analytics/          Wochen-/Monatsansicht, Charts (lazy Chunk)
+    whatif/             Rechner + Kurve
+    tasks/              To-dos
+    insights/           Insight-Karten (Regeln liegen in lib/)
+    settings/           Theme, EUR-Kurs, Defaults, Daten (Export/Import/Prüfen/Löschen), Install-Hinweis
+    └─ je Feature: components/, hooks/, <Feature>Page.tsx, index.ts (öffentliche API)
+  shared/
+    ui/                 shadcn-Komponenten (generiert, nur minimal anpassen)
+    components/         Money, AnimatedNumber, ProgressRing, Numpad, SwipeRow, ResponsiveSheet, GlassCard, EmptyState, Skeletons
+    hooks/              useToday (aktualisiert bei visibilitychange + Mitternacht), useMediaQuery, useStandalone, haptic()
+    stores/             zustand: uiStore (gewählte Woche, offene Sheets), whatIfStore, themeStore
+    motion.ts           Spring-/Dauer-Tokens
+  lib/                  ★ reine Funktionen – kein React, kein Dexie, kein Date.now()
+  db/                   schema.ts, types.ts, seed.ts, repos/*.ts, migrations/
+  styles/               index.css, tokens.css (@theme + CSS-Variablen)
+  test/                 setup.ts, fixtures/
+docs/PLAN.md            Kopie dieses Plans mit Phasen-Checkboxen
+CLAUDE.md
+```
+
+**Schichtenregel (per Lint erzwungen):** `lib` importiert nur `date-fns`/`zod` · `db` importiert `lib` · `features` importieren `lib`, `db`, `shared` und andere Features nur über deren `index.ts` · `shared` importiert nie aus `features`.
+
+**Navigation:** Mobile-Tabs **Home · Ausgaben · ( + ) · Töpfe · Analyse**; Zahnrad im Header → „Mehr" (Budget, Tasks, Was-wäre-wenn, Einstellungen & Daten). Desktop: Sidebar mit allen Punkten + „Neue Ausgabe" (Shortcut `N`). `ResponsiveSheet` = Drawer < `lg`, Dialog ≥ `lg`.
+
+---
+
+## 2. Finales Datenmodell
+
+### Schärfungen gegenüber deinem Vorschlag
+1. **Geld = Integer-Cents** (`…Cents`), nie Float. Eigener Formatter, weil `Intl` de-DE/AUD „1.600,00 AU$" liefert; Ziel `A$1.600,00`, negativ `−A$12,50`.
+2. **Kalendertage = lokale ISO-Strings `YYYY-MM-DD`**, keine Timestamps → zeitzonenfest (AU → EU verschiebt keine Ausgabe). Verifizierte Falle: `new Date('YYYY-MM-DD')` und `toISOString().slice(0,10)` sind UTC (Montag 08:00 Sydney → Sonntag → falsche Woche) → beides per Lint verboten, alles läuft über `lib/dates.ts` (`parseISO`/`format`, Rechnen nur mit `addDays`/`differenceInCalendarDays`, nie `+7*864e5` wegen DST).
+3. **Wochenstart fix Montag** → `weekStartDay` fliegt aus den Settings (weekStart ist Schlüssel mehrerer Tabellen). Repo + zod prüfen: jeder weekStart ist ein Montag.
+4. **Sync-fähig:** jede Zeile `id: string`, `createdAt`, `updatedAt`, `deletedAt|null` (Soft-Delete – macht „Rückgängig" beim Swipe-Löschen trivial). **Deterministische IDs** für Seeds (`pot:primary`, `cat:<slug>`) und abgeleitete Zeilen (`auto:<weekStart>`, `fund:<expenseId>`, `tr:<transferId>:out|in`, `rec:<recurringId>:<date>`) → idempotent nach Reload/Import/Sync, keine doppelten Primär-Töpfe auf zwei Geräten.
+5. **Primär-Topf = feste ID `pot:primary`** statt `isPrimary`-Boolean (ein Boolean erlaubt 0 oder 2 Primär-Töpfe; feste ID nicht). Umbenennbar, nicht lösch-/archivierbar.
+6. **Eine Quelle der Wahrheit:** Wochenkennzahlen werden immer aus Rohdaten berechnet, keine Snapshots. Einzige materialisierte Ableitungen sind Topfbuchungen (`auto:`, `fund:`), die der Repo-Layer in derselben Transaktion nachzieht.
+7. **Wiederkehrend = eigene Vorlagen-Tabelle** statt `isRecurring/recurrenceRule` auf der Ausgabe; erzeugte Ausgaben sind normale Expenses mit `recurringId`.
+8. **Budget ist „gültig ab":** Datensatz nur bei Änderung, immer mit `id = aktuelle Woche`; `resolveBudget(w)` = letzter Datensatz mit `id ≤ w`, sonst der früheste. Das Onboarding schreibt den ersten Datensatz → vergangene Wochen (und damit der Streak) ändern sich nie rückwirkend.
+
+### Typen (`src/db/types.ts`)
+```ts
+type ISODate = string; type Cents = number;
+interface Base { id: string; createdAt: number; updatedAt: number; deletedAt: number | null }
+
+interface Week extends Base {            // id = weekStart (Montag) – ersetzt WeekIncome
+  incomeCents: Cents | null;             // Netto-Direktbetrag; 0 erlaubt (Woche ohne Arbeit)
+  note?: string;
+  closedAt: number | null;               // null = offen
+}
+interface Expense extends Base {
+  date: ISODate; amountCents: Cents;     // > 0
+  categoryId: string; tags: string[]; note?: string;
+  recurringId?: string;                  // aus Vorlage erzeugt
+  fundedByPotId?: string | null;         // „aus Topf bezahlt" (auch Primär-Topf erlaubt)
+}
+interface RecurringExpense extends Base {
+  title: string; amountCents: Cents; categoryId: string; tags: string[];
+  interval: 'weekly' | 'fortnightly' | 'monthly';
+  anchorDate: ISODate;                   // erste Fälligkeit; Wochentag/Monatstag daraus
+  endDate: ISODate | null; active: boolean;
+  lastGeneratedDate: ISODate | null;     // Wasserzeichen
+}
+interface Category extends Base {
+  name: string; icon: string /* lucide */; color: string /* Token cat-1..10 */;
+  group: 'Fixkosten' | 'Variabel' | 'Freizeit' | 'Reisen' | 'Sonstiges';
+  defaultWeeklyLimitCents: Cents | null; sortOrder: number; archived: boolean; // archivieren statt löschen
+}
+interface Budget extends Base {          // id = weekStart „gültig ab"
+  totalLimitCents: Cents;                // maßgeblich (z. B. 40000)
+  categoryLimits: Record<string, Cents>; // optional; UI zeigt „unverteilt"/Überbuchung
+}
+interface Pot extends Base {             // Primär-Topf: id === 'pot:primary'
+  name: string; targetCents: Cents | null; deadline: ISODate | null;
+  color: string; icon: string; sortOrder: number; archived: boolean;
+}
+interface PotTransaction extends Base {
+  potId: string; amountCents: Cents;     // VORZEICHENBEHAFTET → Topfstand = Summe
+  date: ISODate;                         // auto-weekly: Sonntag der Woche (weekStart + 6), nicht closedAt
+  type: 'auto-weekly' | 'manual-deposit' | 'withdrawal' | 'transfer-in' | 'transfer-out' | 'expense-funding';
+  sourceWeekStart?: ISODate; transferId?: string; expenseId?: string; note?: string;
+}
+interface Task extends Base {
+  title: string; dueDate: ISODate | null; done: boolean; doneAt: number | null;
+  category: 'Finanzen' | 'Behörden' | 'Sonstiges'; linkedPotId: string | null; note?: string;
+}
+interface Settings {                     // Singleton id = 'app'
+  id: 'app'; currency: 'AUD'; eurRate: number | null; eurRateUpdatedAt: number | null; showEur: boolean;
+  theme: 'dark' | 'light' | 'system'; defaultWeeklyIncomeCents: Cents; trackingSince: ISODate;
+  lastBackupAt: number | null; installHintDismissedAt: number | null; onboardingDone: boolean; updatedAt: number;
+}
+```
+
+### Dexie-Schema (`src/db/schema.ts`)
+```ts
+export const SCHEMA_VERSION = 1;
+db.version(1).stores({
+  weeks: 'id',                          // id = weekStart
+  expenses: 'id, date',                 // Wochenabfrage = date-Range
+  recurringExpenses: 'id',
+  categories: 'id',
+  budgets: 'id',                        // where('id').belowOrEqual(w).last()
+  pots: 'id',
+  potTransactions: 'id, [potId+date]',  // Verlauf je Topf, sortiert
+  tasks: 'id',
+  settings: 'id',
+});
+```
+**Indizes bewusst sparsam:** ~1.000 Ausgaben/Jahr → Kategorie-/Tag-/Status-Filter laufen im Speicher; Booleans sind ohnehin keine gültigen IndexedDB-Keys; deterministische IDs ersetzen Lookup-Indizes. Ein Index lässt sich später per Versionssprung ohne Datenmigration nachrüsten.
+
+**Versionierung:** ausgelieferte Versionen nie editieren; Änderungen nur als `db.version(n+1).stores(...).upgrade(tx => …)` in `db/migrations/` + fake-indexeddb-Test. `SCHEMA_VERSION` steckt in jedem Backup; `lib/backup.migrateBackup()` hebt alte Backups stufenweise an. `versionchange` → DB schließen + Reload-Hinweis (zwei Tabs am Mac); globaler Handler für „Connection to Indexed Database server lost" (iOS nach Resume) → reopen/reload.
+
+### Invarianten im Repo-Layer (einziger Schreibweg, je eine Dexie-`rw`-Transaktion)
+- **Ein Nadelöhr für Schreibzugriffe:** liest die alte Zeile in der Transaktion und ruft `syncWeekDerived` für **jede abgeschlossene Woche in `{weekOf(alt), weekOf(neu)}`** – deckt Betrag/Datum/Löschen/`fundedByPotId`-Wechsel ab; Materialisierer und Import nutzen denselben Weg. `closeWeek` doppelt = No-op; `reopenWeek` tombstoned `auto:<weekStart>`.
+- Ausgabe mit `fundedByPotId` ↔ Buchung `fund:<expenseId>` wird bei Anlegen/Ändern/Löschen mitgeführt.
+- Umbuchung = zwei Zeilen `tr:<id>:out|in`, atomar; abgelehnt bei Überziehen, gleichem oder archiviertem Topf. Töpfe nur archivierbar bei Stand 0.
+- Recurring-Materialisierung: Wasserzeichen **in** der Transaktion lesen → fällige IDs per `bulkGet` filtern → `bulkAdd` (nie `bulkPut`: überschreibt editierte Instanzen; gelöschte Instanzen bleiben als Tombstone gelöscht). Serialisiert auch Doppel-Trigger (App-Start + `visibilitychange`, zwei Tabs). Anker/Intervall editiert oder Vorlage reaktiviert → Wasserzeichen = gestern (kein Rückwirkend-Auffüllen); `today < Wasserzeichen` (Zeitzonenwechsel) = No-op.
+- Archivierte Kategorien: Limits werden beim Auflösen ignoriert, alte Budget-Zeilen nie umgeschrieben; ihre Ausgaben zählen weiter zum Gesamtlimit.
+- **Import „Ersetzen":** `file.text()` → zod → Migration → FK-/Ledger-Check **vor** der Transaktion; dann eine Transaktion über alle Tabellen (clear + bulkAdd, keine Nicht-Dexie-`await`s darin) → Alles-oder-nichts; vorher Sicherheitskopie des Ist-Zustands in separater DB `fp-safety` (1 Slot, „Import rückgängig"); danach `location.reload()`.
+- **„Alle Daten löschen"** = `db.delete()` + Reload (nicht `clear()`, sonst laufen die Seeds nicht erneut und es fehlt der Primär-Topf).
+- **liveQuery-Konvention:** ein Querier pro Screen (kein Tearing), darin nur Dexie-`await`s; `undefined` = lädt (→ Skeleton), `null` = nicht gefunden.
+
+---
+
+## 3. Kernlogik in `src/lib` (pure, Vitest, `today`/`now` immer als Parameter)
+
+| Modul | Wichtigste Funktionen |
+|---|---|
+| `money.ts` | `formatAUD(cents)` → `A$1.600,00` · `formatEUR(cents, rate)` · `parseAmountInput('12,5')` → `1250` · `ratio()` |
+| `dates.ts` | `parseISODate` / `toISODate` (lokal) · `weekStartOf` · `weekRange` · `addWeeks` · `listWeeks` · `isMonday` · `monthOfWeek` (**Donnerstags-Regel**: Woche zählt zum Monat ihres Donnerstags → Monats-KPIs = Summe ganzer Wochen, bleiben konsistent zu den Wochenwerten) |
+| `budget.ts` | `resolveBudget(budgets, week)` · `budgetUsage(expenses, budget)` → gesamt + je Kategorie, `level: 'ok' \| 'warn' (≥ 80 %) \| 'over' (≥ 100 %)` · `thresholdCrossed(prev, next)` (Toast genau einmal) · `unallocated()` · `reservedThisWeek(templates, week, today)` (noch nicht fällige Daueraufträge der Woche virtuell als „reserviert" → Restbudget ist ehrlich, bevor z. B. die Miete am Freitag gebucht wird) |
+| `savings.ts` | `summarizeWeek({week, expenses, budget})` → `{income, spent (ohne topf-finanzierte), funded, saved, savingsRate, underBudget}` · `buildAutoWeeklyTx()` · `potBalances(txs)` · `validateTransfer()` · `pendingWeeks(weeks, trackingSince, today)` (älteste zuerst) |
+| `streak.ts` | `computeStreak(summaries, today)` → `{current, best}`: rückwärts ab letzter abgeschlossener Woche, kalendarisch lückenlos, `spent ≤ totalLimit`; `current` gilt nur, wenn der letzte Abschluss die Vorwoche oder jünger ist – sonst „Wochen abschließen, um den Streak zu sehen" |
+| `recurrence.ts` | `dueDates(template, afterExclusive, untilInclusive)` – weekly/fortnightly per Kalendertage ab **Anker** (`diffDays % 7/14`), monthly = `addMonths(anchor, k)` mit Monatsende-Klemmung (31. → 28./30., ohne Drift) · `nextDueDate()` |
+| `forecast.ts` | `weeklyPace(txs, windowWeeks = 8)` · `forecastPot()` → ETA („Bei aktuellem Tempo erreicht am …") · `requiredWeeklyForDeadline()` · `deadlineDelta()` („2 Wochen vor Ziel") |
+| `whatif.ts` | `projectScenario({startBalance, baselineWeeklySaving, adjustments[{categoryId, deltaCentsPerWeek}], from, until})` → Punkte `{weekStart, baseline, scenario}` + `gainCents` |
+| `analytics.ts` | `weeklySeries` · `monthlySeries` (Einkommen/Gespart **nur aus abgeschlossenen Wochen** – sonst zeigt der laufende Monat ein falsches Minus; Monatsvergleich über Ø/Woche, da 4 oder 5 Wochen) · `categoryBreakdown` · `cumulativeSavings` · `compareToPreviousWeek` · `bestWorstWeek` · `categoryAverages(windowWeeks)` |
+| `insights.ts` | `type InsightRule = (ctx) => Insight \| null` · `runInsights(ctx, rules)` (Priorität, max. 3 aufs Dashboard). Regeln: Kategorie ≥ 20 % über 8-Wochen-Schnitt · Topf vor/hinter Deadline · Budget 80/100 % · Streak-Meilenstein · offene Wochen · Sparquote vs. Schnitt · Backup älter 14 Tage · EUR-Kurs älter 30 Tage |
+| `ledger.ts` | `checkLedgerInvariants(data)` → Verstöße: Umbuchungen summieren zu 0 · genau eine `auto:`-Buchung je abgeschlossener Woche und = `summarizeWeek().saved` · `fund:`-Buchungen 1:1 zu Ausgaben · alle weekStarts sind Montage · keine verwaisten FKs. Läuft in Tests, nach jedem Import und über „Daten prüfen" in den Einstellungen |
+| `csv.ts` · `backup.ts` | CSV mit `;`, UTF-8-BOM, Dezimalkomma, Schutz vor Formel-Injection (führende `= + - @`) · zod-`BackupSchema`, `buildBackup`, `parseBackup`, `migrateBackup` |
+
+**Pflicht-Testfälle:** Minus-Woche · Woche über Jahreswechsel · DST-Wochen – Datums-Tests laufen unter `TZ=Australia/Sydney` **und** `TZ=Europe/Berlin` · Monats-Dauerauftrag am 31. · fortnightly-Anker · topf-finanzierte Ausgabe · abgeschlossene Woche editieren/wiedereröffnen · doppeltes `closeWeek` · Datumswechsel über Wochengrenze · Budget-Auflösung mit Lücken · Streak mit Lücke / veraltetem Abschluss · offene Woche im laufenden Monat.
+
+---
+
+## 4. Design-Tokens (`src/styles/tokens.css`, Tailwind v4 `@theme`)
+
+Dark ist Default (`:root`), Light über `[data-theme='light']`. Theme wird vor dem ersten Paint per Inline-Script aus `localStorage` gesetzt (kein Flash; `index.html` hat inline dunklen Hintergrund gegen den weißen iOS-Startblitz); maßgeblich bleibt `Settings.theme`.
+
+```css
+:root {                                   /* DARK (Default) */
+  --bg: #0B0C0F;            --surface-1: #14161A;   /* Card */
+  --surface-2: #1B1E24;     /* Sheet/Popover */     --surface-3: #252932; /* Input/Hover */
+  --border: rgb(255 255 255 / .08);      --border-strong: rgb(255 255 255 / .14);
+  --fg: #F5F6F8;  --fg-muted: #9AA1AE;   --fg-subtle: #6A7180;
+  --saved: #3EE0A8;   --saved-soft: rgb(62 224 168 / .14);   --on-saved: #04231A;  /* Mint = Gespart + Primary-CTA */
+  --spent: #FF6F61;   --spent-soft: rgb(255 111 97 / .14);                         /* Coral = Ausgaben */
+  --income: #8AA4FF;  --income-soft: rgb(138 164 255 / .14);                       /* Periwinkle = Verdient */
+  --warning: #FFB84D; --danger: #FF5A52;
+  --cat-1:#8AA4FF; --cat-2:#B58CFF; --cat-3:#FF8FC7; --cat-4:#FFB84D; --cat-5:#5CD6E8;
+  --cat-6:#FF9466; --cat-7:#A3E07A; --cat-8:#E8D36A; --cat-9:#7FD1B9; --cat-10:#9AA1AE;
+  --shadow-card: inset 0 1px 0 rgb(255 255 255 / .04), 0 8px 24px rgb(0 0 0 / .35);
+  --glow-saved: 0 0 24px rgb(62 224 168 / .25);
+}
+[data-theme='light'] {
+  --bg:#F4F5F7; --surface-1:#FFFFFF; --surface-2:#FFFFFF; --surface-3:#ECEEF2;
+  --border: rgb(10 12 16 / .08); --border-strong: rgb(10 12 16 / .16);
+  --fg:#0E1014; --fg-muted:#5B6270; --fg-subtle:#8A909C;
+  --saved:#0FA877; --on-saved:#FFFFFF; --spent:#E5483B; --income:#4463E6; --warning:#C77A00; --danger:#D92D20;
+  --shadow-card: 0 1px 2px rgb(16 24 40 / .06), 0 8px 24px rgb(16 24 40 / .06);
+}
+@theme inline {
+  --color-bg: var(--bg); --color-surface-1: var(--surface-1); /* … alle Farben → bg-saved, text-spent, border-border … */
+  --font-sans: 'Inter Variable', ui-sans-serif, system-ui, -apple-system, sans-serif;
+  --radius-sm: 10px; --radius-md: 14px; --radius-lg: 20px /* Cards */; --radius-xl: 28px /* Sheets, Hero */;
+  --text-display: 2.75rem;  --text-display--line-height: 1.09; /* Hero-Betrag, 700, -0.03em */
+  --text-h1: 1.75rem; --text-h2: 1.25rem; --text-body: 1rem; --text-label: .8125rem; --text-caption: .6875rem;
+  --ease-out-soft: cubic-bezier(.22, 1, .36, 1);
+}
+```
+shadcn-Variablen (`--background`, `--card`, `--primary`, `--destructive`, `--ring`, `--chart-1..5` …) werden auf diese Tokens gemappt (`--primary: var(--saved)`, `--chart-1: var(--income)`, `--chart-2: var(--spent)`, `--chart-3: var(--saved)`).
+
+- **Spacing:** 4-px-Raster; Seitenrand 16 px mobil / 32 px Desktop; Card-Padding 16–20 px; Abschnittsabstand 24 px; Touch-Ziel ≥ 44 px; Tab-Bar 64 px + `env(safe-area-inset-bottom)`; Sidebar 260 px; Content max. 1120 px; Shell-Wechsel bei `lg` (1024 px).
+- **Zahlen:** überall `tabular-nums`; Beträge nur über `<Money>` / `<AnimatedNumber>` (Spring-Ticker). Inputs ≥ 16 px (kein iOS-Zoom).
+- **Glas:** `bg-surface-1/70 backdrop-blur-xl backdrop-saturate-150 border border-border` – nur Tab-Bar, Sticky-Header, Sheet-Griffleiste (Performance).
+- **Motion (`shared/motion.ts`):** Dauer 120/200/320 ms; Springs `snappy {500, 35}`, `soft {260, 28}`, `bouncy {400, 17}`; `whileTap scale .97` als Haptik-Ersatz; `MotionConfig reducedMotion="user"`. `haptic()`-Wrapper: `navigator.vibrate` wo vorhanden, sonst No-op (iOS hat keine Vibration-API; Toggles als natives `<input type="checkbox" switch>` geben dort echte Haptik).
+- Farb-/Chart-Palette wird in Phase 4 mit dem `dataviz`-Skill gegen Kontrast & Farbsehschwäche validiert.
+
+---
+
+## 5. Umsetzungsphasen (jede Phase = eigene Freigabe durch dich)
+
+**Gate für jede Phase:** `npm run typecheck && npm run lint && npm run test && npm run build` grün · UI von mir im Browser geprüft (Chrome-Automation, 390×844 + 1440×900, Dark + Light, Konsole fehlerfrei) · `docs/PLAN.md`-Checkboxen aktualisiert · kurze Phasen-Notiz + Screenshots an dich.
+
+### Phase 0 – Setup, Tokens, Layout-Shell
+Vite-React-TS-Scaffold (TS `~6.0.3`, strict, `paths` ohne `baseUrl`) · Lint inkl. Schichtenregeln + Verbot von `new Date(string)`/`toISOString().slice` · Prettier (`prettier-plugin-tailwindcss`) · Vitest-Setup · Tailwind v4 + `tokens.css` · shadcn init (`ui → src/shared/ui`; button, card, drawer, dialog, slider, input, tabs, skeleton, sonner, tooltip, dropdown-menu, switch) – dabei einmal prüfen: `shadcn add` löst Alias ohne `baseUrl` auf, und worauf der Drawer aufsetzt · Inter self-hosted · Theme ohne Flash · Router + **AppShell als Grid mit innerem Scroller** (keine `position: fixed`-Tab-Bar; `100dvh`, `viewport-fit=cover`, Safe-Areas, `overscroll-behavior: none`) mit Platzhalter-Seiten + Seitenübergängen · Basis-Komponenten `Money`, `GlassCard`, `ProgressRing` (statisch), `ResponsiveSheet` · Dev-Route `/dev/tokens` (Styleguide) · `CLAUDE.md` + `docs/PLAN.md`.
+**DoD:** alle Scripts grün · Shell korrekt bei 390 px und 1440 px, kein horizontales Scrollen · Dark/Light ohne Flash · `/dev/tokens` zeigt Farben, Typo, Radien, Buttons, Card, Sheet · `formatAUD`-Smoke-Test läuft.
+
+### Phase 1 – Datenmodell, Kernlogik, Tests
+`db/types.ts`, `schema.ts`, Repos mit allen Invarianten aus §2, Seeds mit deterministischen IDs (10 Kategorien, `pot:primary` „Nur gespart", Settings A$2.000, erstes Budget A$400) · alle `lib`-Module aus §3 inkl. `checkLedgerInvariants` · Dev-Demo-Daten-Generator (12 realistische Wochen, nur Dev-Build) für die UI-Phasen.
+**DoD:** `lib` ≥ 90 % Line-Coverage, alle Pflicht-Testfälle aus §3, Datums-Tests in beiden Zeitzonen · Repo-Tests (fake-indexeddb): `closeWeek` idempotent, Nadelöhr synct alte + neue Woche, Transfer atomar, Funding-Kaskade, Recurring-Materialisierung idempotent (auch bei parallelem Doppelaufruf), Soft-Delete/Restore, Import-Rollback bei Fehler, Wipe → Seeds wieder da · `checkLedgerInvariants` grün auf Demo-Daten · Lint beweist: kein React/Dexie in `lib`.
+
+### Phase 2 – Einkommen & Ausgaben
+QuickAdd-Sheet: FAB → eigenes Numpad (Betragsanzeige ist **kein** `<input>` → iOS-Tastatur öffnet nie; Tasten mit `pointerdown` + `touch-action: manipulation`) → Kategorie-Grid → Speichern; Datum = heute, Notiz/Tags/Datum aufklappbar (Notizfeld oben im Sheet, damit die Tastatur es nicht verdeckt) · Ausgabenliste nach Kalendertagen mit Wochen-Umschalter, Swipe-to-delete + Undo-Toast, Bearbeiten-Sheet · Kategorien verwalten (Icon/Farbe, Sortierung, Archiv) · Daueraufträge (weekly/fortnightly/monthly) + Materialisierung bei App-Start/`visibilitychange` · Tags mit Autocomplete · **„Woche abschließen"**: Betrag vorbelegt → Zusammenfassung → Bestätigen (Buchung in `pot:primary`, Erfolgsanimation); offene Wochen als Warteschlange, älteste zuerst; „Woche wieder öffnen" · Onboarding (Standard-Einkommen, Budget, Startguthaben, `trackingSince`) · Dashboard v1 (Verdient/Ausgegeben/Gespart, Sparquote) · Skeletons + Empty-States.
+**DoD:** Ausgabe in ≤ 3 Taps nach Betragseingabe · wöchentliche Miete erscheint automatisch und nach Reload nicht doppelt · Swipe + Undo per Touch bedienbar · doppelter Wochenabschluss erzeugt keine zweite Buchung; Ausgabe in abgeschlossener Woche ändern/verschieben passt „Gespart" beider Wochen an · RTL-Tests für QuickAdd und CloseWeek.
+
+### Phase 3 – Budget & Spartöpfe
+Budget-Seite: Gesamt-Slider + Kategorie-Slider (Schritt A$5, alternativ Zahleneingabe), „unverteilt"-Anzeige, „gilt ab dieser Woche" · Warnungen 80 %/100 % (Toast einmalig je Schwelle, dauerhaft Farbe an Ring/Karten) · Dashboard: animierter Restbudget-Ring inkl. „davon reserviert" (anstehende Daueraufträge) + Streak · Töpfe: Liste mit Ständen, Detail (Verlauf, Fortschritt, ETA, „nötig pro Woche"), Anlegen/Bearbeiten, Ein-/Auszahlen, Umbuchen, Archivieren · „Aus Topf bezahlt" im Ausgaben-Sheet.
+**DoD:** Budgetänderung heute verändert vergangene Wochen/Streak nicht · Warnung feuert exakt einmal pro Schwelle und Woche · Topfstand = Summe der Buchungen · Umbuchung atomar, kein Überziehen · topf-finanzierte Ausgabe lässt Budget, Streak und Wochen-Sparsumme unberührt · Prognose = `lib`-Fixtures · `checkLedgerInvariants` grün nach einem durchgespielten Szenario.
+
+### Phase 4 – Analyse & Charts
+(zuerst `dataviz`-Skill laden) Wochen-/Monats-Umschalter, Zeitraum 8 W/12 W/26 W/Alles · Verdient vs. Ausgegeben vs. Gespart · Kategorien-Donut mit Drilldown · kumulierter Sparverlauf · Vorwochen-Vergleich (Delta-Chips) · beste/schlechteste Woche · laufende offene Woche getrennt markiert · EUR-Umschalter · Recharts über CSS-Variablen gethemt, Tooltips mit Tabular Nums.
+**DoD:** Chart-Werte = `lib/analytics`-Fixtures · lesbar bei 390 px, Dark + Light · Recharts in eigenem Lazy-Chunk · Skeleton/Empty-States, kein Layout-Shift.
+
+### Phase 5 – Tasks, Insights, Was-wäre-wenn
+Tasks (Fälligkeit, Kategorie, optional Topf-Kopplung, Abhak-Animation, überfällig hervorgehoben, Dashboard-Widget) · Insight-Karten auf dem Dashboard (wegwischbar, max. 3) · Was-wäre-wenn: Kategorie-Slider „−A$X/Woche", Zieldatum, Kurve Basis vs. Szenario live, Ergebnis „+A$Z bis Datum Y", optional „als Budget übernehmen".
+**DoD:** jede Insight-Regel hat Tests (feuert / feuert nicht) · Kurve aktualisiert beim Ziehen flüssig · Rechner-Ergebnis = `projectScenario`-Fixture · Task-Flows komplett per Touch und Tastatur.
+
+### Phase 6 – PWA, Export, Polish
+`vite-plugin-pwa` (generateSW, alles precachen, `navigateFallback`, Update-Toast; zusätzlich `registration.update()` gedrosselt bei `visibilitychange`, weil eine fortgesetzte PWA selten navigiert) · Icons/Maskable/Apple-Touch + `apple-touch-startup-image` aus einer SVG · Manifest (standalone, Theme-Colors) · Statusbar: `black-translucent` rendert immer weiße Schrift → im Light-Theme dunkler Streifen darunter oder `default` (am Gerät entscheiden) · iOS-Install-Sheet (Safari && nicht standalone), erscheint **vor** dem Onboarding · `navigator.storage.persist()` im Standalone-Modus, Ergebnis in den Einstellungen sichtbar · JSON-Export: `navigator.share({files})` hinter `canShare`, Blob **vor** dem Tap bauen (User-Activation läuft ab), Fallback `<a download>`, `AbortError` schlucken · Import: `accept=".json,application/json,text/plain"`, Inhalt validieren, `input.value` zurücksetzen, Sicherheitskopie + „Import rückgängig" · CSV-Export · „Daten prüfen" · „Alle Daten löschen" (Halten-zum-Bestätigen, vorher Export anbieten) · Settings komplett · A11y-Pass (Fokus, ARIA für Ring/Slider, Kontrast) · Reduced Motion · Performance · Vercel: SPA-Rewrite, `sw.js`/`index.html` no-cache, Assets immutable.
+**DoD:** App startet im Flugmodus vollständig · auf iPhone installiert, Safe-Areas/Statusbar korrekt · Export → „Alle Daten löschen" → Import stellt identischen Zustand her (automatisierter Roundtrip-Test + manuell am Gerät) · Lighthouse Performance/Best Practices/A11y ≥ 90 · initiales JS < 250 KB gzip · Production-URL steht.
+_Die iOS-Punkte stammen teils aus Erfahrungswissen, nicht aus aktueller iOS-26-Doku → werden in dieser Phase am echten Gerät verifiziert._
+
+### Phase 7 (optional, separate Entscheidung) – Sync
+Evaluierung Dexie Cloud (naheliegend, da Dexie; braucht aber E-Mail-Login → Abweichung von „keine Auth") vs. Alternativen. Datenmodell ist vorbereitet; bis dahin: iPhone führend, MacBook per Backup-Import.
+
+> **Wichtig (Origin = Datenbank):** IndexedDB hängt an der Domain. Installierte PWA **immer von der stabilen Production-URL**; jede Vercel-Preview-URL und jede spätere Custom-Domain startet mit leerer DB (→ vorher Backup). Auf iOS sind Safari-Tab und installierte App getrennte Speicher (erst installieren, dann Daten erfassen); App-Icon entfernen löscht die Daten → Backup-Erinnerung ist Pflichtfeature, kein Nice-to-have.
+
+---
+
+## 6. Offene Fragen an dich (vor Phase 0) – mit meiner Annahme, falls du nichts sagst
+
+1. **shadcn-Basis:** Du hast „Radix-Primitives" vorgegeben → ich initialisiere mit `-b radix` (Annahme). Hinweis: shadcn baut den Drawer inzwischen laut Doku auf Base UI statt vaul; ich prüfe das in Phase 0 und melde mich nur, falls es mit Radix-Basis hakt. Alternativ komplett `-b base` (neuer shadcn-Weg) – deine Wahl, nach Init nicht mehr änderbar.
+2. **Minus-Woche** (Ausgaben > Einkommen): Differenz **negativ** in „Nur gespart" buchen (Annahme – Topf bleibt ehrlich) oder auf 0 begrenzen?
+3. **Git-Workflow:** Ich committe pro Phase selbstständig in kleinen Conventional Commits auf Branch `phase-N-…`, Push nur auf deine Ansage; `master` → `main` umbenennen (Annahme: ja zu beidem)?
+4. **Startguthaben:** Onboarding fragt einmalig nach bereits Erspartem → Einzahlung „Startguthaben" in den Primär-Topf (Annahme: ja).
+5. **Lohnwoche:** Einkommen zählt für die Woche, die du abschließt – unabhängig vom Auszahlungstag (Annahme). Oder weicht deine Pay-Period stark von Mo–So ab?
+6. **Budget-Umfang:** Alle Kategorien zählen gegen das A$400-Gesamtlimit, außer topf-finanzierte Ausgaben (Annahme). Start-Kategorien: Miete/Wohnen, Lebensmittel, Essen gehen, Transport, Handy/Internet, Freizeit, Reisen, Shopping, Gesundheit, Sonstiges – passt das?
+7. **Topf-Automatik:** feste Wochenbeträge in Neben-Töpfe (z. B. A$200/Woche → „Auto") beim Wochenabschluss? Annahme: **nicht** in v1, nur manuelle Umbuchungen.
+8. **Sprache/Name:** UI Deutsch, Code Englisch; App-Name „Finanzplaner", Icon = Mint-Ring auf Schwarz (Annahme).
+9. **Testen auf dem iPhone:** Service Worker/Installation brauchen HTTPS. Vercel (privates GitHub-Repo + Git-Integration) schon **ab Phase 2** anbinden, damit du jede Phase real testen kannst (Annahme) – oder erst in Phase 6? Dafür bräuchte ich von dir GitHub-Repo + Vercel-Login.
+10. **Schrift:** Inter self-hosted (Annahme: konsistent + offline) oder System-Font SF Pro (0 KB, „nativer")?
+
+---
+
+## 7. `CLAUDE.md`
+
+Liegt im Repo-Root (`/CLAUDE.md`) und ist dort maßgeblich.
+
+---
+
+## 8. Verifikation (End-to-End)
+
+- **Automatisch pro Phase:** `npm run typecheck`, `npm run lint`, `npm run test` (Vitest: lib in zwei Zeitzonen + Repos gegen fake-indexeddb + RTL-Flows), `npm run build`.
+- **Von mir im Browser** (Chrome-Automation gegen `npm run dev` bzw. `npm run preview`): Kern-Loop durchspielen – Ausgabe erfassen → Woche abschließen → Stand von „Nur gespart" prüfen → Ausgabe nachträglich ändern → Stand zieht nach → „Daten prüfen" grün; Viewports 390×844 und 1440×900, Dark/Light, Konsole ohne Fehler, Screenshots an dich.
+- **PWA (Phase 6):** `npm run build && npm run preview` → DevTools offline → App lädt und ist bedienbar; Lighthouse; Backup-Roundtrip.
+- **Von dir auf dem iPhone:** Production-URL in Safari → „Zum Home-Bildschirm" → Flugmodus-Start, Safe-Areas, Numpad/Sheets, Swipe-Gesten, Export per Share-Sheet aufs MacBook → dort importieren.
+
