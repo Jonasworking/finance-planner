@@ -1,0 +1,73 @@
+/** Money is always stored and computed as integer cents. */
+export type Cents = number
+
+const MINUS = '−'
+
+const withDecimals = new Intl.NumberFormat('de-DE', {
+  minimumFractionDigits: 2,
+  maximumFractionDigits: 2,
+})
+
+const withoutDecimals = new Intl.NumberFormat('de-DE', {
+  maximumFractionDigits: 0,
+})
+
+const eurFormat = new Intl.NumberFormat('de-DE', {
+  style: 'currency',
+  currency: 'EUR',
+})
+
+export interface FormatOptions {
+  /** Prefix positive amounts with "+" (deltas, deposits). */
+  signed?: boolean
+  /** Drop the cents, e.g. for compact tiles: `A$1.600`. */
+  decimals?: boolean
+}
+
+/**
+ * Formats cents as `A$1.600,00` (German separators, A$ prefix, real minus sign).
+ * Intl's de-DE/AUD output is "1.600,00 AU$", hence the custom formatter.
+ */
+export function formatAUD(cents: Cents, options: FormatOptions = {}): string {
+  const { signed = false, decimals = true } = options
+  const abs = Math.abs(cents) / 100
+  const digits = decimals ? withDecimals.format(abs) : withoutDecimals.format(abs)
+  const isZero = decimals ? Math.round(Math.abs(cents)) === 0 : Math.round(abs) === 0
+  const sign = isZero ? '' : cents < 0 ? MINUS : signed ? '+' : ''
+  return `${sign}A$${digits}`
+}
+
+/** Converts AUD cents with a manually maintained rate (1 AUD = `rate` EUR) → `1.234,56 €`. */
+export function formatEUR(cents: Cents, rate: number): string {
+  const eur = Math.round(cents * rate) / 100
+  return eurFormat.format(eur).replace('-', MINUS)
+}
+
+/**
+ * Parses user input into cents. Comma is the decimal separator ("12,5" → 1250);
+ * a lone dot with one or two trailing digits is accepted as a decimal point too ("12.50").
+ * Returns null for anything that is not a non-negative amount.
+ */
+export function parseAmountInput(input: string): Cents | null {
+  const raw = input.replace(/\s|A\$|\$/g, '')
+  if (raw === '' || !/^[\d.,]+$/.test(raw)) return null
+
+  let normalized: string
+  if (raw.includes(',')) {
+    if (raw.indexOf(',') !== raw.lastIndexOf(',')) return null
+    normalized = raw.replace(/\./g, '').replace(',', '.')
+  } else if (/^\d+\.\d{1,2}$/.test(raw)) {
+    normalized = raw
+  } else {
+    normalized = raw.replace(/\./g, '')
+  }
+
+  if (!/^\d*(\.\d{0,2})?$/.test(normalized) || normalized === '' || normalized === '.') return null
+  const value = Number(normalized)
+  return Number.isFinite(value) ? Math.round(value * 100) : null
+}
+
+/** Safe part/total ratio; 0 when there is no positive total. */
+export function ratio(part: number, total: number): number {
+  return total > 0 ? part / total : 0
+}
