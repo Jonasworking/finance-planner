@@ -4,10 +4,10 @@
 
 - [x] Plan freigegeben (2026-09-20)
 - [x] `CLAUDE.md` + `docs/PLAN.md` angelegt
-- [ ] Offene Fragen §6 beantwortet (unbeantwortet = Annahme gilt) — beantwortet: 1 (Radix), 3 (selbstständig committen, `main`, Push nur auf Ansage), 10 (Inter self-hosted), 2 (Minus-Woche negativ buchen), 6 (alle Kategorien zählen; 10 Start-Kategorien wie vorgeschlagen); offen: 4, 5, 7, 8, 9
+- [ ] Offene Fragen §6 beantwortet (unbeantwortet = Annahme gilt) — beantwortet: 1 (Radix), 3 (selbstständig committen, `main`, Push nur auf Ansage), 10 (Inter self-hosted), 2 (Minus-Woche negativ buchen), 6 (alle Kategorien zählen; 10 Start-Kategorien wie vorgeschlagen), 4 (Onboarding fragt nach Startguthaben → Einzahlung in „Nur gespart"), 5 (Lohn zählt für die Woche, die abgeschlossen wird – nicht für die Auszahlungswoche), 9 (Vercel schon ab Phase 2; braucht vom Nutzer ein privates GitHub-Repo + Vercel-Login; Preview-URLs = Wegwerf-Daten); offen: 7, 8
 - [x] **Phase 0** – Setup, Tokens, Layout-Shell — abgeschlossen 2026-09-20 (Branch `phase-0-setup`, in `main`), Notizen unten
 - [x] **Phase 1** – Datenmodell, Kernlogik, Tests — abgeschlossen 2026-09-20 (Branch `phase-1-data-logic`), Notizen unten
-- [ ] **Phase 2** – Einkommen & Ausgaben — _wartet auf Freigabe_
+- [ ] **Phase 2** – Einkommen & Ausgaben — _wartet auf Freigabe_ (am 2026-09-20 ausdrücklich noch nicht freigegeben: Nutzer prüft erst Phase 1)
 - [ ] **Phase 3** – Budget & Spartöpfe
 - [ ] **Phase 4** – Analyse & Charts
 - [ ] **Phase 5** – Tasks, Insights, Was-wäre-wenn
