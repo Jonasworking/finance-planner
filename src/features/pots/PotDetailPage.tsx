@@ -23,6 +23,9 @@ import { PotMoveSheet, type PotMoveMode } from './components/PotMoveSheet'
 import { PotSheet } from './components/PotSheet'
 import { deadlineLine, forecastLine, historyCopy } from './potCopy'
 
+/** Icon above label: three actions side by side stay readable down to the narrowest phones. */
+const actionClass = 'h-auto min-h-14 min-w-0 flex-col gap-1 px-1 py-2 text-label'
+
 const backLink = (
   <Link
     to="/pots"
@@ -162,14 +165,14 @@ export function PotDetailPage() {
               </GlassCard>
             ) : (
               <div className="grid grid-cols-3 gap-2">
-                <Button size="touch" className="min-w-0 px-2" onClick={() => openMove('deposit')}>
+                <Button size="touch" className={actionClass} onClick={() => openMove('deposit')}>
                   <Plus aria-hidden />
                   Einzahlen
                 </Button>
                 <Button
                   size="touch"
                   variant="secondary"
-                  className="min-w-0 px-2"
+                  className={actionClass}
                   disabled={balanceCents <= 0}
                   onClick={() => openMove('withdraw')}
                 >
@@ -179,7 +182,7 @@ export function PotDetailPage() {
                 <Button
                   size="touch"
                   variant="secondary"
-                  className="min-w-0 px-2"
+                  className={actionClass}
                   disabled={usablePots.length < 2}
                   onClick={() => openMove('transfer')}
                 >
@@ -193,9 +196,7 @@ export function PotDetailPage() {
               <dl className="grid grid-cols-[minmax(0,1fr)_auto] gap-x-4 gap-y-3">
                 <dt>
                   Spartempo
-                  <span className="block text-label text-fg-muted">
-                    Ø der letzten 8 abgeschlossenen Wochen
-                  </span>
+                  <span className="block text-label text-fg-muted">Ø letzte 8 Wochen</span>
                 </dt>
                 <dd className="text-right font-semibold tabular-nums">
                   {formatAUD(paceCentsPerWeek, { signed: true })} / Woche

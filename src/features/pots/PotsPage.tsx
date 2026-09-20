@@ -26,7 +26,7 @@ export function PotsPage() {
   return (
     <Page
       title="Spartöpfe"
-      subtitle={pots ? `Insgesamt ${formatAUD(pots.totalCents)} gespart` : undefined}
+      subtitle={pots ? `Gesamt ${formatAUD(pots.totalCents)}` : undefined}
       actions={
         <Button size="touch" onClick={openSheet}>
           <Plus aria-hidden />

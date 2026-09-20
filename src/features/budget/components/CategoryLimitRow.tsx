@@ -35,27 +35,7 @@ export function CategoryLimitRow({
     <div className="flex flex-col gap-1 px-4 py-3">
       <div className="flex items-center gap-3">
         <CategoryIcon icon={category.icon} color={category.color} size="sm" />
-        <span className="min-w-0 flex-1">
-          <span className="block truncate">{category.name}</span>
-          <span className="block truncate text-label text-fg-muted">
-            {formatAUD(usage?.spentCents ?? 0)} diese Woche
-            {usage && usage.reservedCents > 0
-              ? ` + ${formatAUD(usage.reservedCents)} reserviert`
-              : ''}
-            {remaining === null ? (
-              ' · kein Limit'
-            ) : (
-              <>
-                {' · '}
-                <span className={LEVEL_TEXT[level]}>
-                  {remaining >= 0
-                    ? `${formatAUD(remaining)} übrig`
-                    : `${formatAUD(-remaining)} drüber`}
-                </span>
-              </>
-            )}
-          </span>
-        </span>
+        <span className="min-w-0 flex-1 truncate">{category.name}</span>
         <MoneyInput
           key={inputRevision}
           defaultValue={limitCents > 0 ? limitCents : null}
@@ -76,12 +56,28 @@ export function CategoryLimitRow({
         tone={LEVEL_TONE[level]}
         aria-label={`Limit ${category.name}`}
       />
-      <ProgressBar
-        value={usage?.ratio ?? 0}
-        tone={LEVEL_TONE[level]}
-        label={`${category.name}: Limit verbraucht`}
-        className={cn(limitCents > 0 ? undefined : 'invisible')}
-      />
+      {limitCents > 0 ? (
+        <ProgressBar
+          value={usage?.ratio ?? 0}
+          tone={LEVEL_TONE[level]}
+          label={`${category.name}: Limit verbraucht`}
+        />
+      ) : null}
+      {/* Full width below the controls: next to the amount field it got cut off on phones. */}
+      <p className="pt-1 text-label text-fg-muted">
+        {formatAUD(usage?.spentCents ?? 0)} diese Woche
+        {usage && usage.reservedCents > 0 ? ` + ${formatAUD(usage.reservedCents)} reserviert` : ''}
+        {remaining === null ? (
+          ' · kein Limit'
+        ) : (
+          <>
+            {' · '}
+            <span className={cn('whitespace-nowrap', LEVEL_TEXT[level])}>
+              {remaining >= 0 ? `${formatAUD(remaining)} übrig` : `${formatAUD(-remaining)} drüber`}
+            </span>
+          </>
+        )}
+      </p>
     </div>
   )
 }

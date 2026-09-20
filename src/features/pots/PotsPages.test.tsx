@@ -51,7 +51,7 @@ const newTripPot = () =>
 describe('PotsPage', () => {
   it('shows "Nur gespart" and explains further pots instead of leaving a gap', async () => {
     renderAt('/pots')
-    expect(await screen.findByText('Insgesamt A$5.000,00 gespart')).toBeInTheDocument()
+    expect(await screen.findByText('Gesamt A$5.000,00')).toBeInTheDocument()
     expect(screen.getByRole('link', { name: /Nur gespart/ })).toHaveAttribute(
       'href',
       '/pots/pot%3Aprimary',
@@ -108,7 +108,7 @@ describe('PotDetailPage', () => {
     )
     expect(await screen.findByText('40 %')).toBeInTheDocument()
     expect(screen.getByText(/es fehlen A\$1\.800,00/)).toBeInTheDocument()
-    expect(screen.getByText('Umbuchung von „Nur gespart"')).toBeInTheDocument()
+    expect(screen.getByText('Von „Nur gespart"')).toBeInTheDocument()
     // 88 days = 13 week closes until 20 Dec → 1,800 / 13, rounded up
     expect(screen.getByText('A$138,47 / Woche')).toBeInTheDocument()
     // moved in this week → no finished week yet, so no pace and no ETA
@@ -178,7 +178,7 @@ describe('PotDetailPage', () => {
     expect(await screen.findByText('Wochenabschluss')).toBeInTheDocument()
     expect(screen.getByText(/Woche 14\.–20\. Sep\. 2026/)).toBeInTheDocument()
     expect(screen.getByText('Flug')).toBeInTheDocument()
-    expect(screen.getByText(/Aus dem Topf bezahlt · Reisen/)).toBeInTheDocument()
+    expect(screen.getByText(/Ausgabe · Reisen/)).toBeInTheDocument()
     expect(screen.getByText('Startguthaben')).toBeInTheDocument()
     // only the manual opening balance offers deletion
     expect(screen.getAllByRole('button', { name: / löschen$/ })).toHaveLength(1)

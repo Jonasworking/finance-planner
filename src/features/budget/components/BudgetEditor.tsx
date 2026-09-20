@@ -165,19 +165,24 @@ export function BudgetEditor({
             transition={spring.snappy}
             className="sticky bottom-[calc(var(--tabbar-height)+env(safe-area-inset-bottom)+0.75rem)] z-10 mt-4 lg:bottom-4"
           >
-            <div className="flex gap-2 rounded-lg border border-border-strong bg-surface-2 p-2 shadow-sheet">
-              <Button type="button" variant="secondary" size="touch" onClick={onDiscard}>
-                Verwerfen
-              </Button>
-              <Button
-                type="button"
-                size="touch"
-                className="min-w-0 flex-1"
-                disabled={saving}
-                onClick={() => void save()}
-              >
-                Speichern · gilt ab dieser Woche
-              </Button>
+            <div className="flex flex-col gap-2 rounded-lg border border-border-strong bg-surface-2 p-2 shadow-sheet">
+              <p className="px-2 pt-1 text-label text-fg-muted">
+                Gilt ab dieser Woche – vergangene Wochen bleiben, wie sie waren.
+              </p>
+              <div className="flex gap-2">
+                <Button type="button" variant="secondary" size="touch" onClick={onDiscard}>
+                  Verwerfen
+                </Button>
+                <Button
+                  type="button"
+                  size="touch"
+                  className="min-w-0 flex-1"
+                  disabled={saving}
+                  onClick={() => void save()}
+                >
+                  Speichern
+                </Button>
+              </div>
             </div>
           </motion.div>
         ) : null}

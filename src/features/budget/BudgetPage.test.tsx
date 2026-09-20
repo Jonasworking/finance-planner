@@ -36,7 +36,7 @@ const renderPage = () =>
     </MemoryRouter>,
   )
 const totalField = () => screen.findByRole('textbox', { name: 'Wochenbudget' })
-const saveButton = () => screen.queryByRole('button', { name: /Speichern · gilt ab dieser Woche/ })
+const saveButton = () => screen.queryByRole('button', { name: 'Speichern' })
 
 describe('BudgetPage', () => {
   it('shows the budget in force and what this week looks like against it', async () => {

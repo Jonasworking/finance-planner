@@ -57,14 +57,10 @@ export function historyCopy(
       const otherLeg = context.transactions.find(
         (other) => other.transferId === tx.transferId && other.id !== tx.id,
       )
-      const otherPot =
-        context.pots.find((pot) => pot.id === otherLeg?.potId)?.name ?? 'anderem Topf'
+      const otherPot = context.pots.find((pot) => pot.id === otherLeg?.potId)?.name ?? 'Topf'
       return {
-        title:
-          tx.type === 'transfer-in'
-            ? `Umbuchung von „${otherPot}"`
-            : `Umbuchung nach „${otherPot}"`,
-        subtitle: tx.note ?? null,
+        title: tx.type === 'transfer-in' ? `Von „${otherPot}"` : `Nach „${otherPot}"`,
+        subtitle: tx.note ? `Umbuchung · ${tx.note}` : 'Umbuchung',
       }
     }
     case 'expense-funding': {
@@ -72,8 +68,7 @@ export function historyCopy(
       const category = context.categories.find((row) => row.id === expense?.categoryId)?.name
       return {
         title: expense?.note ?? category ?? 'Ausgabe',
-        subtitle:
-          expense?.note && category ? `Aus dem Topf bezahlt · ${category}` : 'Aus dem Topf bezahlt',
+        subtitle: expense?.note && category ? `Ausgabe · ${category}` : 'Ausgabe aus dem Topf',
       }
     }
   }
