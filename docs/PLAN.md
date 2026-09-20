@@ -4,10 +4,12 @@
 
 - [x] Plan freigegeben (2026-09-20)
 - [x] `CLAUDE.md` + `docs/PLAN.md` angelegt
-- [ ] Offene Fragen §6 beantwortet (unbeantwortet = Annahme gilt) — beantwortet: 1 (Radix), 3 (selbstständig committen, `main`, Push nur auf Ansage), 10 (Inter self-hosted), 2 (Minus-Woche negativ buchen), 6 (alle Kategorien zählen; 10 Start-Kategorien wie vorgeschlagen), 4 (Onboarding fragt nach Startguthaben → Einzahlung in „Nur gespart"), 5 (Lohn zählt für die Woche, die abgeschlossen wird – nicht für die Auszahlungswoche), 9 (Vercel schon ab Phase 2; braucht vom Nutzer ein privates GitHub-Repo + Vercel-Login; Preview-URLs = Wegwerf-Daten); offen: 7, 8
+- [x] Offene Fragen §6 beantwortet (unbeantwortet = Annahme gilt) — beantwortet: 1 (Radix), 3 (selbstständig committen, `main`, Push nur auf Ansage), 10 (Inter self-hosted), 2 (Minus-Woche negativ buchen), 6 (alle Kategorien zählen; 10 Start-Kategorien wie vorgeschlagen), 4 (Onboarding fragt nach Startguthaben → Einzahlung in „Nur gespart"), 5 (Lohn zählt für die Woche, die abgeschlossen wird – nicht für die Auszahlungswoche), 9 (Vercel schon ab Phase 2; braucht vom Nutzer ein privates GitHub-Repo + Vercel-Login; Preview-URLs = Wegwerf-Daten), 7 (keine Topf-Automatik in v1), 8 („Finanzplaner" mit Mint-Ring-Icon) — **alle beantwortet**
 - [x] **Phase 0** – Setup, Tokens, Layout-Shell — abgeschlossen 2026-09-20 (Branch `phase-0-setup`, in `main`), Notizen unten
-- [x] **Phase 1** – Datenmodell, Kernlogik, Tests — abgeschlossen 2026-09-20 (Branch `phase-1-data-logic`), Notizen unten
-- [ ] **Phase 2** – Einkommen & Ausgaben — _wartet auf Freigabe_ (am 2026-09-20 ausdrücklich noch nicht freigegeben: Nutzer prüft erst Phase 1)
+- [x] **Phase 1** – Datenmodell, Kernlogik, Tests — abgeschlossen und abgenommen 2026-09-20 (Branch `phase-1-data-logic`, in `main`), Notizen unten
+- [ ] **Phase 2** – Einkommen & Ausgaben — vom Nutzer in zwei Teile geteilt:
+  - [x] **2a** – QuickAdd-Sheet mit Numpad, Ausgabenliste mit Swipe-to-delete + Undo, Bearbeiten-Sheet, Kategorienverwaltung, Tags mit Autocomplete, Vercel-Anbindung — fertig 2026-09-20 (Branch `phase-2a-expenses`), _wartet auf Abnahme_, Notizen unten
+  - [ ] **2b** – Daueraufträge (UI + Materialisierung beim App-Start), „Woche abschließen", Onboarding (inkl. Startguthaben), Dashboard v1 — _wartet auf Freigabe_
 - [ ] **Phase 3** – Budget & Spartöpfe
 - [ ] **Phase 4** – Analyse & Charts
 - [ ] **Phase 5** – Tasks, Insights, Was-wäre-wenn
@@ -39,6 +41,18 @@
 - **Backup:** enthält alle Zeilen inkl. Tombstones (echter 1:1-Roundtrip) und verlangt genau eine Settings-Zeile. Import prüft vor der Transaktion zusätzlich den Ledger; Sicherheitskopie liegt in separater DB `<name>-safety`; `wipeAll` löscht auch diese.
 - **Werkzeug-Falle:** `\u…`-Escapes wurden beim Schreiben still zu echten (teils unsichtbaren) Zeichen. BOM, NBSP und U+FFFF stehen jetzt als `String.fromCharCode(…)` bzw. `Dexie.minKey/maxKey` im Code; Regel + Prüfbefehl in `CLAUDE.md`.
 - **Noch nicht verdrahtet:** Die App nutzt `db`/`repos` noch nicht (Bundle unverändert 196 KB gzip) – das passiert in Phase 2; dort auch `dexie-react-hooks`, `useToday()` und ein Dev-Button für `seedDemoData`.
+
+## Phase 2a – Ergebnis & Abweichungen vom Plan
+
+**Geprüft:** typecheck · lint · build grün · 414 Testläufe (207 Tests × 2 Zeitzonen), darunter RTL-Tests des Ausgaben-Formulars (Numpad, Hardware-Tastatur, Details/Tags, Bearbeiten-Modus) · Coverage `src/lib` 99,8 % Zeilen · **12 Browser-Checks im echten Chrome** (Headless, 390×844 + 1440×900): Schnellerfassung legt Zeile an und bietet Undo · Wisch löscht · Wisch öffnet KEIN Sheet · Undo stellt wieder her · kurzer Wisch zeigt nur den Löschen-Button · Tipp darauf schließt ihn · Tipp öffnet Bearbeiten mit gespeichertem Betrag · Kategorie-Sheet · Desktop: `N` + Tastatur-Eingabe · kein horizontales Scrollen · Konsole fehlerfrei.
+
+- **Vercel:** Die Vercel-Anbindung der Session war bereits angemeldet → kein `vercel login` nötig. Projekt `finance-planner` (Team `jonasworkings-projects`) ist per Git mit dem Repo verbunden: `main` = Production (`finance-planner-jonasworkings-projects.vercel.app`), jeder Branch = Preview (`finance-planner-git-<branch>-jonasworkings-projects.vercel.app`). `vercel.json` mit SPA-Rewrite liegt bis zur Abnahme nur auf dem 2a-Branch. Previews sind standardmäßig durch Vercel-Login geschützt (am iPhone einmal in Safari bei Vercel anmelden).
+- **Gefundener Fehler (im Browser-Test, nicht in Unit-Tests sichtbar):** Nach einem Wisch feuert der Browser noch ein `click` auf die Zeile → das Bearbeiten-Sheet öffnete sich leer für die gerade gelöschte Ausgabe, sein Overlay verdeckte den Undo-Toast. Fix: `SwipeRow` schluckt den Klick nach einem Drag (und schließt bei Tipp eine aufgewischte Zeile); `EditExpenseSheet` schließt sich selbst, wenn seine Ausgabe nicht mehr existiert.
+- **Tags** werden klein geschrieben und ohne `#` gespeichert („#Coffee Run" → `coffee run`), damit Autocomplete und spätere Auswertungen nicht an Schreibweisen scheitern.
+- **Kategorie-Icons:** kuratierte Registry mit 38 lucide-Icons statt dynamischem Import nach Name (der würde alle Icons bündeln). Sortieren per Drag am Griff; per Tastatur ist Umsortieren noch nicht möglich (Merker für den A11y-Pass in Phase 6).
+- **Dev-Werkzeuge:** Einstellungen zeigen im Dev-Build „Demo-Daten laden" / „Alles löschen" (in Production-Builds nicht enthalten).
+- **Bundle:** Start-Chunk 260 KB gzip (Dexie, date-fns, dexie-react-hooks und die neuen Screens kamen dazu); Backup/zod wurde in einen Lazy-Chunk (28 KB) ausgelagert. Ziel < 250 KB bleibt Aufgabe von Phase 6 (Lazy-Routes, `LazyMotion`).
+- **Nicht gebaut (gehört zu 2b):** Daueraufträge-UI, Materialisierung beim App-Start, Wochenabschluss, Onboarding, Dashboard v1 – das Dashboard zeigt weiter die statische Vorschau mit Beispielwerten.
 
 ---
 

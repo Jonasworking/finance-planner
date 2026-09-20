@@ -9,7 +9,7 @@ Vite 8 · React 19 · **TypeScript ~6.0 (gepinnt – TS 7 erst, wenn typescript-
 shadcn/ui (Stil `radix-nova`, `src/shared/ui`) · Zustand (nur UI-State) · Dexie 4 + dexie-react-hooks · Recharts 3 (+ react-is) · date-fns 4 · motion (`motion/react`) ·
 sonner · lucide-react · zod · vite-plugin-pwa · Vitest + fake-indexeddb + Testing Library · react-router 8 (`react-router`, `react-router/dom`) ·
 ESLint 10 + typescript-eslint (nicht Oxlint – wir brauchen `no-restricted-syntax`/-`imports` pro Ordner) · Prettier + `prettier-plugin-tailwindcss` ·
-Deployment: Vercel (statisch). Paketmanager: npm. Kein `framer-motion`, kein `react-router-dom`, kein `next-themes` (eigener `themeStore`).
+Deployment: Vercel (statisch, Projekt `finance-planner` im Team `jonasworkings-projects`, per Git mit `Jonasworking/finance-planner` verbunden: Push auf `main` = Production, jeder andere Branch = Preview; `vercel.json` enthält den SPA-Rewrite). Paketmanager: npm. Kein `framer-motion`, kein `react-router-dom`, kein `next-themes` (eigener `themeStore`).
 `vaul` kommt nur indirekt über den shadcn-Drawer (Radix-Basis nutzt weiterhin vaul) und wird ausschließlich in `shared/components/ResponsiveSheet.tsx` verwendet → dort austauschbar.
 Pakete werden pro Phase installiert (Dexie/zod/date-fns → Phase 1, Recharts → Phase 4, vite-plugin-pwa → Phase 6).
 
@@ -22,17 +22,22 @@ Neue shadcn-Komponente: `npx shadcn@latest add <name>` → danach **immer** `npm
 ## Architektur – wo liegt was
 
 - `src/lib` – **gesamte Fachlogik als reine Funktionen**. Kein React, kein Dexie, kein `Date.now()`/`new Date()` ohne Parameter (`today`/`now` reinreichen). Jede Funktion hat Tests (`*.test.ts` daneben). **Die Domänen-Typen liegen hier** (`lib/types.ts`, inkl. `SCHEMA_VERSION`, `PRIMARY_POT_ID`), weil `lib` nicht aus `db` importieren darf.
-  Module: `money` · `dates` · `ids` · `expenses` · `budget` · `recurrence` · `savings` (`summarizeWeek`, Topfstände, `pendingWeeks`) · `streak` · `forecast` · `whatif` · `analytics` · `insights` (strukturiert: `kind` + Daten, Text rendert die UI) · `ledger` (`checkLedgerInvariants`) · `csv` · `backup` (zod-Schema, per Typ-Assertion an `AppData` gekoppelt).
+  Module: `money` · `dates` · `ids` · `expenses` · `budget` · `recurrence` · `savings` (`summarizeWeek`, Topfstände, `pendingWeeks`) · `streak` · `forecast` · `whatif` · `analytics` · `amountInput` (Numpad-Zustandsmaschine) · `tags` (Normalisierung, Autocomplete) · `insights` (strukturiert: `kind` + Daten, Text rendert die UI) · `ledger` (`checkLedgerInvariants`) · `csv` · `backup` (zod-Schema, per Typ-Assertion an `AppData` gekoppelt).
 - `src/db` – Dexie-Schema (`schema.ts`), Seeds (`seed.ts`), Repos (`repos/`), `queries.ts` (`loadAppData`), `demo.ts` (12 Demo-Wochen, nur Dev/Tests). **Einziger Ort mit Dexie-Schreibzugriff**; Mehr-Tabellen-Operationen in einer `rw`-Transaktion über `ledgerTables`, darin nur Dexie-`await`s.
   Schreib-API: `repos.expenses.add/update/remove/restore` · `repos.weeks.setIncome/close/reopen` · `repos.pots.create/update/archive/deposit/withdraw/transfer/removeTransaction` · `repos.recurring.create/update/remove/materialize(today)` · `repos.budgets.set(today, …)` · `repos.categories` · `repos.tasks` · `repos.settings` · `repos.backup.export/import/restoreSafetyCopy/wipeAll`. Regelverstöße werfen `DomainError` mit `code` (UI übersetzt den Code).
   **Nadelöhr:** jede Ausgaben-Mutation endet in `writeExpense` (`db/repos/context.ts`) → Funding-Spiegel `fund:<id>` + `syncWeekDerived` für alte UND neue Woche. Nie an `db.expenses` vorbei schreiben.
   Tests: `createRepos(new FinanceDB('name'), fakeClock)` gegen fake-indexeddb; `afterEach` prüft `checkLedgerInvariants(await loadAppData(db))` – bei neuen Repo-Tests beibehalten.
-- `src/features/<name>` – UI + Hooks. Ein `useLiveQuery`-Querier pro Screen; `undefined` = lädt, `null` = nicht gefunden. Cross-Feature-Importe nur über `index.ts`.
+- `src/features/<name>` – UI + Hooks. Ein `useLiveQuery`-Querier pro Screen (Lese-Funktionen in `db/queries.ts`: `loadExpensesOfWeek`, `loadExpenseFormData`, `loadCategories`); `undefined` = lädt, `null` = nicht gefunden. Cross-Feature-Importe nur über `index.ts`.
+  Liefert eine Abfrage zu einer wechselnden ID (z. B. Bearbeiten-Sheet), gehört die ID ins Ergebnis – `useLiveQuery` hält nach dem Wechsel kurz die alte Antwort.
+  `repos.backup` wird lazy geladen (zod + Ledger ≈ 28 KB gzip in eigenem Chunk) – Backup-Code nie statisch in den Startpfad importieren.
 - `src/shared` – `ui/` (shadcn, generiert), `components/`, `hooks/`, `stores/`, `lib/utils.ts`. Importiert nie aus `features`. Darf `src/lib` importieren.
 - `src/app` – Router, Provider, Shell (`AppShell`, `BottomTabs`, `Sidebar`, `MorePage`), Dev-Styleguide `/dev/tokens` (nur Dev-Build). Features importieren nie aus `app`.
 - Die Schichtenregeln sind in `eslint.config.js` erzwungen (inkl. Datums-/Uhr-Verbote); Ordner-Configs **ersetzen** die Regel, daher neue Verbote dort überall ergänzen.
 - **`cn` immer aus `@/shared/lib/utils`** – nie das nackte Paket `"cn"`: nur die konfigurierte Variante kennt unsere Schriftgrößen (`text-display|h1|h2|body|label|caption`); sonst verwirft der Merger sie neben Textfarben. Neue `--text-*`-Tokens dort nachtragen (Test: `shared/lib/utils.test.ts`).
 - Seiten nutzen `<Page title=…>` (Sticky-Glas-Header + Content-Spalte); Buttons auf Touch-Screens `size="touch"` / `"icon-touch"` (44 px).
+- Shared-Bausteine: `Money` · `GlassCard` · `ProgressRing` · `ResponsiveSheet` · `Numpad` (Betrag ist Text, kein `<input>`; Tasten auf `pointerdown`) · `SwipeRow` (Wisch = löschen, kurzer Wisch = Button zeigen; **schluckt den Klick nach einem Drag** – sonst öffnet der Wisch die Zeile) · `TagInput` · `CategoryIcon` + `shared/lib/categoryStyle.ts` (Icon-Registry und Farbklassen als vollständige Strings – nie `bg-${color}` bauen) · `errorMessage(error)` für `DomainError`-Codes.
+- Sheets mit Formular: Formular per „Session"-Zähler keyen, der beim **Öffnen** hochzählt (`uiStore.quickAddSession`/`editSession`) – nicht am `open`-Flag, sonst springt der Inhalt während der Schließ-Animation. Ein Sheet ohne Inhalt nie offen lassen: ein Modal-Overlay blockiert alles darunter, auch den Undo-Toast.
+- Löschen fragt nie vorher nach, sondern bietet „Rückgängig" im Toast (`deleteExpenseWithUndo`).
 - Komponenten berechnen nichts Fachliches selbst – fehlt Logik, kommt sie nach `lib` (mit Test). „Heute" kommt aus `useToday()`.
 
 ## Domänenregeln
@@ -54,7 +59,7 @@ Neue shadcn-Komponente: `npx shadcn@latest add <name>` → danach **immer** `npm
 - UI-Texte Deutsch, Code/Kommentare/Commits Englisch.
 - **Keine unsichtbaren Sonderzeichen als Literal** (BOM, geschütztes Leerzeichen, U+FFFF …) und keine `\u…`-Escapes über Schreib-Tools – die werden beim Schreiben still in das echte Zeichen verwandelt. Stattdessen `String.fromCharCode(0xfeff)` bzw. `Dexie.minKey/maxKey`. Prüfen: `LC_ALL=C grep -rln $'\xEF\xBB\xBF\|\xC2\xA0\|\xEF\xBF\xBF' src`.
 - Test-Fixtures: `src/test/fixtures.ts` (`makeExpense`, `makeWeek`, `makeTx`, … mit festem `NOW`).
-- Commits: Conventional Commits mit Feature-Scope – `feat(expenses): quick-add sheet`, `fix(lib): clamp monthly recurrence`, `test(db): closeWeek idempotency`, `chore: …`. Klein & thematisch; Logik und Test im selben Commit; vorher typecheck + lint + test grün. Branch pro Phase `phase-N-kurzname`; Push nur nach Ansage.
+- Commits: Conventional Commits mit Feature-Scope – `feat(expenses): quick-add sheet`, `fix(lib): clamp monthly recurrence`, `test(db): closeWeek idempotency`, `chore: …`. Klein & thematisch; Logik und Test im selben Commit; vorher typecheck + lint + test grün. Branch pro Phase `phase-N-kurzname`. **Push nach `origin` ist generell freigegeben** (seit 2026-09-20); `main` wird erst nach Abnahme einer Phase per Fast-Forward aktualisiert und gepusht.
 
 ## Design
 
