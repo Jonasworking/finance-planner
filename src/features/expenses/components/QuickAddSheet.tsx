@@ -22,9 +22,13 @@ export function QuickAddSheet() {
       const expense = await repos.expenses.add(result)
       setOpen(false)
       const category = data?.categories.find((row) => row.id === result.categoryId)
+      const pot = data?.pots.find((row) => row.id === result.fundedByPotId)
       toast.success(
         `${formatAUD(expense.amountCents)} · ${category?.name ?? 'Ausgabe'} gespeichert`,
         {
+          description: pot
+            ? `Aus „${pot.name}" bezahlt – zählt nicht zum Wochenbudget.`
+            : undefined,
           action: { label: 'Rückgängig', onClick: () => void repos.expenses.remove(expense.id) },
         },
       )
@@ -42,6 +46,8 @@ export function QuickAddSheet() {
           initial={{ amountInput: '', categoryId: null, date: today, note: '', tags: [] }}
           categories={data.categories}
           tagVocabulary={data.tagVocabulary}
+          pots={data.pots}
+          potBalances={data.potBalances}
           today={today}
           submitLabel="Speichern"
           onSubmit={save}

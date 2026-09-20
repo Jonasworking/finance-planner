@@ -1,4 +1,4 @@
-import { CalendarDays, ChevronDown, Trash2 } from 'lucide-react'
+import { CalendarDays, ChevronDown, PiggyBank, Trash2, Wallet } from 'lucide-react'
 import { AnimatePresence, motion } from 'motion/react'
 import { useEffect, useEffectEvent, useState } from 'react'
 import {
@@ -8,7 +8,10 @@ import {
   type NumpadKey,
 } from '@/lib/amountInput'
 import { formatDayLabel } from '@/lib/dates'
-import type { Category, Cents, ISODate } from '@/lib/types'
+import { formatAUD } from '@/lib/money'
+import { availableForExpense } from '@/lib/pots'
+import { validateWithdrawal } from '@/lib/savings'
+import type { Category, Cents, Expense, ISODate, Pot } from '@/lib/types'
 import { Numpad } from '@/shared/components/Numpad'
 import { TagInput } from '@/shared/components/TagInput'
 import { cn } from '@/shared/lib/utils'
@@ -24,6 +27,8 @@ export interface ExpenseFormValues {
   date: ISODate
   note: string
   tags: string[]
+  /** "Aus Topf bezahlt"; null/undefined = from the weekly budget. */
+  fundedByPotId?: string | null
 }
 
 export interface ExpenseFormResult {
@@ -32,12 +37,18 @@ export interface ExpenseFormResult {
   date: ISODate
   note: string | undefined
   tags: string[]
+  fundedByPotId: string | null
 }
 
 export interface ExpenseFormProps {
   initial: ExpenseFormValues
   categories: readonly Category[]
   tagVocabulary: readonly string[]
+  /** Pots the expense can be paid from, with their balances. */
+  pots?: readonly Pot[]
+  potBalances?: Readonly<Record<string, Cents>>
+  /** The stored expense in edit mode: what it already holds in its pot is available to it. */
+  existing?: Expense | null
   today: ISODate
   submitLabel: string
   onSubmit: (result: ExpenseFormResult) => void | Promise<void>
@@ -57,6 +68,9 @@ export function ExpenseForm({
   initial,
   categories,
   tagVocabulary,
+  pots = [],
+  potBalances = {},
+  existing = null,
   today,
   submitLabel,
   onSubmit,
@@ -64,12 +78,25 @@ export function ExpenseForm({
 }: ExpenseFormProps) {
   const [values, setValues] = useState(initial)
   const [detailsOpen, setDetailsOpen] = useState(
-    initial.note !== '' || initial.tags.length > 0 || initial.date !== today,
+    initial.note !== '' ||
+      initial.tags.length > 0 ||
+      initial.date !== today ||
+      initial.fundedByPotId != null,
   )
   const [submitting, setSubmitting] = useState(false)
 
   const amountCents = amountInputToCents(values.amountInput)
-  const canSubmit = amountCents > 0 && values.categoryId !== null && !submitting
+  const fundingPot = pots.find((pot) => pot.id === values.fundedByPotId) ?? null
+  const availableCents = fundingPot
+    ? availableForExpense(potBalances, fundingPot.id, existing)
+    : null
+  // The repo's own rule, so the hint and the write can never disagree.
+  const overdrawn =
+    availableCents !== null &&
+    amountCents > 0 &&
+    validateWithdrawal({ pot: fundingPot, amountCents, balanceCents: availableCents }) ===
+      'insufficient'
+  const canSubmit = amountCents > 0 && values.categoryId !== null && !overdrawn && !submitting
   const patch = (next: Partial<ExpenseFormValues>) =>
     setValues((current) => ({ ...current, ...next }))
   const pressKey = (key: NumpadKey) =>
@@ -85,6 +112,7 @@ export function ExpenseForm({
         date: values.date,
         note: values.note.trim() === '' ? undefined : values.note.trim(),
         tags: values.tags,
+        fundedByPotId: fundingPot?.id ?? null,
       })
     } finally {
       setSubmitting(false)
@@ -128,7 +156,7 @@ export function ExpenseForm({
         <CalendarDays className="size-4" aria-hidden />
         {formatDayLabel(values.date, today)}
         <span aria-hidden>·</span>
-        Details
+        {fundingPot ? `aus „${fundingPot.name}"` : 'Details'}
         <ChevronDown
           className={cn('size-4 transition-transform', detailsOpen && 'rotate-180')}
           aria-hidden
@@ -170,6 +198,51 @@ export function ExpenseForm({
                 aria-label="Datum"
                 className="h-11 rounded-md"
               />
+              {pots.length > 0 ? (
+                <fieldset>
+                  <legend className="pb-2 text-caption text-fg-subtle uppercase">
+                    Bezahlt aus
+                  </legend>
+                  <div
+                    role="radiogroup"
+                    aria-label="Bezahlt aus"
+                    className="flex flex-wrap gap-1.5"
+                  >
+                    {[null, ...pots].map((pot) => {
+                      const selected = (pot?.id ?? null) === (fundingPot?.id ?? null)
+                      const Icon = pot ? PiggyBank : Wallet
+                      return (
+                        <button
+                          key={pot?.id ?? 'budget'}
+                          type="button"
+                          role="radio"
+                          aria-checked={selected}
+                          onClick={() => patch({ fundedByPotId: pot?.id ?? null })}
+                          className={cn(
+                            'flex h-9 max-w-full items-center gap-1.5 rounded-full border px-3.5 text-label outline-none focus-visible:ring-3 focus-visible:ring-ring/50',
+                            selected
+                              ? 'border-transparent bg-saved text-on-saved'
+                              : 'text-fg-muted',
+                          )}
+                        >
+                          <Icon className="size-4 shrink-0" aria-hidden />
+                          <span className="truncate">{pot ? pot.name : 'Wochenbudget'}</span>
+                        </button>
+                      )
+                    })}
+                  </div>
+                  {fundingPot && availableCents !== null ? (
+                    <p
+                      role={overdrawn ? 'alert' : undefined}
+                      className={cn('pt-2 text-label', overdrawn ? 'text-spent' : 'text-fg-muted')}
+                    >
+                      {overdrawn
+                        ? `In „${fundingPot.name}" sind nur ${formatAUD(availableCents)}.`
+                        : `Zählt nicht zum Wochenbudget · ${formatAUD(availableCents)} im Topf`}
+                    </p>
+                  ) : null}
+                </fieldset>
+              ) : null}
             </div>
           </motion.div>
         ) : null}

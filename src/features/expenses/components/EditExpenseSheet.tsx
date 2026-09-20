@@ -30,7 +30,22 @@ export function EditExpenseSheet() {
       own && !form.categories.some((category) => category.id === own.id)
         ? [...form.categories, own]
         : form.categories
-    return { expenseId, found: { expense, categories, tagVocabulary: form.tagVocabulary } }
+    // The same goes for an archived pot that paid for it.
+    const ownPot = expense.fundedByPotId ? await db.pots.get(expense.fundedByPotId) : undefined
+    const pots =
+      ownPot && isActive(ownPot) && !form.pots.some((pot) => pot.id === ownPot.id)
+        ? [...form.pots, ownPot]
+        : form.pots
+    return {
+      expenseId,
+      found: {
+        expense,
+        categories,
+        pots,
+        potBalances: form.potBalances,
+        tagVocabulary: form.tagVocabulary,
+      },
+    }
   }, [expenseId])
 
   const current = result && result.expenseId === expenseId ? result : undefined
@@ -70,9 +85,13 @@ export function EditExpenseSheet() {
             date: data.expense.date,
             note: data.expense.note ?? '',
             tags: data.expense.tags,
+            fundedByPotId: data.expense.fundedByPotId ?? null,
           }}
           categories={data.categories}
           tagVocabulary={data.tagVocabulary}
+          pots={data.pots}
+          potBalances={data.potBalances}
+          existing={data.expense}
           today={today}
           submitLabel="Änderung speichern"
           onSubmit={save}
