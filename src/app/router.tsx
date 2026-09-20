@@ -3,7 +3,7 @@ import { AnalyticsPage } from '@/features/analytics'
 import { BudgetPage } from '@/features/budget'
 import { DashboardPage } from '@/features/dashboard'
 import { CategoriesPage, ExpensesPage, RecurringPage } from '@/features/expenses'
-import { PotsPage } from '@/features/pots'
+import { PotDetailPage, PotsPage } from '@/features/pots'
 import { SettingsPage } from '@/features/settings'
 import { TasksPage } from '@/features/tasks'
 import { WhatIfPage } from '@/features/whatif'
@@ -30,6 +30,7 @@ export const router = createBrowserRouter([
       { path: 'categories', Component: CategoriesPage },
       { path: 'recurring', Component: RecurringPage },
       { path: 'pots', Component: PotsPage },
+      { path: 'pots/:potId', Component: PotDetailPage },
       { path: 'analytics', Component: AnalyticsPage },
       { path: 'budget', Component: BudgetPage },
       { path: 'tasks', Component: TasksPage },

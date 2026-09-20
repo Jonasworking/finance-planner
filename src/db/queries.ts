@@ -148,10 +148,23 @@ export async function loadBudget(db: FinanceDB, today: ISODate) {
   }
 }
 
-/** All pots with every booking – balances, forecasts and histories derive from these. */
+/**
+ * All pots with every booking – balances, forecasts and histories derive from these. Expenses
+ * that were paid from a pot come along (with the categories), so a history can name them.
+ */
 export async function loadPots(db: FinanceDB) {
-  const [pots, transactions] = await Promise.all([db.pots.toArray(), db.potTransactions.toArray()])
-  return { pots: pots.filter(isActive), transactions: transactions.filter(isActive) }
+  const [pots, transactions, fundedExpenses, categories] = await Promise.all([
+    db.pots.toArray(),
+    db.potTransactions.toArray(),
+    db.expenses.filter((expense) => isActive(expense) && expense.fundedByPotId != null).toArray(),
+    db.categories.toArray(),
+  ])
+  return {
+    pots: pots.filter(isActive),
+    transactions: transactions.filter(isActive),
+    fundedExpenses,
+    categories: categories.filter(isActive),
+  }
 }
 
 /** Data for "Woche abschließen" / "Woche bearbeiten" of one week. */
