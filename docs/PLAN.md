@@ -10,6 +10,7 @@
 - [x] **Phase 2** – Einkommen & Ausgaben — vom Nutzer in zwei Teile geteilt, beide abgenommen 2026-09-20:
   - [x] **2a** – QuickAdd-Sheet mit Numpad, Ausgabenliste mit Swipe-to-delete + Undo, Bearbeiten-Sheet, Kategorienverwaltung, Tags mit Autocomplete, Vercel-Anbindung — fertig 2026-09-20 (Branch `phase-2a-expenses`), **abgenommen 2026-09-20 (am iPhone getestet), in `main`**, Notizen unten
   - [x] **2b** – Daueraufträge (weekly/fortnightly/monthly) inkl. Materialisierung, „Woche abschließen" mit Warteschlange + „Woche wieder öffnen", Onboarding (Standard-Einkommen, Budget, Startguthaben, trackingSince), Dashboard v1 mit Empty-States und klarem nächsten Schritt — fertig 2026-09-20 (Branch `phase-2b-weekly-flow`), **abgenommen 2026-09-20 (am iPhone getestet), in `main`**, Notizen unten
+- [x] **Zwischenschritt** – Browser-Journeys als E2E-Smoke-Suite im Repo (`npm run test:e2e`, nicht im Gate) — fertig 2026-09-20 (Branch `e2e-smoke`), _wartet auf Abnahme_, Notizen unten
 - [ ] **Phase 3** – Budget & Spartöpfe
 - [ ] **Phase 4** – Analyse & Charts
 - [ ] **Phase 5** – Tasks, Insights, Was-wäre-wenn
@@ -67,7 +68,18 @@
 - **Im Browser-Test gefundener Layoutfehler:** Grid-Spalten ohne `minmax(0,1fr)`/`min-w-0` liefen durch lange nicht umbrechende Zeilen über den Bildschirmrand (Karten abgeschnitten). Behoben; Regel + Prüfmethode in `CLAUDE.md`. Meine alte Overflow-Prüfung konnte das nicht sehen, weil `main` den Überstand abschneidet – das Skript misst jetzt die Kartenbreiten.
 - **Refactor aus 2a:** Kategorien-Raster als `CategoryGrid` extrahiert (Ausgabe + Dauerauftrag).
 - **Bundle:** Start-Chunk 270 KB gzip (Ziel < 250 KB bleibt Phase 6: Lazy-Routes, `LazyMotion`).
-- **Offen / Merker:** Die Browser-Journeys liegen weiter nur im Scratchpad (Vorschlag: als E2E-Smoke-Skript ins Repo, spätestens Phase 6). Dev-Werkzeuge (Demo-Daten) gibt es nur im Dev-Build.
+- **Offen / Merker:** ~~Die Browser-Journeys liegen weiter nur im Scratchpad~~ → erledigt, siehe Zwischenschritt unten. Dev-Werkzeuge (Demo-Daten) gibt es nur im Dev-Build.
+
+## Zwischenschritt – E2E-Smoke-Suite (vor Phase 3)
+
+**Geprüft:** typecheck · lint · build grün · 478 Testläufe unverändert (die Suite läuft dort bewusst nicht mit) · `npm run test:e2e` **5× hintereinander grün** (6 Journeys, ~47 s inkl. Build) · einmal gegen Production (`E2E_BASE_URL=…vercel.app`) grün, Deep-Link `/recurring` HTTP 200 · **Mutationsprobe:** ohne Klick-Schlucken in `SwipeRow` wird genau die Wisch-Journey rot („a swipe opened a sheet"); ohne `minmax(0,1fr)`/`min-w-0` im Dashboard-Grid werden genau die beiden Dashboards mit abgeschlossener Woche rot, mit Elementnamen und Maßen (`16…438 px of 390`).
+
+- **Umfang (wie gewünscht):** Onboarding (inkl. Reload: bleibt erledigt) · Ausgabe erfassen (Nächster-Schritt-Button und Tab-Bar) · Wisch-Löschen mit Undo, kurzer Wisch, Tipp · Wochenabschluss der laufenden Woche mit Wiederöffnen sowie Warteschlange „ab letzter Woche" · Breitenprüfung der Karten auf jedem Zwischenstand, dazu Desktop 1440×900 mit `N`-Shortcut. Nicht dabei: Daueraufträge, Kategorien, Light-Theme – bleiben bei RTL/Unit.
+- **Läuft gegen das Production-Bundle** (`vite build` + `vite preview` auf Port 4178, startet und beendet die Suite selbst), nicht gegen den Dev-Server: näher an dem, was auf dem iPhone landet; Demo-Daten braucht sie nicht, weil jede Journey beim Onboarding beginnt. Mit `E2E_BASE_URL` auch gegen Preview/Production.
+- **Feste Browser-Uhr** (Sonntag 2026-09-20 12:00, Zeitzone Sydney, per `Date`-Shim mit konstantem Offset): Das alte Skript übersprang den Abschluss der laufenden Woche an Mo–Fr stillschweigend und suchte die Wochenzeile über das Monatskürzel `Sep.` – beides wäre nächste Woche gekippt.
+- **Robuster als die Scratchpad-Skripte:** keine festen Wartezeiten mehr (die beiden alten Skripte schliefen zusammen 48 s), Selektoren über Text/`aria-label` statt Tailwind-Klassen, Klick erst, wenn das Ziel stillsteht und oben liegt. Beim Umbau zwei Timing-Fallen gefunden, die die Sleeps verdeckt hatten (Overlay eines schließenden Sheets schluckt Tipps; Sheet-Titel steht vor dem Formular) – als Konvention in `CLAUDE.md`. Beides Eigenheiten der Suite, **kein App-Fehler**.
+- **Schärfere Wisch-Prüfung:** „kein Sheet offen" nach dem Wisch hätte den 2a-Fehler heute nicht mehr gesehen, weil sich das Bearbeiten-Sheet inzwischen selbst schließt. Ein `MutationObserver` merkt sich deshalb, ob überhaupt je ein Overlay erschien.
+- `puppeteer-core` lädt kein eigenes Chrome (nutzt das lokal installierte, `CHROME_PATH` überschreibt) → der Vercel-Build bleibt schlank. `.mjs` wie `scripts/` → ESLint/`tsc` unberührt.
 
 ---
 
@@ -408,7 +420,7 @@ shadcn-Variablen (`--background`, `--card`, `--primary`, `--destructive`, `--rin
 
 ## 5. Umsetzungsphasen (jede Phase = eigene Freigabe durch dich)
 
-**Gate für jede Phase:** `npm run typecheck && npm run lint && npm run test && npm run build` grün · UI von mir im Browser geprüft (Chrome-Automation, 390×844 + 1440×900, Dark + Light, Konsole fehlerfrei) · `docs/PLAN.md`-Checkboxen aktualisiert · kurze Phasen-Notiz + Screenshots an dich.
+**Gate für jede Phase:** `npm run typecheck && npm run lint && npm run test && npm run build` grün · UI von mir im Browser geprüft (Chrome-Automation, 390×844 + 1440×900, Dark + Light, Konsole fehlerfrei) · ab Phase 3 zusätzlich `npm run test:e2e` grün (Smoke-Suite; neue Abläufe mit echten Gesten/Layout-Risiko bekommen dort eine Journey) · `docs/PLAN.md`-Checkboxen aktualisiert · kurze Phasen-Notiz + Screenshots an dich.
 
 ### Phase 0 – Setup, Tokens, Layout-Shell
 
