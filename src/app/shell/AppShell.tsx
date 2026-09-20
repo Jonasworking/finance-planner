@@ -1,7 +1,15 @@
+import { useLiveQuery } from 'dexie-react-hooks'
 import { motion } from 'motion/react'
 import { useEffect } from 'react'
 import { Outlet, useLocation } from 'react-router'
-import { EditExpenseSheet, QuickAddSheet } from '@/features/expenses'
+import { db } from '@/db'
+import { EditExpenseSheet, QuickAddSheet, useMaterializeRecurring } from '@/features/expenses'
+import { CloseWeekSheet } from '@/features/income'
+import { OnboardingFlow } from '@/features/onboarding'
+import { resolveBudget } from '@/lib/budget'
+import { weekStartOf } from '@/lib/dates'
+import { SETTINGS_ID } from '@/lib/types'
+import { useToday } from '@/shared/hooks/useToday'
 import { spring } from '@/shared/motion'
 import { useUiStore } from '@/shared/stores/uiStore'
 import { BottomTabs } from './BottomTabs'
@@ -15,21 +23,52 @@ function isTypingTarget(target: EventTarget | null): boolean {
 /**
  * Grid shell with an inner scroller instead of a `position: fixed` tab bar (robust on iOS):
  * the scroller and the tab bar share one grid cell, so content scrolls underneath the glass bar.
+ * Until the onboarding is done it shows that instead – full screen, without navigation.
  */
 export function AppShell() {
   const { pathname } = useLocation()
+  const today = useToday()
   const setQuickAddOpen = useUiStore((state) => state.setQuickAddOpen)
 
+  const boot = useLiveQuery(async () => {
+    const [settings, budgets] = await Promise.all([
+      db.settings.get(SETTINGS_ID),
+      db.budgets.toArray(),
+    ])
+    return { settings: settings ?? null, budgets }
+  }, [])
+  const onboarded = boot?.settings?.onboardingDone === true
+
+  useMaterializeRecurring(today, onboarded)
+
   useEffect(() => {
+    if (!onboarded) return
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.key.toLowerCase() !== 'n' || event.metaKey || event.ctrlKey || event.altKey) return
       if (isTypingTarget(event.target)) return
+      // Not while a sheet is open: there "n" is just a letter or does nothing.
+      if (document.querySelector('[role="dialog"]')) return
       event.preventDefault()
       setQuickAddOpen(true)
     }
     window.addEventListener('keydown', onKeyDown)
     return () => window.removeEventListener('keydown', onKeyDown)
-  }, [setQuickAddOpen])
+  }, [onboarded, setQuickAddOpen])
+
+  // Still reading the settings: keep the (dark) background, no flash of the wrong screen.
+  if (boot === undefined) return <div className="h-dvh bg-bg" />
+
+  if (!onboarded) {
+    return (
+      <OnboardingFlow
+        defaults={{
+          defaultWeeklyIncomeCents: boot.settings?.defaultWeeklyIncomeCents ?? 200_000,
+          totalLimitCents:
+            resolveBudget(boot.budgets, weekStartOf(today))?.totalLimitCents ?? 40_000,
+        }}
+      />
+    )
+  }
 
   return (
     <div className="grid h-dvh lg:grid-cols-[var(--sidebar-width)_minmax(0,1fr)]">
@@ -51,6 +90,7 @@ export function AppShell() {
 
       <QuickAddSheet />
       <EditExpenseSheet />
+      <CloseWeekSheet />
     </div>
   )
 }

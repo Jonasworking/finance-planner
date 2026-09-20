@@ -7,6 +7,7 @@ import {
   ListChecks,
   PiggyBank,
   ReceiptText,
+  Repeat,
   Settings,
   type LucideIcon,
 } from 'lucide-react'
@@ -30,6 +31,12 @@ export const primaryNav: NavItem[] = [
 
 /** "Mehr" page on mobile, second sidebar group on desktop. */
 export const secondaryNav: NavItem[] = [
+  {
+    to: '/recurring',
+    label: 'Daueraufträge',
+    icon: Repeat,
+    description: 'Miete & Co. automatisch buchen',
+  },
   {
     to: '/categories',
     label: 'Kategorien',

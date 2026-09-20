@@ -2,7 +2,7 @@ import { createBrowserRouter, type RouteObject } from 'react-router'
 import { AnalyticsPage } from '@/features/analytics'
 import { BudgetPage } from '@/features/budget'
 import { DashboardPage } from '@/features/dashboard'
-import { CategoriesPage, ExpensesPage } from '@/features/expenses'
+import { CategoriesPage, ExpensesPage, RecurringPage } from '@/features/expenses'
 import { PotsPage } from '@/features/pots'
 import { SettingsPage } from '@/features/settings'
 import { TasksPage } from '@/features/tasks'
@@ -28,6 +28,7 @@ export const router = createBrowserRouter([
       { index: true, Component: DashboardPage },
       { path: 'expenses', Component: ExpensesPage },
       { path: 'categories', Component: CategoriesPage },
+      { path: 'recurring', Component: RecurringPage },
       { path: 'pots', Component: PotsPage },
       { path: 'analytics', Component: AnalyticsPage },
       { path: 'budget', Component: BudgetPage },
