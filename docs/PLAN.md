@@ -10,7 +10,7 @@
 - [x] **Phase 2** – Einkommen & Ausgaben — vom Nutzer in zwei Teile geteilt, beide abgenommen 2026-09-20:
   - [x] **2a** – QuickAdd-Sheet mit Numpad, Ausgabenliste mit Swipe-to-delete + Undo, Bearbeiten-Sheet, Kategorienverwaltung, Tags mit Autocomplete, Vercel-Anbindung — fertig 2026-09-20 (Branch `phase-2a-expenses`), **abgenommen 2026-09-20 (am iPhone getestet), in `main`**, Notizen unten
   - [x] **2b** – Daueraufträge (weekly/fortnightly/monthly) inkl. Materialisierung, „Woche abschließen" mit Warteschlange + „Woche wieder öffnen", Onboarding (Standard-Einkommen, Budget, Startguthaben, trackingSince), Dashboard v1 mit Empty-States und klarem nächsten Schritt — fertig 2026-09-20 (Branch `phase-2b-weekly-flow`), **abgenommen 2026-09-20 (am iPhone getestet), in `main`**, Notizen unten
-- [x] **Zwischenschritt** – Browser-Journeys als E2E-Smoke-Suite im Repo (`npm run test:e2e`, nicht im Gate) — fertig 2026-09-20 (Branch `e2e-smoke`), _wartet auf Abnahme_, Notizen unten
+- [x] **Zwischenschritt** – Browser-Journeys als E2E-Smoke-Suite im Repo (`npm run test:e2e`, nicht im Gate) — fertig 2026-09-20 (Branch `e2e-smoke`), **abgenommen 2026-09-20, in `main`**, Notizen unten
 - [ ] **Phase 3** – Budget & Spartöpfe
 - [ ] **Phase 4** – Analyse & Charts
 - [ ] **Phase 5** – Tasks, Insights, Was-wäre-wenn
