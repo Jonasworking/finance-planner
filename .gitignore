@@ -25,3 +25,6 @@ dist-ssr
 
 # Test coverage
 coverage
+
+# Failure screenshots of the browser smoke suite
+e2e/artifacts
