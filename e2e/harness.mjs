@@ -175,15 +175,16 @@ async function findByText(page, selector, text, exact) {
 }
 
 /**
- * Puppeteer clicks coordinates, not elements. Sheets slide in, steps cross-fade and a closing
- * sheet keeps its overlay on top until the animation ends – so wait until the target has stopped
- * moving AND is what a finger would actually hit at its centre.
+ * Puppeteer clicks coordinates, not elements. Sheets slide in, steps cross-fade, a closing sheet
+ * keeps its overlay on top until the animation ends, and the tab bar floats above the end of the
+ * page – so wait until the target has stopped moving AND is what a finger would actually hit at
+ * its centre. While it is out of sight it is scrolled back in: a panel that is still expanding
+ * pushes whatever is below it out of view again after a single scroll.
  */
 async function waitUntilActionable(page, element) {
   await element.evaluate((el) => {
     delete el.__e2eRect
     delete el.__e2eStillFrames
-    el.scrollIntoView({ block: 'center', inline: 'nearest' })
   })
   await page
     .waitForFunction(
@@ -194,19 +195,41 @@ async function waitUntilActionable(page, element) {
         el.__e2eRect = key
         if (el.__e2eStillFrames < 4) return false
         const hit = document.elementFromPoint(rect.x + rect.width / 2, rect.y + rect.height / 2)
-        return hit !== null && (el.contains(hit) || hit.contains(el))
+        if (hit !== null && (el.contains(hit) || hit.contains(el))) return true
+        // Still, but not reachable: bring it to the middle and look again.
+        el.scrollIntoView({ block: 'center', inline: 'nearest' })
+        el.__e2eStillFrames = 0
+        return false
       },
       { polling: 'raf' },
       element,
     )
     .catch(async () => {
-      const label = await element.evaluate((el) => el.textContent.trim().slice(0, 40))
-      throw new Error(`"${label}" never became clickable (still moving or covered)`)
+      // Say what is in the way – "covered by a toast" and "scrolled out of view" need different fixes.
+      const report = await element.evaluate((el) => {
+        const rect = el.getBoundingClientRect()
+        const hit = document.elementFromPoint(rect.x + rect.width / 2, rect.y + rect.height / 2)
+        const describe = (node) =>
+          node
+            ? `<${node.tagName.toLowerCase()}> "${node.textContent.trim().slice(0, 40)}"`
+            : 'nothing (outside the viewport)'
+        return (
+          `${describe(el)} at y=${Math.round(rect.top)}…${Math.round(rect.bottom)} ` +
+          `of ${window.innerHeight}; at its centre: ${describe(hit)}`
+        )
+      })
+      throw new Error(`never became clickable (still moving or covered): ${report}`)
     })
 }
 
 export async function clickText(page, selector, text, { exact = false } = {}) {
   const element = await findByText(page, selector, text, exact)
+  await waitUntilActionable(page, element)
+  await element.click()
+}
+
+/** For elements a journey looked up itself – same care as `clickText`. */
+export async function clickElement(page, element) {
   await waitUntilActionable(page, element)
   await element.click()
 }
@@ -403,6 +426,19 @@ export async function assertFitsViewport(page, where) {
       .slice(0, 5),
   )
   assert.deepEqual(offenders, [], `${where}: elements reach beyond the viewport`)
+
+  // A label that is too long for its button spills over its neighbours while the button itself
+  // stays in place – invisible to the measurement above.
+  const spilling = await page.evaluate(() =>
+    [...document.querySelectorAll('button, a')]
+      .filter((el) => el.clientWidth > 0 && el.scrollWidth > el.clientWidth + 1)
+      .map(
+        (el) =>
+          `"${el.textContent.trim().slice(0, 40)}" needs ${el.scrollWidth} px, has ${el.clientWidth}`,
+      )
+      .slice(0, 5),
+  )
+  assert.deepEqual(spilling, [], `${where}: text spills out of its button`)
 
   const scrolls = await page.evaluate(
     () => document.documentElement.scrollWidth > window.innerWidth,

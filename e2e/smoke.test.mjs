@@ -9,6 +9,7 @@ import {
   DESKTOP,
   PHONE,
   assertFitsViewport,
+  clickElement,
   clickSelector,
   clickText,
   clickToastAction,
@@ -20,6 +21,7 @@ import {
   onboard,
   openModals,
   openSession,
+  pressNumpad,
   saveScreenshot,
   sawModal,
   startSuite,
@@ -175,7 +177,7 @@ journey('the running week can be closed, shown and reopened', PHONE, async (page
       .find((section) => section.querySelector('h2')?.textContent === 'Letzte Wochen')
       ?.querySelector('button'),
   )
-  await weekRow.asElement().click()
+  await clickElement(page, weekRow.asElement())
   await waitForText(page, 'Woche bearbeiten')
   await clickText(page, 'button', 'Woche wieder öffnen')
   await waitForText(page, 'Woche wieder geöffnet')
@@ -199,6 +201,82 @@ journey('a week that ended before today waits in the queue', PHONE, async (page)
   await waitForNoText(page, 'wartet auf ihren Abschluss')
   await waitForText(page, 'Letzte Wochen')
   await assertFitsViewport(page, 'dashboard after catching up')
+})
+
+journey('a pot is created, filled and pays for an expense', PHONE, async (page) => {
+  await onboard(page)
+  await goto(page, '/pots')
+  await waitForText(page, 'Wofür sparst du?') // only "Nur gespart" so far → the screen explains pots
+  await assertFitsViewport(page, 'pots list')
+
+  // create
+  await clickText(page, 'main button', 'Topf anlegen', { exact: true })
+  await waitForModals(page, 1)
+  await typeInto(page, 'Name', 'Bali')
+  await typeInto(page, 'Zielbetrag', '3000')
+  await clickText(page, '[role="dialog"] button', 'Topf anlegen', { exact: true })
+  await waitForModals(page, 0)
+  await waitForText(page, 'Noch keine Buchungen') // landed on the new pot's screen
+  await waitForText(page, 'es fehlen A$3.000,00')
+  await assertFitsViewport(page, 'empty pot')
+
+  // deposit
+  await clickText(page, 'main button', 'Einzahlen', { exact: true })
+  await waitForModals(page, 1)
+  await typeInto(page, 'Betrag', '1000')
+  await clickText(page, '[role="dialog"] button', 'Einzahlen', { exact: true })
+  await waitForModals(page, 0)
+  await waitForText(page, 'es fehlen A$2.000,00')
+  await waitForText(page, '33 %')
+  await waitForText(page, 'Einzahlung')
+
+  // pay a big one-off from the pot
+  await clickSelector(page, 'button[aria-label="Neue Ausgabe"]')
+  await waitForModals(page, 1)
+  await pressNumpad(page, ['8', '0', '0'])
+  await clickText(page, '[role="radio"]', 'Reisen')
+  await clickText(page, '[role="dialog"] button', 'Details')
+  await clickText(page, '[role="radio"]', 'Bali')
+  await waitForText(page, 'Zählt nicht zum Wochenbudget · A$1.000,00 im Topf')
+  await clickText(page, 'button', 'Speichern', { exact: true })
+  await waitForModals(page, 0)
+
+  // the pot paid …
+  await waitForText(page, 'Ausgabe aus dem Topf')
+  await waitForText(page, 'es fehlen A$2.800,00')
+  await assertFitsViewport(page, 'pot with history')
+
+  // … and the weekly budget did not
+  await goto(page, '/')
+  await waitForText(page, 'Zuletzt ausgegeben')
+  const used = await page.$eval('[aria-label="Wochenbudget verbraucht"]', (ring) =>
+    ring.getAttribute('aria-valuenow'),
+  )
+  assert.equal(used, '0', 'a pot-paid expense must not use up the weekly budget')
+  await goto(page, '/pots')
+  await waitForText(page, 'Gesamt A$200,00')
+  await assertFitsViewport(page, 'pots list with a goal')
+})
+
+journey('the budget is changed from this week on', PHONE, async (page) => {
+  await onboard(page)
+  await goto(page, '/budget')
+  await waitForText(page, 'Limits je Kategorie')
+  await assertFitsViewport(page, 'budget')
+
+  await typeInto(page, 'Wochenbudget', '300')
+  await typeInto(page, 'Limit Lebensmittel', '120')
+  await waitForText(page, 'A$180,00 unverteilt')
+  // the save bar floats above the tab bar – it has to be reachable, not hidden behind it
+  await waitForText(page, 'Gilt ab dieser Woche – vergangene Wochen bleiben')
+  await assertFitsViewport(page, 'budget with the save bar')
+  await clickText(page, 'main button', 'Speichern', { exact: true })
+  await waitForText(page, 'Budget gespeichert')
+  await waitForNoText(page, 'Verwerfen')
+  await assertFitsViewport(page, 'budget after saving')
+
+  await goto(page, '/')
+  await waitForText(page, 'von A$300')
 })
 
 journey('desktop layout keeps every card inside the window', DESKTOP, async (page) => {
