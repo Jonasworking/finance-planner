@@ -3,6 +3,7 @@ import { motion } from 'motion/react'
 import { useEffect } from 'react'
 import { Outlet, useLocation } from 'react-router'
 import { db } from '@/db'
+import { useBudgetWarnings } from '@/features/budget'
 import { EditExpenseSheet, QuickAddSheet, useMaterializeRecurring } from '@/features/expenses'
 import { CloseWeekSheet } from '@/features/income'
 import { OnboardingFlow } from '@/features/onboarding'
@@ -40,6 +41,7 @@ export function AppShell() {
   const onboarded = boot?.settings?.onboardingDone === true
 
   useMaterializeRecurring(today, onboarded)
+  useBudgetWarnings(today)
 
   useEffect(() => {
     if (!onboarded) return

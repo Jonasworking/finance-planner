@@ -285,3 +285,36 @@ export function reservedThisWeek(
   items.sort((a, b) => (a.date < b.date ? -1 : a.date > b.date ? 1 : 0))
   return { totalCents: items.reduce((sum, item) => sum + item.amountCents, 0), items }
 }
+
+export interface RunningWeekBudget {
+  /** null until a budget exists (never the case after seeding, but the types allow it). */
+  budget: ResolvedBudget | null
+  reserved: { totalCents: Cents; items: ReservedItem[] }
+  usage: BudgetUsage | null
+}
+
+/**
+ * The running week against its budget – the one calculation the hero ring, the budget screen
+ * and the warnings share, so they can never disagree. A closed week has nothing reserved any
+ * more: its numbers are final.
+ */
+export function runningWeekBudget(input: {
+  budgets: readonly Budget[]
+  /** Expenses of `weekStart`'s week. */
+  weekExpenses: readonly Expense[]
+  templates: readonly RecurringExpense[]
+  weekStart: ISODate
+  today: ISODate
+  weekClosed: boolean
+  activeCategoryIds?: ReadonlySet<string>
+}): RunningWeekBudget {
+  const budget = resolveBudget(input.budgets, input.weekStart, input.activeCategoryIds)
+  const reserved = input.weekClosed
+    ? { totalCents: 0, items: [] }
+    : reservedThisWeek(input.templates, input.weekStart, input.today)
+  return {
+    budget,
+    reserved,
+    usage: budget ? budgetUsage(input.weekExpenses, budget, reserved.items) : null,
+  }
+}

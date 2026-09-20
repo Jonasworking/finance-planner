@@ -8,6 +8,7 @@ import {
   reservedThisWeek,
   resolveBudget,
   roundToBudgetStep,
+  runningWeekBudget,
   sameBudget,
   sliderMaxCents,
   thresholdCrossed,
@@ -302,5 +303,43 @@ describe('reservedThisWeek', () => {
       ['rent', '2026-10-02'],
     ])
     expect(result.totalCents).toBe(27_000)
+  })
+})
+
+describe('runningWeekBudget – one calculation for ring, budget screen and warnings', () => {
+  const week = '2026-09-21'
+  const input = {
+    budgets: [makeBudget('2026-08-03', 40_000, { 'cat:rent': 20_000, 'cat:archived': 1_000 })],
+    weekExpenses: [makeExpense('2026-09-21', 15_000)],
+    templates: [makeRecurring('2026-09-04')], // rent, due Friday 2026-09-25
+    weekStart: week,
+    today: '2026-09-22',
+    weekClosed: false,
+  }
+
+  it('adds what is reserved to what is spent', () => {
+    const result = runningWeekBudget(input)
+    expect(result.reserved.totalCents).toBe(25_000)
+    expect(result.usage?.total).toMatchObject({
+      spentCents: 15_000,
+      reservedCents: 25_000,
+      remainingCents: 0,
+      level: 'over',
+    })
+  })
+
+  it('reserves nothing once the week is closed', () => {
+    const result = runningWeekBudget({ ...input, weekClosed: true })
+    expect(result.reserved).toEqual({ totalCents: 0, items: [] })
+    expect(result.usage?.total).toMatchObject({ remainingCents: 25_000, level: 'ok' })
+  })
+
+  it('drops limits of archived categories and copes with no budget at all', () => {
+    const active = runningWeekBudget({ ...input, activeCategoryIds: new Set(['cat:rent']) })
+    expect(Object.keys(active.budget?.categoryLimits ?? {})).toEqual(['cat:rent'])
+    expect(runningWeekBudget({ ...input, budgets: [] })).toMatchObject({
+      budget: null,
+      usage: null,
+    })
   })
 })
