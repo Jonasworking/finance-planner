@@ -9,7 +9,7 @@ Vite 8 · React 19 · **TypeScript ~6.0 (gepinnt – TS 7 erst, wenn typescript-
 shadcn/ui (Stil `radix-nova`, `src/shared/ui`) · Zustand (nur UI-State) · Dexie 4 + dexie-react-hooks · Recharts 3 (+ react-is) · date-fns 4 · motion (`motion/react`) ·
 sonner · lucide-react · zod · vite-plugin-pwa · Vitest + fake-indexeddb + Testing Library · react-router 8 (`react-router`, `react-router/dom`) ·
 ESLint 10 + typescript-eslint (nicht Oxlint – wir brauchen `no-restricted-syntax`/-`imports` pro Ordner) · Prettier + `prettier-plugin-tailwindcss` ·
-Deployment: Vercel (statisch, Projekt `finance-planner` im Team `jonasworkings-projects`, per Git mit `Jonasworking/finance-planner` verbunden: Push auf `main` = Production, jeder andere Branch = Preview; `vercel.json` enthält den SPA-Rewrite). Paketmanager: npm. Kein `framer-motion`, kein `react-router-dom`, kein `next-themes` (eigener `themeStore`).
+Deployment: Vercel (statisch, Projekt `finance-planner` im Team `jonasworkings-projects`, per Git mit `Jonasworking/finance-planner` verbunden: Push auf `main` = Production, jeder andere Branch = Preview; `vercel.json` enthält den SPA-Rewrite; der Vercel-Login-Schutz ist auf Wunsch des Nutzers aus, alle Deployment-URLs sind öffentlich – Einstellungen am Vercel-Projekt nur nach Rückfrage ändern). Paketmanager: npm. Kein `framer-motion`, kein `react-router-dom`, kein `next-themes` (eigener `themeStore`).
 `vaul` kommt nur indirekt über den shadcn-Drawer (Radix-Basis nutzt weiterhin vaul) und wird ausschließlich in `shared/components/ResponsiveSheet.tsx` verwendet → dort austauschbar.
 Pakete werden pro Phase installiert (Dexie/zod/date-fns → Phase 1, Recharts → Phase 4, vite-plugin-pwa → Phase 6).
 
@@ -58,6 +58,7 @@ Neue shadcn-Komponente: `npx shadcn@latest add <name>` → danach **immer** `npm
 - Suffixe: `…Page` (Route), `…Sheet` (Bottom-Sheet/Dialog), `…Card`, `…List`/`…Row`. Props-Typ `XyzProps`. Kein `any`, kein Default-Export (außer lazy Routen).
 - UI-Texte Deutsch, Code/Kommentare/Commits Englisch.
 - **Keine unsichtbaren Sonderzeichen als Literal** (BOM, geschütztes Leerzeichen, U+FFFF …) und keine `\u…`-Escapes über Schreib-Tools – die werden beim Schreiben still in das echte Zeichen verwandelt. Stattdessen `String.fromCharCode(0xfeff)` bzw. `Dexie.minKey/maxKey`. Prüfen: `LC_ALL=C grep -rln $'\xEF\xBB\xBF\|\xC2\xA0\|\xEF\xBF\xBF' src`.
+- Gesten testen: echter Pointer-Drag funktioniert in jsdom (`pointerDown` aufs Element, `pointerMove`/`pointerUp` aufs `window`, dazwischen Frames abwarten) – Muster in `shared/components/SwipeRow.test.tsx`. Sheets testen: `window.matchMedia` auf „Desktop" stubben, dann rendert `ResponsiveSheet` den Radix-Dialog – Muster in `EditExpenseSheet.test.tsx`. Neue Absicherungen per Mutation gegenprüfen (Fix kurz entfernen → Test muss rot werden).
 - Test-Fixtures: `src/test/fixtures.ts` (`makeExpense`, `makeWeek`, `makeTx`, … mit festem `NOW`).
 - Commits: Conventional Commits mit Feature-Scope – `feat(expenses): quick-add sheet`, `fix(lib): clamp monthly recurrence`, `test(db): closeWeek idempotency`, `chore: …`. Klein & thematisch; Logik und Test im selben Commit; vorher typecheck + lint + test grün. Branch pro Phase `phase-N-kurzname`. **Push nach `origin` ist generell freigegeben** (seit 2026-09-20); `main` wird erst nach Abnahme einer Phase per Fast-Forward aktualisiert und gepusht.
 
