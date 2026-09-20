@@ -6,6 +6,6 @@ export const db = new FinanceDB()
 export const repos = createRepos(db)
 
 export { DomainError, type DomainErrorCode } from './errors'
-export { loadAppData } from './queries'
+export { loadAppData, loadCategories, loadExpenseFormData, loadExpensesOfWeek } from './queries'
 export { createRepos, type Repos } from './repos'
 export { FinanceDB } from './schema'

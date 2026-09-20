@@ -1,6 +1,6 @@
 import type { FinanceDB } from '../schema'
-import { createBackupRepo } from './backup'
-import { systemClock, type Clock } from './context'
+import type { createBackupRepo } from './backup'
+import { systemClock, type Clock, type RepoContext } from './context'
 import { createExpensesRepo } from './expenses'
 import {
   createBudgetsRepo,
@@ -11,6 +11,26 @@ import {
 import { createPotsRepo } from './pots'
 import { createRecurringRepo } from './recurring'
 import { createWeeksRepo } from './weeks'
+
+type BackupRepo = ReturnType<typeof createBackupRepo>
+
+/**
+ * Backup pulls in zod, the backup schema and the ledger check (~90 KB gzip) but is only needed
+ * on the settings screen – so it is loaded on first use. Every method was async already, which
+ * makes the lazy wrapper invisible to callers.
+ */
+function lazyBackupRepo(ctx: RepoContext): BackupRepo {
+  let loading: Promise<BackupRepo> | undefined
+  const load = () => (loading ??= import('./backup').then((module) => module.createBackupRepo(ctx)))
+  return {
+    export: async () => (await load()).export(),
+    markBackupDone: async () => (await load()).markBackupDone(),
+    import: async (input) => (await load()).import(input),
+    safetyCopyInfo: async () => (await load()).safetyCopyInfo(),
+    restoreSafetyCopy: async () => (await load()).restoreSafetyCopy(),
+    wipeAll: async () => (await load()).wipeAll(),
+  }
+}
 
 /** The only write API of the app. Tests pass their own database and a fake clock. */
 export function createRepos(db: FinanceDB, clock: Clock = systemClock) {
@@ -24,7 +44,7 @@ export function createRepos(db: FinanceDB, clock: Clock = systemClock) {
     budgets: createBudgetsRepo(ctx),
     tasks: createTasksRepo(ctx),
     settings: createSettingsRepo(ctx),
-    backup: createBackupRepo(ctx),
+    backup: lazyBackupRepo(ctx),
   }
 }
 
