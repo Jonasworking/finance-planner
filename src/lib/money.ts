@@ -1,7 +1,7 @@
 /** Money is always stored and computed as integer cents. */
 export type Cents = number
 
-const MINUS = '−'
+const MINUS = String.fromCharCode(0x2212) // the real minus sign, not a hyphen
 
 const withDecimals = new Intl.NumberFormat('de-DE', {
   minimumFractionDigits: 2,

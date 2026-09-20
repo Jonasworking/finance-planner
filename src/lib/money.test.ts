@@ -1,6 +1,9 @@
 import { describe, expect, it } from 'vitest'
 import { formatAUD, formatEUR, parseAmountInput, ratio } from './money'
 
+const MINUS = String.fromCharCode(0x2212)
+const NBSP = String.fromCharCode(0xa0)
+
 describe('formatAUD', () => {
   it('formats with German separators and A$ prefix', () => {
     expect(formatAUD(160000)).toBe('A$1.600,00')
@@ -10,7 +13,7 @@ describe('formatAUD', () => {
   })
 
   it('uses a real minus sign in front of the currency', () => {
-    expect(formatAUD(-1250)).toBe('−A$12,50')
+    expect(formatAUD(-1250)).toBe(`${MINUS}A$12,50`)
   })
 
   it('supports signed and whole-dollar output', () => {
@@ -23,8 +26,8 @@ describe('formatAUD', () => {
 
 describe('formatEUR', () => {
   it('converts with the given rate', () => {
-    expect(formatEUR(160000, 0.6)).toBe('960,00 €')
-    expect(formatEUR(-10000, 0.5)).toBe('−50,00 €')
+    expect(formatEUR(160000, 0.6)).toBe(`960,00${NBSP}€`)
+    expect(formatEUR(-10000, 0.5)).toBe(`${MINUS}50,00${NBSP}€`)
   })
 })
 
