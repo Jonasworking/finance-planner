@@ -1,7 +1,7 @@
 import { motion } from 'motion/react'
 import { useEffect } from 'react'
 import { Outlet, useLocation } from 'react-router'
-import { QuickAddSheet } from '@/features/expenses'
+import { EditExpenseSheet, QuickAddSheet } from '@/features/expenses'
 import { spring } from '@/shared/motion'
 import { useUiStore } from '@/shared/stores/uiStore'
 import { BottomTabs } from './BottomTabs'
@@ -50,6 +50,7 @@ export function AppShell() {
       </div>
 
       <QuickAddSheet />
+      <EditExpenseSheet />
     </div>
   )
 }

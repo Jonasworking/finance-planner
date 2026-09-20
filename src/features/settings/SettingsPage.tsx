@@ -1,6 +1,12 @@
+import { lazy, Suspense } from 'react'
 import { GlassCard } from '@/shared/components/GlassCard'
 import { Page } from '@/shared/components/Page'
 import { ThemeToggle } from '@/shared/components/ThemeToggle'
+
+// Statically false in production builds, so the dev tools (and the demo generator) are dropped.
+const DevTools = import.meta.env.DEV
+  ? lazy(() => import('./components/DevTools').then((module) => ({ default: module.DevTools })))
+  : null
 
 export function SettingsPage() {
   return (
@@ -21,6 +27,12 @@ export function SettingsPage() {
             „Alle Daten löschen".
           </p>
         </GlassCard>
+
+        {DevTools ? (
+          <Suspense fallback={null}>
+            <DevTools />
+          </Suspense>
+        ) : null}
       </div>
     </Page>
   )

@@ -1,6 +1,7 @@
 import {
   ChartColumn,
   FlaskConical,
+  FolderCog,
   Gauge,
   House,
   ListChecks,
@@ -29,6 +30,12 @@ export const primaryNav: NavItem[] = [
 
 /** "Mehr" page on mobile, second sidebar group on desktop. */
 export const secondaryNav: NavItem[] = [
+  {
+    to: '/categories',
+    label: 'Kategorien',
+    icon: FolderCog,
+    description: 'Anlegen, sortieren, archivieren',
+  },
   { to: '/budget', label: 'Budget', icon: Gauge, description: 'Wochenlimit und Kategorien' },
   { to: '/tasks', label: 'Tasks', icon: ListChecks, description: 'Finanz-To-dos mit Fälligkeit' },
   {
