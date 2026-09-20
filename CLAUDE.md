@@ -1,24 +1,37 @@
 # Finanzplaner-PWA
+
 Private Ein-Nutzer-Finanz-App (AUD, wöchentlicher Rhythmus). Kein Backend, keine Auth. Ziel: installierte PWA auf iPhone + MacBook.
 Plan & Phasenstatus: `docs/PLAN.md` – **nur an der freigegebenen Phase arbeiten**, Checkboxen dort pflegen.
 
 ## Stack
+
 Vite 8 · React 19 · **TypeScript ~6.0 (gepinnt – TS 7 erst, wenn typescript-eslint es unterstützt; kein `baseUrl`)** · Tailwind v4 (CSS-first, Tokens in `src/styles/tokens.css`) ·
-shadcn/ui (`src/shared/ui`) · Zustand (nur UI-State) · Dexie 4 + dexie-react-hooks · Recharts 3 (+ react-is) · date-fns 4 · motion (`motion/react`) ·
+shadcn/ui (Stil `radix-nova`, `src/shared/ui`) · Zustand (nur UI-State) · Dexie 4 + dexie-react-hooks · Recharts 3 (+ react-is) · date-fns 4 · motion (`motion/react`) ·
 sonner · lucide-react · zod · vite-plugin-pwa · Vitest + fake-indexeddb + Testing Library · react-router 8 (`react-router`, `react-router/dom`) ·
-Deployment: Vercel (statisch). Paketmanager: npm. Kein `vaul`, kein `framer-motion`, kein `react-router-dom`.
+ESLint 10 + typescript-eslint (nicht Oxlint – wir brauchen `no-restricted-syntax`/-`imports` pro Ordner) · Prettier + `prettier-plugin-tailwindcss` ·
+Deployment: Vercel (statisch). Paketmanager: npm. Kein `framer-motion`, kein `react-router-dom`, kein `next-themes` (eigener `themeStore`).
+`vaul` kommt nur indirekt über den shadcn-Drawer (Radix-Basis nutzt weiterhin vaul) und wird ausschließlich in `shared/components/ResponsiveSheet.tsx` verwendet → dort austauschbar.
+Pakete werden pro Phase installiert (Dexie/zod/date-fns → Phase 1, Recharts → Phase 4, vite-plugin-pwa → Phase 6).
 
 ## Befehle
-`npm run dev` · `npm run build` · `npm run typecheck` · `npm run lint` · `npm run test` (einzeln: `npx vitest run src/lib/dates.test.ts`)
+
+`npm run dev` · `npm run build` · `npm run typecheck` · `npm run lint` · `npm run test` (einzeln: `npx vitest run src/lib/money.test.ts`) · `npm run format`
+Neue shadcn-Komponente: `npx shadcn@latest add <name>` → danach **immer** `npm run ui:fix-imports` (sonst schlägt der Lint fehl, siehe `cn`-Regel).
 
 ## Architektur – wo liegt was
+
 - `src/lib` – **gesamte Fachlogik als reine Funktionen**. Kein React, kein Dexie, kein `Date.now()`/`new Date()` ohne Parameter (`today`/`now` reinreichen). Jede Funktion hat Tests (`*.test.ts` daneben).
 - `src/db` – Dexie-Schema, Typen, Repos. **Einziger Ort mit Dexie-Schreibzugriff**; Mehr-Tabellen-Operationen in einer `rw`-Transaktion, darin nur Dexie-`await`s.
 - `src/features/<name>` – UI + Hooks. Ein `useLiveQuery`-Querier pro Screen; `undefined` = lädt, `null` = nicht gefunden. Cross-Feature-Importe nur über `index.ts`.
-- `src/shared` – `ui/` (shadcn, generiert), `components/`, `hooks/`, `stores/`. Importiert nie aus `features`.
+- `src/shared` – `ui/` (shadcn, generiert), `components/`, `hooks/`, `stores/`, `lib/utils.ts`. Importiert nie aus `features`. Darf `src/lib` importieren.
+- `src/app` – Router, Provider, Shell (`AppShell`, `BottomTabs`, `Sidebar`, `MorePage`), Dev-Styleguide `/dev/tokens` (nur Dev-Build). Features importieren nie aus `app`.
+- Die Schichtenregeln sind in `eslint.config.js` erzwungen (inkl. Datums-/Uhr-Verbote); Ordner-Configs **ersetzen** die Regel, daher neue Verbote dort überall ergänzen.
+- **`cn` immer aus `@/shared/lib/utils`** – nie das nackte Paket `"cn"`: nur die konfigurierte Variante kennt unsere Schriftgrößen (`text-display|h1|h2|body|label|caption`); sonst verwirft der Merger sie neben Textfarben. Neue `--text-*`-Tokens dort nachtragen (Test: `shared/lib/utils.test.ts`).
+- Seiten nutzen `<Page title=…>` (Sticky-Glas-Header + Content-Spalte); Buttons auf Touch-Screens `size="touch"` / `"icon-touch"` (44 px).
 - Komponenten berechnen nichts Fachliches selbst – fehlt Logik, kommt sie nach `lib` (mit Test). „Heute" kommt aus `useToday()`.
 
 ## Domänenregeln
+
 - Geld = Integer-Cents (`…Cents`); Anzeige nur über `formatAUD` / `<Money>` → `A$1.600,00`. EUR nur Anzeige (`Settings.eurRate`).
 - Kalendertage = lokale `YYYY-MM-DD`-Strings, nur über `lib/dates.ts`. **Verboten:** `new Date('YYYY-MM-DD')`, `toISOString().slice(0,10)`, Millisekunden-Arithmetik. Wochenstart fix **Montag**; `Week.id` = weekStart.
 - Jede Zeile: `id`, `createdAt`, `updatedAt`, `deletedAt` (Soft-Delete; Lesezugriffe filtern Tombstones). Sync-fähig halten.
@@ -30,12 +43,14 @@ Deployment: Vercel (statisch). Paketmanager: npm. Kein `vaul`, kein `framer-moti
 - Dexie: ausgelieferte Version nie ändern → neue `version(n+1)` + `upgrade` + Migrationstest; `SCHEMA_VERSION` + `migrateBackup` mitziehen.
 
 ## Konventionen
+
 - Komponenten `PascalCase.tsx`, eine pro Datei, Named Exports; Hooks `useXyz.ts`; lib/Repos `camelCase.ts`; Tests `*.test.ts(x)` neben der Quelle.
 - Suffixe: `…Page` (Route), `…Sheet` (Bottom-Sheet/Dialog), `…Card`, `…List`/`…Row`. Props-Typ `XyzProps`. Kein `any`, kein Default-Export (außer lazy Routen).
 - UI-Texte Deutsch, Code/Kommentare/Commits Englisch.
 - Commits: Conventional Commits mit Feature-Scope – `feat(expenses): quick-add sheet`, `fix(lib): clamp monthly recurrence`, `test(db): closeWeek idempotency`, `chore: …`. Klein & thematisch; Logik und Test im selben Commit; vorher typecheck + lint + test grün. Branch pro Phase `phase-N-kurzname`; Push nur nach Ansage.
 
 ## Design
+
 Dark = Default, Light via `[data-theme='light']`. Tokens **nur** aus `tokens.css` (keine Hex-Werte in Komponenten):
 bg `#0B0C0F` · surface-1/2/3 `#14161A/#1B1E24/#252932` · fg `#F5F6F8` · fg-muted `#9AA1AE` ·
 **saved/Mint `#3EE0A8`** (auch Primary-CTA) · **spent/Coral `#FF6F61`** · **income/Periwinkle `#8AA4FF`** · warning `#FFB84D` · danger `#FF5A52` · `cat-1…10`.
