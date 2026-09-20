@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { makeRecurring } from '@/test/fixtures'
-import { dueDates, nextDueDate, planMaterialization } from './recurrence'
+import { describeRecurrence, dueDates, nextDueDate, planMaterialization } from './recurrence'
 
 describe('dueDates', () => {
   it('lists weekly occurrences from the anchor', () => {
@@ -120,5 +120,25 @@ describe('planMaterialization', () => {
     expect(
       planMaterialization(makeRecurring('2026-09-04', { deletedAt: 1 }), '2026-09-20').dates,
     ).toEqual([])
+  })
+})
+
+describe('describeRecurrence', () => {
+  it('names the rhythm in German', () => {
+    expect(describeRecurrence({ interval: 'weekly', anchorDate: '2026-09-04' })).toBe(
+      'Wöchentlich, freitags',
+    )
+    expect(describeRecurrence({ interval: 'fortnightly', anchorDate: '2026-09-07' })).toBe(
+      'Alle 2 Wochen, montags',
+    )
+    expect(describeRecurrence({ interval: 'monthly', anchorDate: '2026-09-15' })).toBe(
+      'Monatlich am 15.',
+    )
+    expect(describeRecurrence({ interval: 'monthly', anchorDate: '2026-01-31' })).toBe(
+      'Monatlich am 31. (sonst Monatsende)',
+    )
+    expect(describeRecurrence({ interval: 'weekly', anchorDate: '2026-09-06' })).toBe(
+      'Wöchentlich, sonntags',
+    )
   })
 })

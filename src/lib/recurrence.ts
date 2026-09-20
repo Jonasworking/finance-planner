@@ -1,4 +1,4 @@
-import { addDaysISO, addMonthsClamped, daysBetween, maxISO, minISO } from './dates'
+import { addDaysISO, addMonthsClamped, daysBetween, maxISO, minISO, parseISODate } from './dates'
 import type { ISODate, RecurringExpense } from './types'
 
 type Schedule = Pick<RecurringExpense, 'interval' | 'anchorDate' | 'endDate' | 'active'>
@@ -76,4 +76,26 @@ export function planMaterialization(
   if (!template.active || template.deletedAt !== null) return none
   if (template.lastGeneratedDate && today <= template.lastGeneratedDate) return none
   return { dates: dueDates(template, template.lastGeneratedDate, today), nextWatermark: today }
+}
+
+const WEEKDAYS_DATIVE = [
+  'sonntags',
+  'montags',
+  'dienstags',
+  'mittwochs',
+  'donnerstags',
+  'freitags',
+  'samstags',
+]
+
+/** Human rhythm of a rule: "Wöchentlich, freitags" · "Alle 2 Wochen, freitags" · "Monatlich am 31." */
+export function describeRecurrence(schedule: Pick<Schedule, 'interval' | 'anchorDate'>): string {
+  const anchor = parseISODate(schedule.anchorDate)
+  if (schedule.interval === 'monthly') {
+    const day = anchor.getDate()
+    // Days 29–31 do not exist in every month; the rule then falls on the month's last day.
+    return day > 28 ? `Monatlich am ${day}. (sonst Monatsende)` : `Monatlich am ${day}.`
+  }
+  const weekday = WEEKDAYS_DATIVE[anchor.getDay()]!
+  return schedule.interval === 'weekly' ? `Wöchentlich, ${weekday}` : `Alle 2 Wochen, ${weekday}`
 }
