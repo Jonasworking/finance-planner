@@ -15,6 +15,13 @@ interface UiState {
   editSession: number
   openExpense: (id: string) => void
   closeExpense: () => void
+
+  /** "Woche abschließen" / "Woche bearbeiten" for one week (its Monday). Same pattern as above. */
+  closeWeekStart: string | null
+  closeWeekOpen: boolean
+  closeWeekSession: number
+  openCloseWeek: (weekStart: string) => void
+  dismissCloseWeek: () => void
 }
 
 /** Ephemeral UI state only – persistent data lives in Dexie. */
@@ -33,4 +40,15 @@ export const useUiStore = create<UiState>((set) => ({
   openExpense: (editingExpenseId) =>
     set((state) => ({ editingExpenseId, editOpen: true, editSession: state.editSession + 1 })),
   closeExpense: () => set({ editOpen: false }),
+
+  closeWeekStart: null,
+  closeWeekOpen: false,
+  closeWeekSession: 0,
+  openCloseWeek: (closeWeekStart) =>
+    set((state) => ({
+      closeWeekStart,
+      closeWeekOpen: true,
+      closeWeekSession: state.closeWeekSession + 1,
+    })),
+  dismissCloseWeek: () => set({ closeWeekOpen: false }),
 }))
