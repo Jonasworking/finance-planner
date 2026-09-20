@@ -7,9 +7,9 @@
 - [x] Offene Fragen §6 beantwortet (unbeantwortet = Annahme gilt) — beantwortet: 1 (Radix), 3 (selbstständig committen, `main`, Push nur auf Ansage), 10 (Inter self-hosted), 2 (Minus-Woche negativ buchen), 6 (alle Kategorien zählen; 10 Start-Kategorien wie vorgeschlagen), 4 (Onboarding fragt nach Startguthaben → Einzahlung in „Nur gespart"), 5 (Lohn zählt für die Woche, die abgeschlossen wird – nicht für die Auszahlungswoche), 9 (Vercel schon ab Phase 2; braucht vom Nutzer ein privates GitHub-Repo + Vercel-Login; Preview-URLs = Wegwerf-Daten), 7 (keine Topf-Automatik in v1), 8 („Finanzplaner" mit Mint-Ring-Icon) — **alle beantwortet**
 - [x] **Phase 0** – Setup, Tokens, Layout-Shell — abgeschlossen 2026-09-20 (Branch `phase-0-setup`, in `main`), Notizen unten
 - [x] **Phase 1** – Datenmodell, Kernlogik, Tests — abgeschlossen und abgenommen 2026-09-20 (Branch `phase-1-data-logic`, in `main`), Notizen unten
-- [ ] **Phase 2** – Einkommen & Ausgaben — vom Nutzer in zwei Teile geteilt:
+- [x] **Phase 2** – Einkommen & Ausgaben — vom Nutzer in zwei Teile geteilt, beide abgenommen 2026-09-20:
   - [x] **2a** – QuickAdd-Sheet mit Numpad, Ausgabenliste mit Swipe-to-delete + Undo, Bearbeiten-Sheet, Kategorienverwaltung, Tags mit Autocomplete, Vercel-Anbindung — fertig 2026-09-20 (Branch `phase-2a-expenses`), **abgenommen 2026-09-20 (am iPhone getestet), in `main`**, Notizen unten
-  - [x] **2b** – Daueraufträge (weekly/fortnightly/monthly) inkl. Materialisierung, „Woche abschließen" mit Warteschlange + „Woche wieder öffnen", Onboarding (Standard-Einkommen, Budget, Startguthaben, trackingSince), Dashboard v1 mit Empty-States und klarem nächsten Schritt — fertig 2026-09-20 (Branch `phase-2b-weekly-flow`), _wartet auf Abnahme_, Notizen unten
+  - [x] **2b** – Daueraufträge (weekly/fortnightly/monthly) inkl. Materialisierung, „Woche abschließen" mit Warteschlange + „Woche wieder öffnen", Onboarding (Standard-Einkommen, Budget, Startguthaben, trackingSince), Dashboard v1 mit Empty-States und klarem nächsten Schritt — fertig 2026-09-20 (Branch `phase-2b-weekly-flow`), **abgenommen 2026-09-20 (am iPhone getestet), in `main`**, Notizen unten
 - [ ] **Phase 3** – Budget & Spartöpfe
 - [ ] **Phase 4** – Analyse & Charts
 - [ ] **Phase 5** – Tasks, Insights, Was-wäre-wenn
