@@ -1,8 +1,8 @@
 import { useLiveQuery } from 'dexie-react-hooks'
-import { DASHBOARD_WEEKS, db, loadDashboard } from '@/db'
+import { db, loadDashboard } from '@/db'
 import { reservedThisWeek, resolveBudget } from '@/lib/budget'
 import { nextStep, projectWeek, weekProgress } from '@/lib/dashboard'
-import { addWeeksISO, formatWeekRange, weekStartOf } from '@/lib/dates'
+import { formatWeekRange, weekStartOf } from '@/lib/dates'
 import { expensesInWeek } from '@/lib/expenses'
 import { pendingWeeks, summarizeWeek } from '@/lib/savings'
 import { Page } from '@/shared/components/Page'
@@ -19,7 +19,7 @@ const RECENT_WEEKS = 6
 
 export function DashboardPage() {
   const today = useToday()
-  const data = useLiveQuery(() => loadDashboard(db, today), [today])
+  const data = useLiveQuery(() => loadDashboard(db), [])
   const currentWeek = weekStartOf(today)
 
   if (!data?.settings) {
@@ -55,10 +55,8 @@ export function DashboardPage() {
     reservedCents: reserved.totalCents,
   })
 
-  // Expenses are only loaded DASHBOARD_WEEKS back – older weeks would show incomplete spending.
-  const oldestLoaded = addWeeksISO(currentWeek, -DASHBOARD_WEEKS)
   const closedWeeks = data.weeks
-    .filter((week) => week.closedAt !== null && week.id >= oldestLoaded)
+    .filter((week) => week.closedAt !== null)
     .sort((a, b) => (a.id < b.id ? 1 : -1))
     .slice(0, RECENT_WEEKS)
     .map((week) => summarize(week.id))

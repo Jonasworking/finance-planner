@@ -1,4 +1,5 @@
 import { transferTxIds } from '@/lib/ids'
+import { isDerivedTx } from '@/lib/pots'
 import {
   validateDeposit,
   validateTransfer,
@@ -182,9 +183,7 @@ export function createPotsRepo(ctx: RepoContext) {
       inLedger(async () => {
         const tx = await db.potTransactions.get(id)
         if (!tx || !isActive(tx)) throw new DomainError('not-found')
-        if (tx.type === 'auto-weekly' || tx.type === 'expense-funding') {
-          throw new DomainError('derived-transaction')
-        }
+        if (isDerivedTx(tx)) throw new DomainError('derived-transaction')
 
         const legs = tx.transferId
           ? (await db.potTransactions.bulkGet(Object.values(transferTxIds(tx.transferId)))).filter(
@@ -200,6 +199,37 @@ export function createPotsRepo(ctx: RepoContext) {
         const now = clock.now()
         await db.potTransactions.bulkPut(
           legs.map((leg) => ({ ...leg, deletedAt: now, updatedAt: now })),
+        )
+      }),
+
+    /**
+     * Undo of `removeTransaction`: revives the booking (both legs of a transfer). The same rules
+     * apply as when it was first written – the pots must still be usable, and money that has
+     * been spent in the meantime cannot be taken out a second time.
+     */
+    restoreTransaction: (id: string): Promise<void> =>
+      inLedger(async () => {
+        const tx = await db.potTransactions.get(id)
+        if (!tx) throw new DomainError('not-found')
+        if (isDerivedTx(tx)) throw new DomainError('derived-transaction')
+
+        const legs = (
+          tx.transferId
+            ? await db.potTransactions.bulkGet(Object.values(transferTxIds(tx.transferId)))
+            : [tx]
+        ).filter((leg): leg is PotTransaction => leg !== undefined && !isActive(leg))
+
+        for (const leg of legs) {
+          const pot = await db.pots.get(leg.potId)
+          if (!pot || !isActive(pot)) throw new DomainError('unknown-pot')
+          if (pot.archived) throw new DomainError('archived')
+          if (leg.amountCents < 0 && (await balanceOf(ctx, leg.potId)) < -leg.amountCents) {
+            throw new DomainError('insufficient')
+          }
+        }
+        const now = clock.now()
+        await db.potTransactions.bulkPut(
+          legs.map((leg) => ({ ...leg, deletedAt: null, updatedAt: now })),
         )
       }),
   }

@@ -1,7 +1,10 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
+import { budgetUsage, resolveBudget } from '@/lib/budget'
 import { isMonday } from '@/lib/dates'
+import { expensesInWeek } from '@/lib/expenses'
 import { checkLedgerInvariants } from '@/lib/ledger'
-import { potBalances } from '@/lib/savings'
+import { potBalances, summarizeWeek } from '@/lib/savings'
+import { computeStreak } from '@/lib/streak'
 import { isActive, PRIMARY_POT_ID } from '@/lib/types'
 import { DomainError } from './errors'
 import { loadAppData } from './queries'
@@ -333,6 +336,45 @@ describe('pots', () => {
     await expectCode(repos.pots.removeTransaction(deposit.id), 'insufficient')
   })
 
+  it('restores a removed booking – both transfer legs – as the undo of a delete', async () => {
+    const deposit = await repos.pots.deposit(tripId, 10_000, '2026-09-02')
+    await repos.pots.removeTransaction(deposit.id)
+    expect(await balances()).toEqual({ [PRIMARY_POT_ID]: 50_000 })
+    await repos.pots.restoreTransaction(deposit.id)
+    expect(await balances()).toEqual({ [PRIMARY_POT_ID]: 50_000, [tripId]: 10_000 })
+
+    const transferId = await repos.pots.transfer({
+      fromPotId: PRIMARY_POT_ID,
+      toPotId: tripId,
+      amountCents: 30_000,
+      date: '2026-09-10',
+    })
+    await repos.pots.removeTransaction(`tr:${transferId}:out`)
+    await repos.pots.restoreTransaction(`tr:${transferId}:in`) // either leg brings back both
+    expect(await balances()).toEqual({ [PRIMARY_POT_ID]: 20_000, [tripId]: 40_000 })
+
+    await repos.pots.restoreTransaction(deposit.id) // already active → nothing to do
+    expect(await balances()).toEqual({ [PRIMARY_POT_ID]: 20_000, [tripId]: 40_000 })
+  })
+
+  it('refuses a restore that would overdraw a pot, hit an archived one or touch derived rows', async () => {
+    const withdrawal = await repos.pots.withdraw(PRIMARY_POT_ID, 40_000, '2026-09-03')
+    await repos.pots.removeTransaction(withdrawal.id)
+    await repos.pots.withdraw(PRIMARY_POT_ID, 45_000, '2026-09-04') // the money is gone meanwhile
+    await expectCode(repos.pots.restoreTransaction(withdrawal.id), 'insufficient')
+
+    const deposit = await repos.pots.deposit(tripId, 500, '2026-09-02')
+    await repos.pots.removeTransaction(deposit.id)
+    await repos.pots.archive(tripId)
+    await expectCode(repos.pots.restoreTransaction(deposit.id), 'archived')
+
+    await repos.weeks.close(WEEK, { incomeCents: 100 })
+    await repos.weeks.reopen(WEEK)
+    await expectCode(repos.pots.restoreTransaction(`auto:${WEEK}`), 'derived-transaction')
+    await expectCode(repos.pots.restoreTransaction('missing'), 'not-found')
+    expect(await balances()).toEqual({ [PRIMARY_POT_ID]: 5_000 })
+  })
+
   it('archives only empty pots and never the primary one', async () => {
     await repos.pots.deposit(tripId, 500, '2026-09-02')
     await expectCode(repos.pots.archive(tripId), 'pot-not-empty')
@@ -588,5 +630,77 @@ describe('recurring restore', () => {
     expect((await db.recurringExpenses.get(template.id))?.deletedAt).toBeNull()
     expect(await repos.recurring.materialize('2026-09-12')).toBe(1)
     await expectCode(repos.recurring.restore('missing'), 'not-found')
+  })
+})
+
+describe('phase 3 scenario: budget change, pots and a pot-funded expense', () => {
+  const TODAY = '2026-09-23' // Wednesday of the week after WEEK
+  const BEFORE = '2026-09-07'
+
+  /** Week numbers and streak exactly the way the screens derive them: from raw rows. */
+  async function books() {
+    const data = await loadAppData(db)
+    const summaries = [BEFORE, WEEK].map((weekStart) =>
+      summarizeWeek({
+        weekStart,
+        week: data.weeks.find((week) => week.id === weekStart),
+        expenses: data.expenses,
+        budget: resolveBudget(data.budgets, weekStart),
+      }),
+    )
+    return { data, summaries, streak: computeStreak(summaries, TODAY) }
+  }
+
+  it('leaves past weeks, the streak and the week’s savings untouched', async () => {
+    await repos.expenses.add({ date: '2026-09-08', amountCents: 38_000, categoryId: GROCERIES })
+    await repos.expenses.add({ date: '2026-09-16', amountCents: 39_500, categoryId: GROCERIES })
+    await repos.weeks.close(BEFORE, { incomeCents: 200_000 })
+    await repos.weeks.close(WEEK, { incomeCents: 200_000 })
+    expect((await books()).streak).toMatchObject({ current: 2, best: 2, stale: false })
+
+    // A tighter budget from today on: both closed weeks would be "over" under it …
+    await repos.budgets.set(TODAY, {
+      totalLimitCents: 30_000,
+      categoryLimits: { [GROCERIES]: 10_000 },
+    })
+    const afterBudget = await books()
+    // … but they keep the limit that applied back then, and so does the streak.
+    expect(afterBudget.summaries.map((week) => week.totalLimitCents)).toEqual([40_000, 40_000])
+    expect(afterBudget.streak).toMatchObject({ current: 2, best: 2 })
+    expect(resolveBudget(afterBudget.data.budgets, NEXT_WEEK)?.totalLimitCents).toBe(30_000)
+
+    // Save up in a pot and pay a big one-off from it – inside the already closed week.
+    const trip = await repos.pots.create({ name: 'Reise', targetCents: 300_000 })
+    await repos.pots.transfer({
+      fromPotId: PRIMARY_POT_ID,
+      toPotId: trip.id,
+      amountCents: 100_000,
+      date: TODAY,
+    })
+    await repos.expenses.add({
+      date: '2026-09-18',
+      amountCents: 80_000,
+      categoryId: 'cat:travel',
+      fundedByPotId: trip.id,
+    })
+
+    const afterTrip = await books()
+    expect(afterTrip.summaries[1]).toMatchObject({
+      spentCents: 39_500,
+      fundedCents: 80_000,
+      savedCents: 160_500,
+      underBudget: true,
+    })
+    expect(afterTrip.streak).toMatchObject({ current: 2, best: 2 })
+    expect((await autoTx(WEEK))?.amountCents).toBe(160_500)
+    const weekUsage = budgetUsage(
+      expensesInWeek(afterTrip.data.expenses, WEEK),
+      resolveBudget(afterTrip.data.budgets, WEEK)!,
+    )
+    expect(weekUsage.total.spentCents).toBe(39_500)
+    expect(weekUsage.byCategory['cat:travel']).toBeUndefined()
+
+    // Pot balance = plain sum of its bookings: 162,000 + 160,500 − 100,000 and 100,000 − 80,000.
+    expect(await balances()).toEqual({ [PRIMARY_POT_ID]: 222_500, [trip.id]: 20_000 })
   })
 })

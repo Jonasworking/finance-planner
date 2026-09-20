@@ -1,6 +1,6 @@
 import Dexie from 'dexie'
-import { addWeeksISO, weekEndOf, weekStartOf } from '@/lib/dates'
-import { potBalance } from '@/lib/savings'
+import { weekEndOf, weekStartOf } from '@/lib/dates'
+import { potBalance, potBalances } from '@/lib/savings'
 import { collectTags } from '@/lib/tags'
 import {
   isActive,
@@ -9,6 +9,7 @@ import {
   type AppData,
   type Category,
   type ISODate,
+  type Pot,
 } from '@/lib/types'
 import type { FinanceDB } from './schema'
 
@@ -61,14 +62,26 @@ export async function loadExpensesOfWeek(db: FinanceDB, weekStart: ISODate) {
   return { expenses: expenses.filter(isActive), categories: categories.filter(isActive) }
 }
 
-/** What the expense form needs: selectable categories (in order) and the tag vocabulary. */
+const byPotOrder = (a: Pot, b: Pot) => a.sortOrder - b.sortOrder || a.createdAt - b.createdAt
+
+/**
+ * What the expense form needs: selectable categories (in order), the tag vocabulary and the
+ * pots an expense can be paid from ("aus Topf bezahlt") with their balances.
+ */
 export async function loadExpenseFormData(db: FinanceDB) {
-  const [categories, expenses] = await Promise.all([db.categories.toArray(), db.expenses.toArray()])
+  const [categories, expenses, pots, transactions] = await Promise.all([
+    db.categories.toArray(),
+    db.expenses.toArray(),
+    db.pots.toArray(),
+    db.potTransactions.toArray(),
+  ])
   return {
     categories: categories
       .filter((category) => isActive(category) && !category.archived)
       .sort(bySortOrder),
     tagVocabulary: collectTags(expenses),
+    pots: pots.filter((pot) => isActive(pot) && !pot.archived).sort(byPotOrder),
+    potBalances: potBalances(transactions),
   }
 }
 
@@ -81,37 +94,64 @@ export async function loadCategories(db: FinanceDB) {
   }
 }
 
-/** How many weeks of history the home screen looks back (recent weeks list). */
-export const DASHBOARD_WEEKS = 8
-
-/** Everything the home screen needs, in one querier. */
-export async function loadDashboard(db: FinanceDB, today: ISODate) {
-  const currentWeek = weekStartOf(today)
-  const from = addWeeksISO(currentWeek, -DASHBOARD_WEEKS)
-  const [settings, weeks, budgets, expenses, templates, categories, primaryTx, anyExpense] =
-    await Promise.all([
-      db.settings.get(SETTINGS_ID),
-      db.weeks.toArray(),
-      db.budgets.toArray(),
-      db.expenses.where('date').between(from, weekEndOf(currentWeek), true, true).toArray(),
-      db.recurringExpenses.toArray(),
-      db.categories.toArray(),
-      db.potTransactions
-        .where('[potId+date]')
-        .between([PRIMARY_POT_ID, Dexie.minKey], [PRIMARY_POT_ID, Dexie.maxKey])
-        .toArray(),
-      db.expenses.filter(isActive).limit(1).count(),
-    ])
+/**
+ * Everything the home screen needs, in one querier. Expenses are loaded completely: the streak
+ * runs over every closed week, and ~1,000 rows a year are cheap to read.
+ */
+export async function loadDashboard(db: FinanceDB) {
+  const [settings, weeks, budgets, expenses, templates, categories, primaryTx] = await Promise.all([
+    db.settings.get(SETTINGS_ID),
+    db.weeks.toArray(),
+    db.budgets.toArray(),
+    db.expenses.toArray(),
+    db.recurringExpenses.toArray(),
+    db.categories.toArray(),
+    db.potTransactions
+      .where('[potId+date]')
+      .between([PRIMARY_POT_ID, Dexie.minKey], [PRIMARY_POT_ID, Dexie.maxKey])
+      .toArray(),
+  ])
+  const activeExpenses = expenses.filter(isActive)
   return {
     settings: settings ?? null,
     weeks: weeks.filter(isActive),
     budgets,
-    expenses: expenses.filter(isActive),
+    expenses: activeExpenses,
     templates: templates.filter(isActive),
     categories: categories.filter(isActive),
     primaryBalanceCents: potBalance(primaryTx, PRIMARY_POT_ID),
-    hasAnyExpense: anyExpense > 0,
+    hasAnyExpense: activeExpenses.length > 0,
   }
+}
+
+/** The budget screen and the budget warnings: the running week against the budget rows. */
+export async function loadBudget(db: FinanceDB, today: ISODate) {
+  const weekStart = weekStartOf(today)
+  const [settings, budgets, categories, expenses, templates, week] = await Promise.all([
+    db.settings.get(SETTINGS_ID),
+    db.budgets.toArray(),
+    db.categories.toArray(),
+    db.expenses.where('date').between(weekStart, weekEndOf(weekStart), true, true).toArray(),
+    db.recurringExpenses.toArray(),
+    db.weeks.get(weekStart),
+  ])
+  return {
+    weekStart,
+    onboardingDone: settings?.onboardingDone === true,
+    budgets,
+    categories: categories
+      .filter((category) => isActive(category) && !category.archived)
+      .sort(bySortOrder),
+    expenses: expenses.filter(isActive),
+    templates: templates.filter(isActive),
+    weekClosed: week != null && isActive(week) && week.closedAt !== null,
+  }
+}
+
+/** All pots with every booking – balances, forecasts and histories derive from these. */
+export async function loadPots(db: FinanceDB) {
+  const [pots, transactions] = await Promise.all([db.pots.toArray(), db.potTransactions.toArray()])
+  return { pots: pots.filter(isActive), transactions: transactions.filter(isActive) }
 }
 
 /** Data for "Woche abschließen" / "Woche bearbeiten" of one week. */
