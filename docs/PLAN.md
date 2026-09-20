@@ -4,10 +4,10 @@
 
 - [x] Plan freigegeben (2026-09-20)
 - [x] `CLAUDE.md` + `docs/PLAN.md` angelegt
-- [ ] Offene Fragen §6 beantwortet (unbeantwortet = Annahme gilt) — beantwortet: 1 (Radix), 3 (selbstständig committen, `main`, Push nur auf Ansage), 10 (Inter self-hosted); offen: 2, 4–9
-- [x] **Phase 0** – Setup, Tokens, Layout-Shell — abgeschlossen 2026-09-20 (Branch `phase-0-setup`), Notizen unten
-- [ ] **Phase 1** – Datenmodell, Kernlogik, Tests — _wartet auf Freigabe_
-- [ ] **Phase 2** – Einkommen & Ausgaben
+- [ ] Offene Fragen §6 beantwortet (unbeantwortet = Annahme gilt) — beantwortet: 1 (Radix), 3 (selbstständig committen, `main`, Push nur auf Ansage), 10 (Inter self-hosted), 2 (Minus-Woche negativ buchen), 6 (alle Kategorien zählen; 10 Start-Kategorien wie vorgeschlagen); offen: 4, 5, 7, 8, 9
+- [x] **Phase 0** – Setup, Tokens, Layout-Shell — abgeschlossen 2026-09-20 (Branch `phase-0-setup`, in `main`), Notizen unten
+- [x] **Phase 1** – Datenmodell, Kernlogik, Tests — abgeschlossen 2026-09-20 (Branch `phase-1-data-logic`), Notizen unten
+- [ ] **Phase 2** – Einkommen & Ausgaben — _wartet auf Freigabe_
 - [ ] **Phase 3** – Budget & Spartöpfe
 - [ ] **Phase 4** – Analyse & Charts
 - [ ] **Phase 5** – Tasks, Insights, Was-wäre-wenn
@@ -25,6 +25,20 @@
 - **Struktur:** shadcn-Helfer liegen in `src/shared/lib` (nicht `src/lib` – das bleibt reine Fachlogik). `PageHeader` wurde zu `shared/components/Page` (Features dürfen nicht aus `app/` importieren). Button hat zusätzliche Größen `touch`/`icon-touch` (44 px).
 - **Pakete pro Phase:** In Phase 0 nur das Nötige installiert; Dexie/zod/date-fns folgen in Phase 1, Recharts in Phase 4, vite-plugin-pwa in Phase 6.
 - **Merker für Phase 6:** Bundle aktuell 196 KB gzip (Budget 250 KB; Dexie + zod kommen noch) → ggf. `LazyMotion` und Lazy-Routes. PWA-Precache auf `inter-latin*`-Dateien beschränken (Fontsource liefert alle Schriftsysteme; zur Laufzeit lädt der Browser dank `unicode-range` ohnehin nur Latin).
+
+## Phase 1 – Ergebnis & Abweichungen vom Plan
+
+**DoD geprüft:** typecheck · lint · build grün · **374 Testläufe** (187 Tests × Zeitzonen `Australia/Sydney` + `Europe/Berlin`; ein Harness-Test beweist, dass die Zone wirklich aktiv ist) · Coverage `src/lib`: 99,8 % Zeilen, 100 % Funktionen, 94 % Branches (Schwellen 90/90/80 im Vitest-Config) · alle Pflicht-Testfälle aus §3 vorhanden · Repo-Tests gegen fake-indexeddb: `closeWeek` idempotent, Nadelöhr synct alte + neue Woche, Transfer atomar, Funding-Kaskade, Recurring idempotent (auch bei parallelem Doppelaufruf), Soft-Delete/Restore, Import-Rollback, Wipe → Seeds zurück · `checkLedgerInvariants` läuft nach **jedem** Repo-Test und ist auf den Demo-Daten grün · Lint beweist: kein React/Dexie in `lib`. Gegenprobe per Mutation (Sync der alten Woche entfernt) → vom gezielten Test UND vom Ledger-Check erkannt.
+
+- **Typen liegen in `src/lib/types.ts`** statt `src/db/types.ts`: `lib` darf nicht aus `db` importieren, braucht die Typen aber. Dort auch `SCHEMA_VERSION` und `PRIMARY_POT_ID`.
+- **Datums-Anker Mittag:** `parseISODate` erzeugt lokale Daten um 12:00 statt Mitternacht – bleibt auch in Zeitzonen korrekt, deren DST-Wechsel um Mitternacht liegt. Ungültige Tage (`2026-02-30`) werden abgelehnt statt still zu überlaufen.
+- **Insights sind strukturiert** (`kind` + Daten, `id` für „wegwischen", `priority`), den deutschen Text rendert die UI in Phase 5. Kategorie-Schnitt zählt nur Wochen, die schon erfasst sind (neue Nutzer werden nicht unterschätzt).
+- **„Reserviert" folgt dem Wasserzeichen** der Vorlage statt „heute": eine heute fällige Miete zählt auch, wenn der Materialisierer noch nicht lief; bewusst gelöschte Instanzen kommen nicht zurück.
+- **Sparprognose-Tempo** (`weeklyPace`): Netto-Zuflüsse inkl. Umbuchungen in beide Richtungen, aber ohne Entnahmen und topf-finanzierte Ausgaben (Konsum ist kein Spartempo); junge Töpfe werden über ihr eigenes Alter gemittelt.
+- **Zusätzliche Schutzregeln:** topf-finanzierte Ausgabe/Entnahme/Umbuchung überzieht nie einen Topf; das Löschen einer Einzahlung darf einen Topf nicht ins Minus bringen; abgeleitete Buchungen (`auto:`, `fund:`) sind nicht direkt löschbar; Einkommen einer abgeschlossenen Woche lässt sich nicht auf „leer" setzen. `auto:`-Buchung wird nur geschrieben, wenn sich etwas ändert (Live-Queries bleiben ruhig); auch eine 0-A$-Woche bekommt eine Buchung (Invariante „genau eine je abgeschlossener Woche").
+- **Backup:** enthält alle Zeilen inkl. Tombstones (echter 1:1-Roundtrip) und verlangt genau eine Settings-Zeile. Import prüft vor der Transaktion zusätzlich den Ledger; Sicherheitskopie liegt in separater DB `<name>-safety`; `wipeAll` löscht auch diese.
+- **Werkzeug-Falle:** `\u…`-Escapes wurden beim Schreiben still zu echten (teils unsichtbaren) Zeichen. BOM, NBSP und U+FFFF stehen jetzt als `String.fromCharCode(…)` bzw. `Dexie.minKey/maxKey` im Code; Regel + Prüfbefehl in `CLAUDE.md`.
+- **Noch nicht verdrahtet:** Die App nutzt `db`/`repos` noch nicht (Bundle unverändert 196 KB gzip) – das passiert in Phase 2; dort auch `dexie-react-hooks`, `useToday()` und ein Dev-Button für `seedDemoData`.
 
 ---
 

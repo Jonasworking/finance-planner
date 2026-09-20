@@ -15,13 +15,18 @@ Pakete werden pro Phase installiert (Dexie/zod/date-fns → Phase 1, Recharts �
 
 ## Befehle
 
-`npm run dev` · `npm run build` · `npm run typecheck` · `npm run lint` · `npm run test` (einzeln: `npx vitest run src/lib/money.test.ts`) · `npm run format`
+`npm run dev` · `npm run build` · `npm run typecheck` · `npm run lint` · `npm run test` (einzeln: `npx vitest run src/lib/money.test.ts`) · `npm run test:coverage` (Schwellen für `src/lib`: 90 % Zeilen/Funktionen, 80 % Branches) · `npm run format`
+**Jeder Test läuft zweimal** – als Vitest-Projekt `sydney` und `berlin` (`TZ` gesetzt): Kalenderlogik darf weder vom UTC-Offset noch von DST abhängen. Nur eine Zone: `npx vitest run --project sydney`.
 Neue shadcn-Komponente: `npx shadcn@latest add <name>` → danach **immer** `npm run ui:fix-imports` (sonst schlägt der Lint fehl, siehe `cn`-Regel).
 
 ## Architektur – wo liegt was
 
-- `src/lib` – **gesamte Fachlogik als reine Funktionen**. Kein React, kein Dexie, kein `Date.now()`/`new Date()` ohne Parameter (`today`/`now` reinreichen). Jede Funktion hat Tests (`*.test.ts` daneben).
-- `src/db` – Dexie-Schema, Typen, Repos. **Einziger Ort mit Dexie-Schreibzugriff**; Mehr-Tabellen-Operationen in einer `rw`-Transaktion, darin nur Dexie-`await`s.
+- `src/lib` – **gesamte Fachlogik als reine Funktionen**. Kein React, kein Dexie, kein `Date.now()`/`new Date()` ohne Parameter (`today`/`now` reinreichen). Jede Funktion hat Tests (`*.test.ts` daneben). **Die Domänen-Typen liegen hier** (`lib/types.ts`, inkl. `SCHEMA_VERSION`, `PRIMARY_POT_ID`), weil `lib` nicht aus `db` importieren darf.
+  Module: `money` · `dates` · `ids` · `expenses` · `budget` · `recurrence` · `savings` (`summarizeWeek`, Topfstände, `pendingWeeks`) · `streak` · `forecast` · `whatif` · `analytics` · `insights` (strukturiert: `kind` + Daten, Text rendert die UI) · `ledger` (`checkLedgerInvariants`) · `csv` · `backup` (zod-Schema, per Typ-Assertion an `AppData` gekoppelt).
+- `src/db` – Dexie-Schema (`schema.ts`), Seeds (`seed.ts`), Repos (`repos/`), `queries.ts` (`loadAppData`), `demo.ts` (12 Demo-Wochen, nur Dev/Tests). **Einziger Ort mit Dexie-Schreibzugriff**; Mehr-Tabellen-Operationen in einer `rw`-Transaktion über `ledgerTables`, darin nur Dexie-`await`s.
+  Schreib-API: `repos.expenses.add/update/remove/restore` · `repos.weeks.setIncome/close/reopen` · `repos.pots.create/update/archive/deposit/withdraw/transfer/removeTransaction` · `repos.recurring.create/update/remove/materialize(today)` · `repos.budgets.set(today, …)` · `repos.categories` · `repos.tasks` · `repos.settings` · `repos.backup.export/import/restoreSafetyCopy/wipeAll`. Regelverstöße werfen `DomainError` mit `code` (UI übersetzt den Code).
+  **Nadelöhr:** jede Ausgaben-Mutation endet in `writeExpense` (`db/repos/context.ts`) → Funding-Spiegel `fund:<id>` + `syncWeekDerived` für alte UND neue Woche. Nie an `db.expenses` vorbei schreiben.
+  Tests: `createRepos(new FinanceDB('name'), fakeClock)` gegen fake-indexeddb; `afterEach` prüft `checkLedgerInvariants(await loadAppData(db))` – bei neuen Repo-Tests beibehalten.
 - `src/features/<name>` – UI + Hooks. Ein `useLiveQuery`-Querier pro Screen; `undefined` = lädt, `null` = nicht gefunden. Cross-Feature-Importe nur über `index.ts`.
 - `src/shared` – `ui/` (shadcn, generiert), `components/`, `hooks/`, `stores/`, `lib/utils.ts`. Importiert nie aus `features`. Darf `src/lib` importieren.
 - `src/app` – Router, Provider, Shell (`AppShell`, `BottomTabs`, `Sidebar`, `MorePage`), Dev-Styleguide `/dev/tokens` (nur Dev-Build). Features importieren nie aus `app`.
@@ -47,6 +52,8 @@ Neue shadcn-Komponente: `npx shadcn@latest add <name>` → danach **immer** `npm
 - Komponenten `PascalCase.tsx`, eine pro Datei, Named Exports; Hooks `useXyz.ts`; lib/Repos `camelCase.ts`; Tests `*.test.ts(x)` neben der Quelle.
 - Suffixe: `…Page` (Route), `…Sheet` (Bottom-Sheet/Dialog), `…Card`, `…List`/`…Row`. Props-Typ `XyzProps`. Kein `any`, kein Default-Export (außer lazy Routen).
 - UI-Texte Deutsch, Code/Kommentare/Commits Englisch.
+- **Keine unsichtbaren Sonderzeichen als Literal** (BOM, geschütztes Leerzeichen, U+FFFF …) und keine `\u…`-Escapes über Schreib-Tools – die werden beim Schreiben still in das echte Zeichen verwandelt. Stattdessen `String.fromCharCode(0xfeff)` bzw. `Dexie.minKey/maxKey`. Prüfen: `LC_ALL=C grep -rln $'\xEF\xBB\xBF\|\xC2\xA0\|\xEF\xBF\xBF' src`.
+- Test-Fixtures: `src/test/fixtures.ts` (`makeExpense`, `makeWeek`, `makeTx`, … mit festem `NOW`).
 - Commits: Conventional Commits mit Feature-Scope – `feat(expenses): quick-add sheet`, `fix(lib): clamp monthly recurrence`, `test(db): closeWeek idempotency`, `chore: …`. Klein & thematisch; Logik und Test im selben Commit; vorher typecheck + lint + test grün. Branch pro Phase `phase-N-kurzname`; Push nur nach Ansage.
 
 ## Design
