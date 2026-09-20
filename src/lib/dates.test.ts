@@ -4,6 +4,8 @@ import {
   addMonthsClamped,
   addWeeksISO,
   daysBetween,
+  formatDayLabel,
+  formatWeekRange,
   isISODate,
   isMonday,
   listWeeks,
@@ -142,5 +144,21 @@ describe('minISO / maxISO', () => {
   it('compares chronologically', () => {
     expect(minISO('2026-09-21', '2026-10-01')).toBe('2026-09-21')
     expect(maxISO('2026-09-21', '2026-10-01')).toBe('2026-10-01')
+  })
+})
+
+describe('German labels', () => {
+  it('labels days relative to today', () => {
+    expect(formatDayLabel('2026-09-23', '2026-09-23')).toBe('Heute')
+    expect(formatDayLabel('2026-09-22', '2026-09-23')).toBe('Gestern')
+    expect(formatDayLabel('2026-09-21', '2026-09-23')).toBe('Mo., 21. Sep.')
+    expect(formatDayLabel('2025-12-31', '2026-01-02')).toBe('Mi., 31. Dez. 2025')
+    expect(formatDayLabel('2026-01-01', '2026-01-02')).toBe('Gestern')
+  })
+
+  it('formats week ranges within a month, across months and across years', () => {
+    expect(formatWeekRange('2026-09-21')).toBe('21.–27. Sep. 2026')
+    expect(formatWeekRange('2026-09-28')).toBe('28. Sep. – 4. Okt. 2026')
+    expect(formatWeekRange('2026-12-28')).toBe('28. Dez. 2026 – 3. Jan. 2027')
   })
 })

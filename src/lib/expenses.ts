@@ -31,3 +31,28 @@ export function groupByWeek(expenses: readonly Expense[]): Map<ISODate, Expense[
   }
   return groups
 }
+
+export interface DayGroup {
+  date: ISODate
+  expenses: Expense[]
+  /** Sum of what counts as spending (pot-funded expenses are listed but not added). */
+  totalCents: Cents
+}
+
+/** Active expenses grouped by calendar day – newest day first, newest entry first within a day. */
+export function groupByDay(expenses: readonly Expense[]): DayGroup[] {
+  const groups = new Map<ISODate, Expense[]>()
+  for (const expense of expenses) {
+    if (!isActive(expense)) continue
+    const bucket = groups.get(expense.date)
+    if (bucket) bucket.push(expense)
+    else groups.set(expense.date, [expense])
+  }
+  return [...groups.entries()]
+    .sort((a, b) => (a[0] < b[0] ? 1 : -1))
+    .map(([date, items]) => ({
+      date,
+      expenses: items.sort((a, b) => b.createdAt - a.createdAt),
+      totalCents: sumAmounts(items.filter(isBudgetRelevant)),
+    }))
+}

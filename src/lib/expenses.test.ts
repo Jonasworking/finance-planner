@@ -1,6 +1,13 @@
 import { describe, expect, it } from 'vitest'
 import { makeExpense, NOW } from '@/test/fixtures'
-import { expensesInWeek, groupByWeek, isBudgetRelevant, isPotFunded, sumAmounts } from './expenses'
+import {
+  expensesInWeek,
+  groupByDay,
+  groupByWeek,
+  isBudgetRelevant,
+  isPotFunded,
+  sumAmounts,
+} from './expenses'
 import { autoWeeklyTxId, categoryId, fundingTxId, recurringInstanceId, transferTxIds } from './ids'
 
 describe('expense helpers', () => {
@@ -37,5 +44,21 @@ describe('deterministic ids', () => {
     expect(transferTxIds('t1')).toEqual({ out: 'tr:t1:out', in: 'tr:t1:in' })
     expect(recurringInstanceId('rent', '2026-09-25')).toBe('rec:rent:2026-09-25')
     expect(categoryId('groceries')).toBe('cat:groceries')
+  })
+})
+
+describe('groupByDay', () => {
+  it('lists newest day and newest entry first, totals without pot-funded spending', () => {
+    const early = makeExpense('2026-09-22', 1_000, { createdAt: 10 })
+    const late = makeExpense('2026-09-22', 2_000, { createdAt: 20 })
+    const funded = makeExpense('2026-09-22', 50_000, { createdAt: 15, fundedByPotId: 'pot:trip' })
+    const monday = makeExpense('2026-09-21', 700)
+    const deleted = makeExpense('2026-09-23', 9_000, { deletedAt: NOW })
+
+    expect(groupByDay([monday, early, deleted, late, funded])).toEqual([
+      { date: '2026-09-22', expenses: [late, funded, early], totalCents: 3_000 },
+      { date: '2026-09-21', expenses: [monday], totalCents: 700 },
+    ])
+    expect(groupByDay([])).toEqual([])
   })
 })

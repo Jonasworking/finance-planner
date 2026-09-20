@@ -1,4 +1,5 @@
 import { addDays, addMonths, differenceInCalendarDays, format, getDay, startOfWeek } from 'date-fns'
+import { de } from 'date-fns/locale/de'
 import type { ISODate } from './types'
 
 /*
@@ -96,3 +97,24 @@ export function monthOfWeek(weekStart: ISODate): string {
 /** ISO strings sort chronologically, so plain comparison is enough. */
 export const minISO = (a: ISODate, b: ISODate): ISODate => (a <= b ? a : b)
 export const maxISO = (a: ISODate, b: ISODate): ISODate => (a >= b ? a : b)
+
+/** "Heute", "Gestern", otherwise "Mo., 21. Sep." (with the year when it is not today's year). */
+export function formatDayLabel(iso: ISODate, today: ISODate): string {
+  if (iso === today) return 'Heute'
+  if (iso === addDaysISO(today, -1)) return 'Gestern'
+  const pattern = iso.slice(0, 4) === today.slice(0, 4) ? 'EEE, d. MMM' : 'EEE, d. MMM yyyy'
+  return format(parseISODate(iso), pattern, { locale: de })
+}
+
+/** "21.–27. Sep. 2026", "28. Sep. – 4. Okt. 2026" or "28. Dez. 2026 – 3. Jan. 2027". */
+export function formatWeekRange(weekStart: ISODate): string {
+  const start = parseISODate(weekStart)
+  const end = parseISODate(weekEndOf(weekStart))
+  const last = format(end, 'd. MMM yyyy', { locale: de })
+  if (start.getFullYear() !== end.getFullYear()) {
+    return `${format(start, 'd. MMM yyyy', { locale: de })} – ${last}`
+  }
+  if (start.getMonth() !== end.getMonth())
+    return `${format(start, 'd. MMM', { locale: de })} – ${last}`
+  return `${format(start, 'd.', { locale: de })}–${last}`
+}
