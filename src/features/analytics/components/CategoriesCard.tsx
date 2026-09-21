@@ -2,7 +2,7 @@ import { ArrowLeft, ChevronRight } from 'lucide-react'
 import { lazy, Suspense, useMemo, useState } from 'react'
 import { categoryDetail, foldSlices, type CategorySlice, type Granularity } from '@/lib/analytics'
 import { formatDayLabel } from '@/lib/dates'
-import type { Cents, MoneyDisplay } from '@/lib/money'
+import { formatPercent, type Cents, type MoneyDisplay } from '@/lib/money'
 import type { Category, Expense, ISODate } from '@/lib/types'
 import { CategoryIcon } from '@/shared/components/CategoryIcon'
 import { GlassCard } from '@/shared/components/GlassCard'
@@ -21,7 +21,6 @@ const CategoryTrendChart = lazy(() =>
   import('../charts').then((module) => ({ default: module.CategoryTrendChart })),
 )
 
-const percent = new Intl.NumberFormat('de-DE', { style: 'percent', maximumFractionDigits: 0 })
 const TITLE = 'Wofür das Geld wegging'
 
 interface SliceRowProps {
@@ -52,7 +51,7 @@ function SliceRow({ row, display, expanded, onSelect }: SliceRowProps) {
           className="font-semibold"
         />
         <span className="block text-label text-fg-muted tabular-nums">
-          {percent.format(row.share)}
+          {formatPercent(row.share)}
         </span>
       </span>
       <ChevronRight
@@ -139,7 +138,7 @@ export function CategoriesCard({
         subtitle={
           <>
             <Money cents={detail.totalCents} decimals={false} display={display} /> im Zeitraum ·{' '}
-            {percent.format(selected.share)} der Ausgaben · Ø{' '}
+            {formatPercent(selected.share)} der Ausgaben · Ø{' '}
             <Money cents={detail.avgPerWeekCents} decimals={false} display={display} /> pro Woche
           </>
         }

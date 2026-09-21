@@ -6,6 +6,7 @@ import {
   formatDisplayUnits,
   formatEUR,
   formatMoney,
+  formatPercent,
   formatRate,
   isValidRate,
   moneyDisplay,
@@ -136,5 +137,15 @@ describe('exchange rate input', () => {
     expect(isValidRate(Number.POSITIVE_INFINITY)).toBe(false)
     expect(formatRate(0.6)).toBe('0,60')
     expect(formatRate(0.6075)).toBe('0,6075')
+  })
+})
+
+describe('formatPercent', () => {
+  it('rounds to whole percent with a real minus sign', () => {
+    expect(formatPercent(0.825)).toBe(`83${NBSP}%`)
+    expect(formatPercent(-0.06)).toBe(`${MINUS}6${NBSP}%`)
+    expect(formatPercent(0.06, { signed: true })).toBe(`+6${NBSP}%`)
+    expect(formatPercent(-0.6, { signed: true })).toBe(`${MINUS}60${NBSP}%`)
+    expect(formatPercent(-0.001, { signed: true })).toBe(`0${NBSP}%`)
   })
 })

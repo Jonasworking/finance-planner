@@ -1,11 +1,9 @@
 import { useReducedMotion } from 'motion/react'
 import { Cell, Pie, PieChart, ResponsiveContainer, Tooltip } from 'recharts'
-import { formatMoney, type MoneyDisplay } from '@/lib/money'
+import { formatMoney, formatPercent, type MoneyDisplay } from '@/lib/money'
 import type { DonutRow } from '../chartData'
 import { ChartTooltip } from './ChartTooltip'
 import { ANIMATION_MS } from './theme'
-
-const percent = new Intl.NumberFormat('de-DE', { style: 'percent', maximumFractionDigits: 0 })
 
 interface DonutTooltipProps {
   active?: boolean
@@ -21,7 +19,7 @@ function DonutTooltip({ active, payload, display }: DonutTooltipProps) {
       title={row.name}
       rows={[
         {
-          label: percent.format(row.share),
+          label: formatPercent(row.share),
           value: formatMoney(row.amountCents, display),
           color: row.fill,
         },

@@ -1,11 +1,9 @@
 import type { RangeTotals } from '@/lib/analytics'
-import type { Cents, MoneyDisplay } from '@/lib/money'
+import { formatPercent, type Cents, type MoneyDisplay } from '@/lib/money'
 import { GlassCard } from '@/shared/components/GlassCard'
 import { Money } from '@/shared/components/Money'
 import { cn } from '@/shared/lib/utils'
 import { weeksLabel } from '../labels'
-
-const percent = new Intl.NumberFormat('de-DE', { style: 'percent', maximumFractionDigits: 0 })
 
 interface TileProps {
   label: string
@@ -50,7 +48,7 @@ export function KpiRow({ totals, display }: KpiRowProps) {
         </Tile>
         <Tile label="Sparquote">
           <span className="tabular-nums">
-            {totals.incomeCents > 0 ? percent.format(totals.savingsRate) : '–'}
+            {totals.incomeCents > 0 ? formatPercent(totals.savingsRate) : '–'}
           </span>
         </Tile>
       </div>

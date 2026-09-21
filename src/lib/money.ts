@@ -148,6 +148,16 @@ export function formatRate(rate: number): string {
   return rateFormat.format(rate)
 }
 
+const percentFormat = new Intl.NumberFormat('de-DE', { style: 'percent', maximumFractionDigits: 0 })
+
+/** A ratio as whole percent: `82 %`; `signed` gives changes as `+6 %` / `−6 %` (real minus). */
+export function formatPercent(value: number, options: { signed?: boolean } = {}): string {
+  const digits = percentFormat.format(Math.abs(value))
+  const isZero = Math.round(Math.abs(value) * 100) === 0
+  const sign = isZero ? '' : value < 0 ? MINUS : options.signed ? '+' : ''
+  return `${sign}${digits}`
+}
+
 /** Safe part/total ratio; 0 when there is no positive total. */
 export function ratio(part: number, total: number): number {
   return total > 0 ? part / total : 0

@@ -1,12 +1,6 @@
 import { ArrowDown, ArrowUp, Minus } from 'lucide-react'
-import { formatMoney, type Cents, type MoneyDisplay } from '@/lib/money'
+import { formatMoney, formatPercent, type Cents, type MoneyDisplay } from '@/lib/money'
 import { cn } from '@/shared/lib/utils'
-
-const percent = new Intl.NumberFormat('de-DE', {
-  style: 'percent',
-  maximumFractionDigits: 0,
-  signDisplay: 'exceptZero',
-})
 
 export interface DeltaChipProps {
   deltaCents: Cents
@@ -40,7 +34,9 @@ export function DeltaChip({ deltaCents, upIsGood, ratio, display }: DeltaChipPro
         <>
           <span className="sr-only">{direction === 'up' ? 'gestiegen um' : 'gesunken um'}</span>
           {formatMoney(Math.abs(deltaCents), display, { decimals: false })}
-          {ratio != null ? <span className="opacity-80">({percent.format(ratio)})</span> : null}
+          {ratio != null ? (
+            <span className="opacity-80">({formatPercent(ratio, { signed: true })})</span>
+          ) : null}
         </>
       )}
     </span>
