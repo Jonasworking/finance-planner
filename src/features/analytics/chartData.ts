@@ -111,3 +111,25 @@ export function toTrendRows(
     amountCents: point.amountCents,
   }))
 }
+
+export interface CumulativeRow {
+  key: ISODate
+  tick: string
+  title: string
+  total: number
+  totalCents: Cents
+}
+
+/** The running total is always per closed WEEK, also when the screen groups by month. */
+export function toCumulativeRows(
+  cumulative: readonly { weekStart: ISODate; totalCents: Cents }[],
+  display: MoneyDisplay,
+): CumulativeRow[] {
+  return cumulative.map((point) => ({
+    key: point.weekStart,
+    tick: periodTick(point.weekStart, 'week'),
+    title: periodLabel(point.weekStart, 'week'),
+    total: displayUnits(point.totalCents, display),
+    totalCents: point.totalCents,
+  }))
+}

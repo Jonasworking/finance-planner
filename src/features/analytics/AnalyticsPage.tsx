@@ -10,6 +10,7 @@ import { useAnalyticsStore } from './analyticsStore'
 import { BestWorstCard } from './components/BestWorstCard'
 import { CategoriesCard } from './components/CategoriesCard'
 import { ComparisonCard } from './components/ComparisonCard'
+import { CumulativeCard } from './components/CumulativeCard'
 import { FilterBar } from './components/FilterBar'
 import { FlowCard } from './components/FlowCard'
 import { KpiRow } from './components/KpiRow'
@@ -90,6 +91,7 @@ export function AnalyticsPage() {
             {view.bestWorst ? <BestWorstCard bestWorst={view.bestWorst} display={display} /> : null}
           </div>
         </div>
+        <CumulativeCard cumulative={view.cumulative} display={display} />
       </div>
     </Page>
   )

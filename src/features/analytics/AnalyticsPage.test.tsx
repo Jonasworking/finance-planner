@@ -7,7 +7,13 @@ import { buildAnalytics } from '@/lib/analytics'
 import { formatAUD, formatEUR } from '@/lib/money'
 import { useUiStore } from '@/shared/stores/uiStore'
 import { useAnalyticsStore } from './analyticsStore'
-import { toFlowRows, type DonutRow, type FlowRow, type TrendRow } from './chartData'
+import {
+  toFlowRows,
+  type CumulativeRow,
+  type DonutRow,
+  type FlowRow,
+  type TrendRow,
+} from './chartData'
 import { AnalyticsPage } from './AnalyticsPage'
 
 const TODAY = '2026-09-23' // Wednesday of the week starting 2026-09-21
@@ -30,6 +36,13 @@ vi.mock('./charts', () => ({
     <ul aria-label="Trend-Chart" data-fill={fill}>
       {rows.map((row) => (
         <li key={row.key}>{`${row.key}|${row.amount}`}</li>
+      ))}
+    </ul>
+  ),
+  CumulativeChart: ({ rows }: { rows: CumulativeRow[] }) => (
+    <ul aria-label="Sparverlauf-Chart">
+      {rows.map((row) => (
+        <li key={row.key}>{`${row.key}|${row.total}`}</li>
       ))}
     </ul>
   ),
@@ -283,5 +296,34 @@ describe('AnalyticsPage', () => {
 
     await user.click(screen.getByRole('button', { name: 'Alle Kategorien' }))
     expect(await screen.findByText('Wofür das Geld wegging')).toBeInTheDocument()
+  })
+
+  it('adds the closed weeks up to the savings curve', async () => {
+    const user = userEvent.setup()
+    await seedWeeks()
+    const view = await expected(12, 'week')
+    renderPage()
+
+    const chart = await screen.findByRole('list', { name: 'Sparverlauf-Chart' })
+    expect(
+      within(chart)
+        .getAllByRole('listitem')
+        .map((item) => item.textContent),
+    ).toEqual(view.cumulative.map((point) => `${point.weekStart}|${point.totalCents / 100}`))
+    expect(view.cumulative.at(-1)?.totalCents).toBe(640_000)
+    const card = screen.getByRole('heading', { name: 'Sparverlauf' }).closest('div')!.parentElement!
+    expect(within(card).getByText('A$6.400')).toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: 'Sparverlauf: als Tabelle anzeigen' }))
+    const newest = screen.getByRole('row', { name: /14\.–20\. Sep\./ })
+    expect(within(newest).getByText('A$6.400,00')).toBeInTheDocument()
+  })
+
+  it('explains the savings curve until two weeks are closed', async () => {
+    await onboard('2026-09-14')
+    await repos.weeks.close('2026-09-14', { incomeCents: 200_000 })
+    renderPage()
+    expect(await screen.findByText(/Ab zwei abgeschlossenen Wochen/)).toBeInTheDocument()
+    expect(screen.queryByRole('list', { name: 'Sparverlauf-Chart' })).not.toBeInTheDocument()
   })
 })

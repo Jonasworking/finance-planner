@@ -1,9 +1,9 @@
 import { describe, expect, it } from 'vitest'
-import { flowSeries, foldSlices } from '@/lib/analytics'
+import { cumulativeSavings, flowSeries, foldSlices } from '@/lib/analytics'
 import { AUD_DISPLAY } from '@/lib/money'
 import type { WeekSummary } from '@/lib/savings'
 import { makeCategory } from '@/test/fixtures'
-import { REST_SLICE_ID, toDonutRows, toFlowRows, toTrendRows } from './chartData'
+import { REST_SLICE_ID, toCumulativeRows, toDonutRows, toFlowRows, toTrendRows } from './chartData'
 
 const summary = (
   weekStart: string,
@@ -136,5 +136,17 @@ describe('toTrendRows', () => {
       },
       { key: '2026-09-14', tick: '14.9.', title: '14.–20. Sep. 2026', amount: 0, amountCents: 0 },
     ])
+  })
+})
+
+describe('toCumulativeRows', () => {
+  it('draws the running total of the closed weeks, week by week', () => {
+    const rows = toCumulativeRows(cumulativeSavings(summaries), AUD_DISPLAY)
+    // 07.09.: +1.500 · 14.09.: minus week −300 · the open week is not part of it.
+    expect(rows.map(({ key, tick, total }) => ({ key, tick, total }))).toEqual([
+      { key: '2026-09-07', tick: '7.9.', total: 1500 },
+      { key: '2026-09-14', tick: '14.9.', total: 1200 },
+    ])
+    expect(rows[1]).toMatchObject({ title: '14.–20. Sep. 2026', totalCents: 120_000 })
   })
 })
