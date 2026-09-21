@@ -137,5 +137,29 @@ const SOLID: Record<string, string> = {
 /** Tinted background + colored icon, e.g. for list rows and the category grid. */
 export const chipClass = (color: string): string => CHIP[color] ?? CHIP['cat-10']!
 
-/** Solid swatch, e.g. for the color picker and chart legends. */
+/*
+ * Chart fills are their own steps of the same hues (see tokens.css): SVG marks take the CSS
+ * variable, the legend swatch next to them the matching class.
+ */
+const CHART: Record<string, { fill: string; swatch: string }> = {
+  'cat-1': { fill: 'var(--chart-cat-1)', swatch: 'bg-chart-cat-1' },
+  'cat-2': { fill: 'var(--chart-cat-2)', swatch: 'bg-chart-cat-2' },
+  'cat-3': { fill: 'var(--chart-cat-3)', swatch: 'bg-chart-cat-3' },
+  'cat-4': { fill: 'var(--chart-cat-4)', swatch: 'bg-chart-cat-4' },
+  'cat-5': { fill: 'var(--chart-cat-5)', swatch: 'bg-chart-cat-5' },
+  'cat-6': { fill: 'var(--chart-cat-6)', swatch: 'bg-chart-cat-6' },
+  'cat-7': { fill: 'var(--chart-cat-7)', swatch: 'bg-chart-cat-7' },
+  'cat-8': { fill: 'var(--chart-cat-8)', swatch: 'bg-chart-cat-8' },
+  'cat-9': { fill: 'var(--chart-cat-9)', swatch: 'bg-chart-cat-9' },
+  'cat-10': { fill: 'var(--chart-cat-10)', swatch: 'bg-chart-cat-10' },
+}
+
+/** "Sonstige" and everything without a color of its own. */
+export const CHART_OTHER = { fill: 'var(--chart-other)', swatch: 'bg-chart-other' } as const
+
+/** Solid swatch, e.g. for the color picker. */
 export const solidClass = (color: string): string => SOLID[color] ?? SOLID['cat-10']!
+
+/** Fill of a chart mark (`fill`, a CSS variable) and the class of its legend swatch. */
+export const chartColor = (color: string): { fill: string; swatch: string } =>
+  CHART[color] ?? CHART_OTHER

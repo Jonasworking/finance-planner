@@ -50,6 +50,25 @@ const colorGroups: { title: string; swatches: { name: string; className: string 
       { name: 'cat-10', className: 'bg-cat-10' },
     ],
   },
+  {
+    title: 'Chart-Flächen',
+    swatches: [
+      { name: 'chart-income', className: 'bg-chart-income' },
+      { name: 'chart-spent', className: 'bg-chart-spent' },
+      { name: 'chart-saved', className: 'bg-chart-saved' },
+      { name: 'chart-other', className: 'bg-chart-other' },
+      { name: 'chart-cat-1', className: 'bg-chart-cat-1' },
+      { name: 'chart-cat-2', className: 'bg-chart-cat-2' },
+      { name: 'chart-cat-3', className: 'bg-chart-cat-3' },
+      { name: 'chart-cat-4', className: 'bg-chart-cat-4' },
+      { name: 'chart-cat-5', className: 'bg-chart-cat-5' },
+      { name: 'chart-cat-6', className: 'bg-chart-cat-6' },
+      { name: 'chart-cat-7', className: 'bg-chart-cat-7' },
+      { name: 'chart-cat-8', className: 'bg-chart-cat-8' },
+      { name: 'chart-cat-9', className: 'bg-chart-cat-9' },
+      { name: 'chart-cat-10', className: 'bg-chart-cat-10' },
+    ],
+  },
 ]
 
 const typeScale = [

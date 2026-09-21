@@ -32,7 +32,7 @@
   --warning-soft: rgb(255 184 77 / 0.14);
   --danger: #ff5a52;
 
-  /* Category palette (validated with the dataviz skill in phase 4) */
+  /* Category palette – chips, icons, small marks. Chart fills use the --chart-cat-* steps below. */
   --cat-1: #8aa4ff;
   --cat-2: #b58cff;
   --cat-3: #ff8fc7;
@@ -43,6 +43,29 @@
   --cat-8: #e8d36a;
   --cat-9: #7fd1b9;
   --cat-10: #9aa1ae;
+
+  /*
+   * Chart fills (phase 4, checked with the dataviz validator against surface-1). The brand colors
+   * are too light for large fills on a dark surface (OKLCH L 0.72–0.81, band 0.48–0.67), so charts
+   * wear the same hues one step darker. income/spent/saved pass every check in both themes
+   * (worst pair under red-green deficiency ΔE 8.4). The nine category hues CANNOT pass the pair
+   * checks (nine hues in one lightness band) – confusable families are spread in lightness, and
+   * a category is never identified by color alone (icon + name + amount, 2px gaps).
+   */
+  --chart-income: #738ce5;
+  --chart-spent: #eb5d50;
+  --chart-saved: #01a275;
+  --chart-cat-1: #738ce5;
+  --chart-cat-2: #7a4fbd;
+  --chart-cat-3: #c65c93;
+  --chart-cat-4: #b47800;
+  --chart-cat-5: #17a5b7;
+  --chart-cat-6: #b3501f;
+  --chart-cat-7: #659f39;
+  --chart-cat-8: #aa9523;
+  --chart-cat-9: #06856c;
+  --chart-cat-10: #7c8492;
+  --chart-other: #6a7180; /* "Sonstige" / de-emphasis */
 
   /* Elevation */
   --elev-card: inset 0 1px 0 rgb(255 255 255 / 0.04), 0 8px 24px rgb(0 0 0 / 0.35);
@@ -79,6 +102,33 @@
   --warning-soft: rgb(199 122 0 / 0.12);
   --danger: #d92d20;
 
+  /* Same hues, stepped for white: every category color reaches 3:1 (the pastels sat near 1.5:1). */
+  --cat-1: #738ce5;
+  --cat-2: #774cb9;
+  --cat-3: #d3689f;
+  --cat-4: #ac7300;
+  --cat-5: #00a1b3;
+  --cat-6: #d97144;
+  --cat-7: #5f9832;
+  --cat-8: #a79219;
+  --cat-9: #008f74;
+  --cat-10: #7f8693;
+
+  --chart-income: var(--income);
+  --chart-spent: #dd4034; /* a touch darker than --spent: clears ΔE 8 against --saved */
+  --chart-saved: var(--saved);
+  --chart-cat-1: var(--cat-1);
+  --chart-cat-2: var(--cat-2);
+  --chart-cat-3: var(--cat-3);
+  --chart-cat-4: var(--cat-4);
+  --chart-cat-5: var(--cat-5);
+  --chart-cat-6: var(--cat-6);
+  --chart-cat-7: var(--cat-7);
+  --chart-cat-8: var(--cat-8);
+  --chart-cat-9: var(--cat-9);
+  --chart-cat-10: var(--cat-10);
+  --chart-other: #8a909c;
+
   --elev-card: 0 1px 2px rgb(16 24 40 / 0.06), 0 8px 24px rgb(16 24 40 / 0.06);
   --elev-sheet: 0 -8px 40px rgb(16 24 40 / 0.16);
   --elev-glow-saved: 0 0 24px rgb(15 168 119 / 0.2);
@@ -103,9 +153,9 @@
   --destructive: var(--danger);
   --input: var(--border-strong);
   --ring: var(--saved);
-  --chart-1: var(--income);
-  --chart-2: var(--spent);
-  --chart-3: var(--saved);
+  --chart-1: var(--chart-income);
+  --chart-2: var(--chart-spent);
+  --chart-3: var(--chart-saved);
   --chart-4: var(--warning);
   --chart-5: var(--cat-2);
   --radius: 0.875rem;
