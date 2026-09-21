@@ -30,6 +30,7 @@ import {
   tapRow,
   typeInto,
   waitForAmount,
+  waitForChart,
   waitForExpenseRows,
   waitForModals,
   waitForNoText,
@@ -278,6 +279,78 @@ journey('the budget is changed from this week on', PHONE, async (page) => {
   await goto(page, '/')
   await waitForText(page, 'von A$300')
 })
+
+journey(
+  'the analysis draws its charts, drills into a category and switches to EUR',
+  PHONE,
+  async (page) => {
+    // two closed weeks: last week from the queue, then the running one with an expense in it
+    await onboard(page, { tracking: 'Ab letzter Woche' })
+    await clickText(page, 'main button', 'abschließen')
+    await waitForModals(page, 1)
+    await clickText(page, 'button', 'Woche abschließen', { exact: true })
+    await waitForText(page, 'In „Nur gespart" gebucht')
+    await clickText(page, 'button', 'Fertig', { exact: true })
+    await waitForModals(page, 0)
+    await clickText(page, 'button', 'Ausgabe erfassen')
+    await fillQuickAdd(page, ['4', '5'], 'Lebensmittel')
+    await clickText(page, 'button', 'Diese Woche abschließen')
+    await waitForModals(page, 1)
+    await clickText(page, 'button', 'Woche abschließen', { exact: true })
+    await waitForText(page, 'In „Nur gespart" gebucht')
+    await clickText(page, 'button', 'Fertig', { exact: true })
+    await waitForModals(page, 0)
+
+    // the screen (and Recharts with it) arrives as a lazy chunk
+    await goto(page, '/analytics')
+    await waitForText(page, 'Aus 2 Wochen mit Abschluss.')
+    await waitForText(page, 'A$3.955') // saved: A$2.000 + (A$2.000 − A$45)
+    await waitForChart(page, 'Verdient, ausgegeben, gespart: Chart')
+    await waitForChart(page, 'Kategorien: Chart')
+    await waitForChart(page, 'Sparverlauf: Chart')
+    await waitForText(page, 'Letzte Woche im Vergleich')
+    await waitForText(page, 'Beste und schwächste Woche')
+    await assertFitsViewport(page, 'analysis by week')
+
+    await clickText(page, '[role="radio"]', 'Monate', { exact: true })
+    await waitForText(page, 'Ø pro Woche je Monat')
+    await waitForChart(page, 'Verdient, ausgegeben, gespart: Chart')
+    await assertFitsViewport(page, 'analysis by month')
+    await clickText(page, '[role="radio"]', 'Wochen', { exact: true })
+
+    // every chart has a table twin
+    await clickSelector(
+      page,
+      'button[aria-label="Verdient, ausgegeben, gespart: als Tabelle anzeigen"]',
+    )
+    await waitForText(page, '14.–20. Sep.')
+    await assertFitsViewport(page, 'analysis with the table view')
+    await clickSelector(
+      page,
+      'button[aria-label="Verdient, ausgegeben, gespart: als Chart anzeigen"]',
+    )
+    await waitForChart(page, 'Verdient, ausgegeben, gespart: Chart')
+
+    // drill into the only category and back
+    await clickText(page, 'main button', 'Lebensmittel')
+    await waitForText(page, 'A$45 im Zeitraum') // (not the heading: CSS uppercases its ß to SS)
+    await waitForChart(page, 'Lebensmittel: Chart')
+    await assertFitsViewport(page, 'analysis drill-down')
+    await clickText(page, 'main button', 'Alle Kategorien')
+    await waitForText(page, 'Wofür das Geld wegging')
+
+    // EUR needs a rate first: the switch asks for it, then shows euros
+    await clickSelector(page, '[role="radio"][aria-label="Euro"]')
+    await waitForModals(page, 1)
+    await typeInto(page, 'EUR-Kurs', '0,6')
+    await waitForText(page, 'A$1.000,00 entsprechen 600,00')
+    await clickText(page, '[role="dialog"] button', 'Speichern', { exact: true })
+    await waitForModals(page, 0)
+    await waitForText(page, '2.373') // A$3.955 × 0,6
+    await waitForNoText(page, 'A$3.955')
+    await assertFitsViewport(page, 'analysis in EUR')
+  },
+)
 
 journey('desktop layout keeps every card inside the window', DESKTOP, async (page) => {
   await goto(page, '/')

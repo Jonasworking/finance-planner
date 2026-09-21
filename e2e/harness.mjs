@@ -405,6 +405,30 @@ export async function clickToastAction(page, toastText, actionText) {
   await button.click()
 }
 
+// ---------- charts ----------
+
+/**
+ * A chart counts as drawn once its group (aria-label "<Titel>: Chart") holds an SVG with at
+ * least one data mark of real size – the lazy chunk has loaded and Recharts has measured.
+ */
+export const waitForChart = (page, label) =>
+  page
+    .waitForFunction(
+      (name) => {
+        const group = document.querySelector(`[role="group"][aria-label="${name}"]`)
+        if (!group) return false
+        return [...group.querySelectorAll('svg path, svg rect, svg circle')].some((mark) => {
+          const box = mark.getBoundingClientRect()
+          return box.width > 1 && box.height > 1
+        })
+      },
+      {},
+      label,
+    )
+    .catch(() => {
+      throw new Error(`chart never drew: "${label}"`)
+    })
+
 // ---------- layout ----------
 
 /**

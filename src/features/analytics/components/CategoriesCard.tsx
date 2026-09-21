@@ -136,10 +136,18 @@ export function CategoriesCard({
       <ChartCard
         title={selected.name}
         subtitle={
+          // Each fact stays on one line – a break may only fall between them.
           <>
-            <Money cents={detail.totalCents} decimals={false} display={display} /> im Zeitraum ·{' '}
-            {formatPercent(selected.share)} der Ausgaben · Ø{' '}
-            <Money cents={detail.avgPerWeekCents} decimals={false} display={display} /> pro Woche
+            <span className="whitespace-nowrap">
+              <Money cents={detail.totalCents} decimals={false} display={display} /> im Zeitraum
+            </span>
+            {' · '}
+            <span className="whitespace-nowrap">{formatPercent(selected.share)} der Ausgaben</span>
+            {' · '}
+            <span className="whitespace-nowrap">
+              Ø <Money cents={detail.avgPerWeekCents} decimals={false} display={display} /> pro
+              Woche
+            </span>
           </>
         }
         table={table}
@@ -206,7 +214,11 @@ export function CategoriesCard({
 
       {rows.length > 0 ? (
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
-          <div className="relative mx-auto size-44 shrink-0">
+          <div
+            role="group"
+            aria-label="Kategorien: Chart"
+            className="relative mx-auto size-44 shrink-0"
+          >
             <Suspense fallback={<Skeleton className="size-full rounded-full" />}>
               <CategoryDonut rows={rows} display={display} onSelect={select} />
             </Suspense>

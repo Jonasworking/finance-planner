@@ -1,5 +1,4 @@
 import { motion } from 'motion/react'
-import { useId } from 'react'
 import { cn } from '@/shared/lib/utils'
 import { spring } from '@/shared/motion'
 
@@ -27,13 +26,31 @@ export function SegmentedControl<T extends string | number>({
   onChange,
   className,
 }: SegmentedControlProps<T>) {
-  const indicatorId = useId()
+  const activeIndex = options.findIndex((option) => option.value === value)
   return (
     <div
       role="radiogroup"
       aria-label={label}
-      className={cn('grid auto-cols-fr grid-flow-col rounded-md bg-surface-3 p-1', className)}
+      className={cn(
+        'relative grid auto-cols-fr grid-flow-col rounded-md bg-surface-3 p-1',
+        className,
+      )}
     >
+      {/*
+       * The indicator slides inside the GROUP (all segments are equally wide), not inside the
+       * buttons: a shared-layout indicator sticks out of its button while it travels, which a
+       * layout check rightly reads as overflowing content.
+       */}
+      {activeIndex >= 0 ? (
+        <motion.span
+          aria-hidden
+          initial={false}
+          animate={{ x: `${activeIndex * 100}%` }}
+          transition={spring.snappy}
+          className="absolute inset-y-1 left-1 rounded-sm bg-surface-1 shadow-card"
+          style={{ width: `calc((100% - 0.5rem) / ${options.length})` }}
+        />
+      ) : null}
       {options.map((option) => {
         const active = option.value === value
         return (
@@ -50,14 +67,7 @@ export function SegmentedControl<T extends string | number>({
               active ? 'text-fg' : 'text-fg-muted hover:text-fg',
             )}
           >
-            {active ? (
-              <motion.span
-                layoutId={indicatorId}
-                transition={spring.snappy}
-                className="absolute inset-0 rounded-sm bg-surface-1 shadow-card"
-              />
-            ) : null}
-            <span className="relative">{option.label}</span>
+            {option.label}
           </button>
         )
       })}

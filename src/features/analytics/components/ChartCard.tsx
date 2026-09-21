@@ -141,7 +141,11 @@ export function ChartCard({
       ) : (
         <>
           {legend ? <ChartLegend items={legend} /> : null}
-          <div className={cn('min-w-0 tabular-nums', plotClassName)}>
+          <div
+            role="group"
+            aria-label={`${title}: Chart`}
+            className={cn('min-w-0 tabular-nums', plotClassName)}
+          >
             <Suspense fallback={<Skeleton className="size-full rounded-md" />}>{children}</Suspense>
           </div>
         </>
