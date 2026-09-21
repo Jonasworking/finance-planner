@@ -12,7 +12,7 @@
   - [x] **2b** – Daueraufträge (weekly/fortnightly/monthly) inkl. Materialisierung, „Woche abschließen" mit Warteschlange + „Woche wieder öffnen", Onboarding (Standard-Einkommen, Budget, Startguthaben, trackingSince), Dashboard v1 mit Empty-States und klarem nächsten Schritt — fertig 2026-09-20 (Branch `phase-2b-weekly-flow`), **abgenommen 2026-09-20 (am iPhone getestet), in `main`**, Notizen unten
 - [x] **Zwischenschritt** – Browser-Journeys als E2E-Smoke-Suite im Repo (`npm run test:e2e`, nicht im Gate) — fertig 2026-09-20 (Branch `e2e-smoke`), **abgenommen 2026-09-20, in `main`**, Notizen unten
 - [x] **Phase 3** – Budget & Spartöpfe — fertig 2026-09-20 (Branch `phase-3-budget-pots`), **abgenommen 2026-09-21 (am iPhone getestet), in `main`**, Notizen unten
-- [ ] **Phase 4** – Analyse & Charts
+- [ ] **Phase 4** – Analyse & Charts — freigegeben 2026-09-21, fertig 2026-09-21 (Branch `phase-4-analytics`), _wartet auf Abnahme_, Notizen unten
 - [ ] **Phase 5** – Tasks, Insights, Was-wäre-wenn
 - [ ] **Phase 6** – PWA, Export, Polish
 - [ ] Phase 7 (optional) – Sync
@@ -23,17 +23,33 @@
 
 **Wo wir stehen**
 
-- **Phase 3 ist abgenommen** (2026-09-21, am iPhone getestet). `main` wurde per Fast-Forward auf `phase-3-budget-pots` gezogen und gepusht → Production: https://finance-planner-jonasworkings-projects.vercel.app
-- **Phase 4 (Analyse & Charts) ist freigegeben** (2026-09-21) und läuft auf Branch `phase-4-analytics`. Reihenfolge: `dataviz`-Skill laden → `recharts` + `react-is` installieren → UI auf `lib/analytics` → Analyse-Route als eigener Lazy-Chunk → neue Journey in der Smoke-Suite (390 px).
+- `main` = `30204bd` (Phase 0–3 + E2E-Smoke-Suite), gepusht, Production: https://finance-planner-jonasworkings-projects.vercel.app
+- **Phase 4 (Analyse & Charts) ist fertig gebaut und wartet auf deine Abnahme.** Branch `phase-4-analytics`, gepusht – nach jedem Teilschritt committet. Preview zum Testen am iPhone (eigene, leere Daten): https://finance-planner-git-phase-4-analytics-jonasworkings-projects.vercel.app
+- Letzter Prüfstand: typecheck · lint · build grün · 736 Testläufe · Coverage `src/lib` 99,9 % · Smoke-Suite 9/9 grün, 3× hintereinander.
 
-**Offen aus Phase 3** (nicht blockierend, unverändert)
+**Was du bei der Abnahme ansehen solltest** (das kann nur das echte Gerät zeigen)
+
+1. Die Preview startet leer: im Onboarding „Eigenes Datum" wählen (z. B. vor vier Wochen) → die wartenden Wochen der Reihe nach abschließen, am besten mit unterschiedlichem Einkommen → ein paar Ausgaben in verschiedenen Kategorien erfassen (Datum über „Details" auch in vergangene Wochen). Ab zwei Abschlüssen zeigt die Analyse alles; die laufende Woche erscheint als blasse Säule.
+2. Analyse-Tab: Lädt der Screen zügig nach (eigener Chunk)? Filterzeile mit dem Daumen: Wochen/Monate, 8 W … Alles, A$/€.
+3. Säulen-Chart antippen und den Finger ziehen → Tooltip folgt; verdeckt der Finger zu viel? Tabellen-Symbol oben rechts an jeder Karte.
+4. Donut: Segment oder Zeile antippen → Drilldown, „Alle Kategorien" zurück; „Übrige" aufklappen (erst ab 7 Kategorien mit Ausgaben).
+5. € antippen → Sheet „EUR-Kurs" (Dezimal-Tastatur, Feld nicht von der Tastatur verdeckt?) → speichern → alle Beträge und Achsen in €.
+6. Helles Theme: Kategorie-Farben sind dort jetzt kräftiger (auch in Ausgabenliste und Kategorien) – gefällt dir das?
+
+**Offen aus Phase 3/4** (nichts davon blockiert die Abnahme)
 
 - Ausgaben-Sheet mit offenen Details ist höher als der Bildschirm („Speichern" erst nach Scrollen im Sheet).
 - `AnimatedNumber` (Spring-Ticker für Beträge) ist nicht gebaut.
 - Warn-Protokoll liegt in `localStorage`: nach „Alle Daten löschen" mitten in der Woche bleibt es bis zur nächsten Woche stumm.
 - Ausgabe aus einem inzwischen archivierten Topf lässt sich erst nach „Wiederherstellen" des Topfs ändern.
-- Start-Chunk 285 KB gzip (Ziel < 250 KB → Phase 6: Lazy-Routes für Budget/Töpfe, `LazyMotion`).
-- Sortieren per Tastatur (Kategorien) und ein A11y-Pass stehen weiter für Phase 6 an; Töpfe haben noch kein Umsortieren.
+- Start-Chunk 286 KB gzip (Ziel < 250 KB → Phase 6: Lazy-Routes für Budget/Töpfe, `LazyMotion`).
+- A11y-Pass (Pfeiltasten im Segment-Schalter, Sortieren per Tastatur, `forced-colors`-Textur für Charts) → Phase 6.
+
+**Als Nächstes**
+
+1. Du testest die Preview am iPhone → „Phase 4 ist abgenommen" (oder Nachbesserungen).
+2. Dann von mir: Abnahme hier vermerken → `main` per Fast-Forward auf `phase-4-analytics` → pushen → Production prüfen → Smoke-Suite einmal gegen Production.
+3. **Phase 5 (Tasks, Insights, Was-wäre-wenn) erst nach deiner Freigabe.** Die Insight-Regeln und `projectScenario` liegen seit Phase 1 getestet in `lib`; die Was-wäre-wenn-Kurve kann `ChartCard`, `ChartTooltip` und die Chart-Tokens aus Phase 4 wiederverwenden (Recharts nur unter `features/analytics/charts` importierbar – für Phase 5 den Chart-Ordner teilen oder die Regel um einen zweiten Ordner erweitern).
 
 ## Phase 0 – Ergebnis & Abweichungen vom Plan
 
@@ -116,6 +132,24 @@
 - **Smoke-Suite am Phasenende (wie gewünscht):** zwei Journeys wurden rot – beides Schwächen der Suite, kein App-Fehler: Der Klick auf die Wochenzeile lief nicht über den Helfer und traf unter der Tab-Bar das „+"; und der Helfer scrollte ein Ziel nur einmal ins Bild, ein noch aufklappendes Panel schob „Speichern" danach wieder hinaus. Der Helfer scrollt jetzt nach und sagt beim Timeout, was das Ziel verdeckt.
 - **Bundle:** Start-Chunk 285 KB gzip (+15 KB; Ziel < 250 KB bleibt Phase 6: Lazy-Routes für Budget/Töpfe, `LazyMotion`).
 - **Offen / Merker:** `AnimatedNumber` (Spring-Ticker für Beträge) ist weiterhin nicht gebaut. Mit offenen Details ist das Ausgaben-Sheet höher als der Bildschirm – „Speichern" ist erreichbar, aber erst nach Scrollen im Sheet (war schon in 2a so, „Bezahlt aus" macht es ~110 px länger). Eine Ausgabe, die aus einem inzwischen archivierten Topf bezahlt wurde, lässt sich erst nach „Wiederherstellen" des Topfs ändern.
+
+## Phase 4 – Ergebnis & Abweichungen vom Plan
+
+**Geprüft:** typecheck · lint · build grün · **736 Testläufe** (368 Tests × 2 Zeitzonen) · Coverage `src/lib` 99,9 % Zeilen / 100 % Funktionen / 95,4 % Branches · `npm run test:e2e` **9 Journeys grün, 3× hintereinander** (~62 s), neu: „Analyse zeichnet ihre Charts, Drilldown, EUR" bei 390 px · Sichtprüfung im echten Chrome mit Demo-Daten (390×844 dunkel **und** hell, 1440×900 hell; Wochen/Monate, 12 W/26 W/Alles, A$/€, Tabellenansicht, Drilldown, Tooltip), Konsole fehlerfrei, kein Element außerhalb des Viewports.
+**DoD:** Chart-Werte = `lib/analytics` (die Seite reicht den Charts genau `buildAnalytics`/`toFlowRows`/`toDonutRows`/`toCumulativeRows` durch – Seitentest gegen die echte DB-Schicht vergleicht Zeile für Zeile; per Mutation gegengeprüft: ohne Monats-Einrasten, ohne Klemmen auf den Tracking-Beginn und mit „offene Woche zählt mit" fällt jeweils genau der zuständige Test) · lesbar bei 390 px in Dark + Light · Recharts im eigenen Lazy-Chunk (`charts` 115 KB gzip, Seite 8 KB; **Start-Chunk unverändert 286 KB**) · Skeletons in fester Plot-Höhe, Karten ohne Daten erklären sich selbst, kein Layout-Shift.
+
+- **Reihenfolge nach dem `dataviz`-Skill: erst die Form, Farbe zuletzt.** „Verdient · Ausgegeben · Gespart" ist **eine gestapelte Säule je Woche** (Ausgegeben + Gespart = Verdient) mit einer Einkommens-Marke quer über der Säule – statt drei Balken je Woche (78 Balken bei 26 Wochen auf 286 px) oder drei Linien (Wochen sind abgeschlossene Einheiten, keine stetige Größe). In einer Minus-Woche sitzt die Marke IN den Ausgaben und der Fehlbetrag hängt unter der Nulllinie. Kategorien = Donut (ausdrücklich gewünscht) mit höchstens 5 Segmenten + „Übrige", Summe in der Mitte; Sparverlauf = eine Linie über blasser Fläche bis zur Nulllinie, neuester Punkt markiert. Jede Karte hat Tooltip (Werte führen, Serien als Strich-Schlüssel), Legende in Textfarbe und einen **Tabellen-Zwilling**; Marken ≤ 24 px, 4-px-Rundung nur am Daten-Ende, 2-px-Lücke in Flächenfarbe statt Rahmen, nie zwei y-Achsen.
+- **Kontrast-/Farbprüfung (Validator des Skills, gegen `surface-1`):** Mint/Coral/Periwinkle haben im Dark-Theme reichlich Kontrast (10,7 / 6,6 / 7,6 : 1), sind als große Flächen aber zu hell (OKLCH L 0,81 / 0,72 / 0,74, Band 0,48–0,67). Charts tragen deshalb dieselben Farbtöne eine Stufe dunkler (`--chart-income/-spent/-saved` = `#738ce5 / #eb5d50 / #01a275`, Kontrast 5,7 / 5,4 / 5,6); Text, Ring und Buttons behalten die Markenfarben. Mint und Coral wurden in der Helligkeit so weit auseinandergezogen, dass das Paar auch bei Rot-Grün-Schwäche das Ziel erreicht (ΔE 8,4 in beiden Themes; vorher 7,3 / 7,9 = nur mit Zweitkodierung zulässig). Light: nur `--chart-spent` eine Spur dunkler als `--spent`.
+- **Kategorie-Palette – ehrliches Ergebnis:** Neun Farbtöne in einem Helligkeitsband können die Paarprüfung nicht bestehen (Periwinkle↔Violett ΔE 0,4 bei gleicher Helligkeit; auch die beste durchgerechnete Stufung erreicht nur die Hälfte des Ziels und macht aus Gelb Oliv). Deshalb: Die Farbe folgt weiter der Kategorie (nie dem Rang), verwechselbare Familien sind in der Helligkeit gespreizt (Periwinkle/Violett jetzt ΔE 13), und **eine Kategorie wird nie nur über Farbe erkannt** – die Liste neben dem Donut ist Legende und Tabelle zugleich (Farbstrich, Icon, Name, Betrag, Anteil). **App-weite Folge:** `--cat-1…10` haben jetzt eigene Light-Stufen mit ≥ 3:1 auf Weiß (die Pastelltöne lagen bei ~1,5:1) – Chips und Icons im hellen Theme sind dadurch kräftiger.
+- **Zeitraum endet immer mit der laufenden Woche und beginnt nie vor dem Tracking-Start** (sonst stünden leere „offene" Wochen davor). In der Monatsansicht rastet der Beginn auf die erste Woche seines Monats ein (Donnerstags-Regel) – kein angeschnittener Monat. **Monate zeigen den Ø pro abgeschlossener Woche**, nicht die Summe: Monate haben 4 oder 5 Wochen, Summen würden grundlos zickzacken (Summe und Wochenzahl stehen in Tooltip und Tabelle).
+- **Offene Wochen getrennt:** Ihre Ausgaben erscheinen als blasse Säule („noch offen: bisher ausgegeben"), zählen aber in keine Summe, keinen Vergleich und nicht in den Sparverlauf – das Einkommen fehlt ja noch. Die Kacheln sagen das aus („1 Woche ist noch offen …"). Der Donut zählt sie mit (dort geht es um Ausgaben, nicht um Gespartes) und nennt den Betrag; aus Töpfen Bezahltes ist nicht drin und wird ebenfalls genannt.
+- **Vorwochen-Vergleich = die zwei jüngsten ABGESCHLOSSENEN Wochen** (Monate: Ø pro Woche), nie die laufende – eine halbe Woche sieht immer wie eine Ersparnis aus. Delta-Chips mit Pfeil + Farbe nach „gut/schlecht" (mehr ausgegeben = Coral, weniger = Mint). Beste/schwächste Woche ab zwei Abschlüssen. **Sparverlauf startet im Zeitraum bei 0** (mit „Alles" = seit Beginn): eine Fläche braucht eine ehrliche Nulllinie; ein Fenster auf eine große Gesamtsumme wäre entweder flach oder abgeschnitten.
+- **Drilldown:** Tipp auf Kategorie (Segment oder Zeile) → Verlauf je Woche/Monat in der Chart-Stufe ihrer eigenen Farbe (Wochen ohne Ausgabe = 0, nicht ausgelassen), Summe · Anteil · Ø pro Woche, die 5 größten Ausgaben (Tipp öffnet das Bearbeiten-Sheet), Tabellen-Zwilling. „Übrige (n)" klappt die kleinen Kategorien auf, jede ist wieder antippbar.
+- **EUR:** Umschalter A$/€ in der Filterzeile, gespeichert in `Settings.showEur`; Achsen rechnen in EUR-Einheiten (runde Euro-Ticks), gerechnet wird weiter in A$-Cents. **Vorgezogen aus Phase 6 (mit dir abgestimmt am 2026-09-21):** das kleine Sheet „EUR-Kurs" (ein Feld `1 A$ = 0,61 €`, Live-Beispiel, Datum der letzten Änderung). Ohne Kurs öffnet der Umschalter dieses Sheet und schaltet nach dem Speichern auf € um; in den Einstellungen gibt es eine Karte dafür. Repo lehnt unbrauchbare Kurse ab (`invalid-rate`).
+- **Recharts bleibt garantiert im Lazy-Chunk:** Import nur in `features/analytics/charts/` erlaubt (ESLint-Regel, per Probe-Datei bewiesen), die Karten laden diesen Ordner per `lazy()`; die Route selbst ist ebenfalls lazy. Die Zeilen, die ein Chart zeichnet, entstehen in `chartData.ts` (ohne Recharts) und sind dort getestet; in jsdom-Tests sind die Charts durch eine Klartext-Ausgabe ihrer Zeilen ersetzt (jsdom hat kein Layout, Recharts zeichnet dort nichts) – das echte SVG prüft die Smoke-Suite.
+- **Von der Smoke-Suite gefunden (kein Unit-Test sah es):** Der gleitende Auswahl-Indikator des neuen `SegmentedControl` ragte während der Fahrt aus seinem Button („Wochen needs 92 px, has 75"). Er gleitet jetzt innerhalb der Gruppe. Zwei Eigenheiten der Werkzeuge, **kein App-Fehler:** `innerText` liefert per CSS großgeschriebene Überschriften – aus „Größte" wird „GRÖSSTE", darauf kann man nicht warten; und ein Ganzseiten-Screenshot ändert die Fenstergröße, Recharts animiert dann neu und das Bild zeigt leere Charts (Screenshots mit `prefers-reduced-motion` aufnehmen).
+- **Bundle:** Start-Chunk 286 KB gzip (unverändert; Ziel < 250 KB bleibt Phase 6), `analytics` 8 KB, `charts` 115 KB – beide erst beim Öffnen der Analyse.
+- **Offen / Merker:** keine Direktbeschriftung auf den Säulen (bei 11 px Breite nicht unterzubringen – Legende, Tooltip und Tabelle tragen die Werte) · kein Textur-Modus für `forced-colors`/Druck · Pfeiltasten im `SegmentedControl` und ein A11y-Pass bleiben Phase 6 (Recharts bringt Tastatur-Navigation der Tooltips mit) · `ThemeToggle` könnte auf `SegmentedControl` umziehen · `AnimatedNumber` weiterhin nicht gebaut.
 
 ---
 
