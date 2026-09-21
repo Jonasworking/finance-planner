@@ -1,8 +1,9 @@
 import { describe, expect, it } from 'vitest'
-import { flowSeries } from '@/lib/analytics'
+import { flowSeries, foldSlices } from '@/lib/analytics'
 import { AUD_DISPLAY } from '@/lib/money'
 import type { WeekSummary } from '@/lib/savings'
-import { toFlowRows } from './chartData'
+import { makeCategory } from '@/test/fixtures'
+import { REST_SLICE_ID, toDonutRows, toFlowRows, toTrendRows } from './chartData'
 
 const summary = (
   weekStart: string,
@@ -63,5 +64,77 @@ describe('toFlowRows', () => {
       saved: 300,
       open: 0,
     })
+  })
+})
+
+describe('toDonutRows', () => {
+  const categories = [
+    makeCategory('cat:rent', { name: 'Miete', icon: 'House', color: 'cat-1' }),
+    makeCategory('cat:food', { name: 'Essen', icon: 'Utensils', color: 'cat-6' }),
+  ]
+  const slice = (categoryId: string, amountCents: number, share: number) => ({
+    categoryId,
+    amountCents,
+    share,
+  })
+
+  it('gives every slice the name, icon and chart color of ITS category', () => {
+    const rows = toDonutRows(
+      foldSlices([slice('cat:rent', 60_000, 0.6), slice('cat:food', 40_000, 0.4)]),
+      categories,
+    )
+    expect(rows).toEqual([
+      expect.objectContaining({
+        id: 'cat:rent',
+        name: 'Miete',
+        icon: 'House',
+        color: 'cat-1',
+        fill: 'var(--chart-cat-1)',
+        swatch: 'bg-chart-cat-1',
+        amountCents: 60_000,
+        share: 0.6,
+        value: 60_000,
+      }),
+      expect.objectContaining({ id: 'cat:food', fill: 'var(--chart-cat-6)', value: 40_000 }),
+    ])
+  })
+
+  it('folds the tail into a neutral slice and keeps a deleted category visible', () => {
+    const slices = [50, 20, 10, 8, 6, 4, 2].map((amount, index) =>
+      slice(index === 0 ? 'cat:rent' : `cat:gone-${index}`, amount * 100, amount / 100),
+    )
+    const rows = toDonutRows(foldSlices(slices), categories)
+    expect(rows).toHaveLength(6)
+    expect(rows[1]).toMatchObject({ name: 'Gelöschte Kategorie', fill: 'var(--chart-cat-10)' })
+    expect(rows.at(-1)).toMatchObject({
+      id: REST_SLICE_ID,
+      name: 'Übrige (2)',
+      fill: 'var(--chart-other)',
+      amountCents: 600,
+    })
+  })
+})
+
+describe('toTrendRows', () => {
+  it('labels each period and converts to axis units', () => {
+    expect(
+      toTrendRows(
+        [
+          { key: '2026-09-07', amountCents: 11_000 },
+          { key: '2026-09-14', amountCents: 0 },
+        ],
+        'week',
+        { currency: 'EUR', rate: 0.5 },
+      ),
+    ).toEqual([
+      {
+        key: '2026-09-07',
+        tick: '7.9.',
+        title: '7.–13. Sep. 2026',
+        amount: 55,
+        amountCents: 11_000,
+      },
+      { key: '2026-09-14', tick: '14.9.', title: '14.–20. Sep. 2026', amount: 0, amountCents: 0 },
+    ])
   })
 })

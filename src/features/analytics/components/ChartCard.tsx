@@ -30,6 +30,9 @@ export interface ChartCardProps {
   empty?: ReactNode
   /** Height of the plot INCLUDING its axis labels, so nothing scrolls inside the card. */
   plotClassName?: string
+  /** Above the title (e.g. a back link) and below the plot – shown in chart and table view. */
+  before?: ReactNode
+  after?: ReactNode
   children: ReactNode
 }
 
@@ -62,6 +65,8 @@ export function ChartCard({
   table,
   empty,
   plotClassName = 'h-60',
+  before,
+  after,
   children,
 }: ChartCardProps) {
   const [showTable, setShowTable] = useState(false)
@@ -69,6 +74,7 @@ export function ChartCard({
 
   return (
     <GlassCard className="flex min-w-0 flex-col gap-3">
+      {before}
       <div className="flex items-start gap-3">
         <div className="min-w-0 flex-1">
           <h2 className="text-h2">{title}</h2>
@@ -140,6 +146,7 @@ export function ChartCard({
           </div>
         </>
       )}
+      {after}
     </GlassCard>
   )
 }

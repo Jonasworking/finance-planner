@@ -7,7 +7,7 @@ import { buildAnalytics } from '@/lib/analytics'
 import { formatAUD, formatEUR } from '@/lib/money'
 import { useUiStore } from '@/shared/stores/uiStore'
 import { useAnalyticsStore } from './analyticsStore'
-import { toFlowRows, type FlowRow } from './chartData'
+import { toFlowRows, type DonutRow, type FlowRow, type TrendRow } from './chartData'
 import { AnalyticsPage } from './AnalyticsPage'
 
 const TODAY = '2026-09-23' // Wednesday of the week starting 2026-09-21
@@ -15,6 +15,24 @@ vi.mock('@/shared/hooks/useToday', () => ({ useToday: () => '2026-09-23' }))
 // jsdom has no layout, so Recharts draws nothing: the charts are replaced by a plain readout of
 // the rows they were given. The SVG itself is covered by the browser smoke suite.
 vi.mock('./charts', () => ({
+  CategoryDonut: ({ rows, onSelect }: { rows: DonutRow[]; onSelect: (id: string) => void }) => (
+    <ul aria-label="Donut">
+      {rows.map((row) => (
+        <li key={row.id}>
+          <button type="button" onClick={() => onSelect(row.id)}>
+            {`Segment ${row.name}: ${row.value} ${row.fill}`}
+          </button>
+        </li>
+      ))}
+    </ul>
+  ),
+  CategoryTrendChart: ({ rows, fill }: { rows: TrendRow[]; fill: string }) => (
+    <ul aria-label="Trend-Chart" data-fill={fill}>
+      {rows.map((row) => (
+        <li key={row.key}>{`${row.key}|${row.amount}`}</li>
+      ))}
+    </ul>
+  ),
   FlowChart: ({ rows }: { rows: FlowRow[] }) => (
     <ul aria-label="Flow-Chart">
       {rows.map((row) => (
@@ -91,7 +109,7 @@ const tile = (label: string) =>
 beforeEach(async () => {
   act(() => {
     useAnalyticsStore.setState({ granularity: 'week', range: 12 })
-    useUiStore.setState({ eurRateOpen: false })
+    useUiStore.setState({ eurRateOpen: false, editOpen: false })
   })
   await db.delete()
   await db.open()
@@ -216,5 +234,54 @@ describe('AnalyticsPage', () => {
     expect(within(open).getByText('noch offen')).toBeInTheDocument()
     expect(within(open).getByText('A$120')).toBeInTheDocument()
     expect(screen.queryByRole('list', { name: 'Flow-Chart' })).not.toBeInTheDocument()
+  })
+
+  it('splits the spending by category and drills into one', async () => {
+    const user = userEvent.setup()
+    await seedWeeks()
+    await repos.expenses.add({
+      date: '2026-09-15',
+      amountCents: 25_000,
+      categoryId: 'cat:rent',
+      note: 'Miete September',
+    })
+    await repos.expenses.add({
+      date: '2026-09-16',
+      amountCents: 65_000,
+      categoryId: 'cat:travel',
+      fundedByPotId: 'pot:primary',
+    })
+    renderPage()
+
+    const card = (await screen.findByText('Wofür das Geld wegging')).closest('div')!.parentElement!
+    // Groceries: 1.400 closed + 120 open; rent 250. The pot-funded trip is named, not counted.
+    expect(await within(card).findByText('A$1.770')).toBeInTheDocument()
+    const groceries = within(card).getByRole('button', { name: /^Lebensmittel/ }) // not the stubbed slice
+    expect(within(groceries).getByText('A$1.520')).toBeInTheDocument()
+    expect(within(groceries).getByText(/86\s%/)).toBeInTheDocument()
+    expect(within(card).getByText(/aus noch\s+offenen Wochen/)).toBeInTheDocument()
+    expect(within(card).getByText(/die aus Töpfen\s+bezahlt wurden/)).toBeInTheDocument()
+    // The slice wears the chart step of its category's own color.
+    const rent = await db.categories.get('cat:rent')
+    expect(
+      await within(card).findByRole('button', {
+        name: `Segment ${rent!.name}: 25000 var(--chart-${rent!.color})`,
+      }),
+    ).toBeInTheDocument()
+
+    await user.click(within(card).getByRole('button', { name: new RegExp(`^${rent!.name}`) }))
+    expect(await screen.findByRole('heading', { name: rent!.name })).toBeInTheDocument()
+    const trend = await screen.findByRole('list', { name: 'Trend-Chart' })
+    expect(trend).toHaveAttribute('data-fill', `var(--chart-${rent!.color})`)
+    expect(
+      within(trend)
+        .getAllByRole('listitem')
+        .map((item) => item.textContent),
+    ).toEqual(['2026-08-24|0', '2026-08-31|0', '2026-09-07|0', '2026-09-14|250', '2026-09-21|0'])
+    await user.click(screen.getByRole('button', { name: /Miete September/ }))
+    expect(useUiStore.getState().editOpen).toBe(true)
+
+    await user.click(screen.getByRole('button', { name: 'Alle Kategorien' }))
+    expect(await screen.findByText('Wofür das Geld wegging')).toBeInTheDocument()
   })
 })

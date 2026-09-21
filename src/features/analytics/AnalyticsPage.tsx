@@ -8,6 +8,7 @@ import { useToday } from '@/shared/hooks/useToday'
 import { Skeleton } from '@/shared/ui/skeleton'
 import { useAnalyticsStore } from './analyticsStore'
 import { BestWorstCard } from './components/BestWorstCard'
+import { CategoriesCard } from './components/CategoriesCard'
 import { ComparisonCard } from './components/ComparisonCard'
 import { FilterBar } from './components/FilterBar'
 import { FlowCard } from './components/FlowCard'
@@ -66,13 +67,26 @@ export function AnalyticsPage() {
         {/* minmax(0,…) + min-w-0: grid tracks must not grow to fit long non-wrapping rows */}
         <div className="grid grid-cols-[minmax(0,1fr)] gap-4 lg:grid-cols-[repeat(2,minmax(0,1fr))] lg:items-start">
           <div className="flex min-w-0 flex-col gap-4">
+            <CategoriesCard
+              // A new selection starts at the overview again.
+              key={`${range}-${granularity}`}
+              slices={view.slices}
+              categories={data.categories}
+              expenses={view.expenses}
+              weekStarts={view.weekStarts}
+              granularity={granularity}
+              fundedCents={view.fundedCents}
+              openSpentCents={view.totals.openSpentCents}
+              today={today}
+              display={display}
+            />
+          </div>
+          <div className="flex min-w-0 flex-col gap-4">
             <ComparisonCard
               comparison={view.comparison}
               granularity={granularity}
               display={display}
             />
-          </div>
-          <div className="flex min-w-0 flex-col gap-4">
             {view.bestWorst ? <BestWorstCard bestWorst={view.bestWorst} display={display} /> : null}
           </div>
         </div>
