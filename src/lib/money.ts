@@ -37,10 +37,46 @@ export function formatAUD(cents: Cents, options: FormatOptions = {}): string {
   return `${sign}A$${digits}`
 }
 
+const eurFormatWhole = new Intl.NumberFormat('de-DE', {
+  style: 'currency',
+  currency: 'EUR',
+  maximumFractionDigits: 0,
+})
+
 /** Converts AUD cents with a manually maintained rate (1 AUD = `rate` EUR) → `1.234,56 €`. */
-export function formatEUR(cents: Cents, rate: number): string {
-  const eur = Math.round(cents * rate) / 100
-  return eurFormat.format(eur).replace('-', MINUS)
+export function formatEUR(cents: Cents, rate: number, options: FormatOptions = {}): string {
+  const { signed = false, decimals = true } = options
+  const eurCents = Math.round(cents * rate)
+  const abs = Math.abs(eurCents) / 100
+  const digits = (decimals ? eurFormat : eurFormatWhole).format(abs)
+  const isZero = decimals ? eurCents === 0 : Math.round(abs) === 0
+  const sign = isZero ? '' : eurCents < 0 ? MINUS : signed ? '+' : ''
+  return `${sign}${digits}`
+}
+
+/**
+ * How amounts are shown: AUD, or – display only – EUR at the hand-maintained rate. Stored and
+ * computed values are always AUD cents.
+ */
+export type MoneyDisplay = { currency: 'AUD' } | { currency: 'EUR'; rate: number }
+
+export const AUD_DISPLAY: MoneyDisplay = { currency: 'AUD' }
+
+/** EUR only when it is switched on AND a usable rate exists. */
+export function moneyDisplay(settings: { showEur: boolean; eurRate: number | null }): MoneyDisplay {
+  return settings.showEur && settings.eurRate !== null && settings.eurRate > 0
+    ? { currency: 'EUR', rate: settings.eurRate }
+    : AUD_DISPLAY
+}
+
+export function formatMoney(
+  cents: Cents,
+  display: MoneyDisplay,
+  options: FormatOptions = {},
+): string {
+  return display.currency === 'EUR'
+    ? formatEUR(cents, display.rate, options)
+    : formatAUD(cents, options)
 }
 
 /**

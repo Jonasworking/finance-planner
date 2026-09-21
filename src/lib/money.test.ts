@@ -1,5 +1,13 @@
 import { describe, expect, it } from 'vitest'
-import { formatAUD, formatEUR, parseAmountInput, ratio } from './money'
+import {
+  AUD_DISPLAY,
+  formatAUD,
+  formatEUR,
+  formatMoney,
+  moneyDisplay,
+  parseAmountInput,
+  ratio,
+} from './money'
 
 const MINUS = String.fromCharCode(0x2212)
 const NBSP = String.fromCharCode(0xa0)
@@ -28,6 +36,31 @@ describe('formatEUR', () => {
   it('converts with the given rate', () => {
     expect(formatEUR(160000, 0.6)).toBe(`960,00${NBSP}€`)
     expect(formatEUR(-10000, 0.5)).toBe(`${MINUS}50,00${NBSP}€`)
+  })
+
+  it('supports signed deltas and whole amounts like formatAUD', () => {
+    expect(formatEUR(10000, 0.6, { signed: true })).toBe(`+60,00${NBSP}€`)
+    expect(formatEUR(-10000, 0.6, { signed: true })).toBe(`${MINUS}60,00${NBSP}€`)
+    expect(formatEUR(0, 0.6, { signed: true })).toBe(`0,00${NBSP}€`)
+    expect(formatEUR(199_990, 0.6, { decimals: false })).toBe(`1.200${NBSP}€`)
+    expect(formatEUR(-40, 0.6, { decimals: false })).toBe(`0${NBSP}€`) // no "minus zero"
+  })
+})
+
+describe('moneyDisplay / formatMoney', () => {
+  it('shows EUR only when it is switched on and a rate exists', () => {
+    expect(moneyDisplay({ showEur: true, eurRate: 0.6 })).toEqual({ currency: 'EUR', rate: 0.6 })
+    expect(moneyDisplay({ showEur: false, eurRate: 0.6 })).toBe(AUD_DISPLAY)
+    expect(moneyDisplay({ showEur: true, eurRate: null })).toBe(AUD_DISPLAY)
+    expect(moneyDisplay({ showEur: true, eurRate: 0 })).toBe(AUD_DISPLAY)
+  })
+
+  it('formats in the chosen currency', () => {
+    expect(formatMoney(160000, AUD_DISPLAY)).toBe('A$1.600,00')
+    expect(formatMoney(160000, { currency: 'EUR', rate: 0.6 }, { decimals: false })).toBe(
+      `960${NBSP}€`,
+    )
+    expect(formatMoney(-2500, AUD_DISPLAY, { signed: true })).toBe(`${MINUS}A$25,00`)
   })
 })
 

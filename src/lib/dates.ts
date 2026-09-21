@@ -118,3 +118,14 @@ export function formatWeekRange(weekStart: ISODate): string {
     return `${format(start, 'd. MMM', { locale: de })} – ${last}`
   return `${format(start, 'd.', { locale: de })}–${last}`
 }
+
+/** Axis label of a week: its Monday as "21.9." */
+export function formatWeekTick(weekStart: ISODate): string {
+  return format(parseISODate(weekStart), 'd.M.')
+}
+
+/** 'YYYY-MM' → "Sep 26" (axis) or "September 2026". */
+export function formatMonth(month: string, style: 'short' | 'long' = 'long'): string {
+  const pattern = style === 'short' ? 'LLL yy' : 'LLLL yyyy'
+  return format(parseISODate(`${month}-01`), pattern, { locale: de })
+}

@@ -5,7 +5,9 @@ import {
   addWeeksISO,
   daysBetween,
   formatDayLabel,
+  formatMonth,
   formatWeekRange,
+  formatWeekTick,
   isISODate,
   isMonday,
   listWeeks,
@@ -160,5 +162,13 @@ describe('German labels', () => {
     expect(formatWeekRange('2026-09-21')).toBe('21.–27. Sep. 2026')
     expect(formatWeekRange('2026-09-28')).toBe('28. Sep. – 4. Okt. 2026')
     expect(formatWeekRange('2026-12-28')).toBe('28. Dez. 2026 – 3. Jan. 2027')
+  })
+
+  it('labels chart axes by week and by month', () => {
+    expect(formatWeekTick('2026-09-21')).toBe('21.9.')
+    expect(formatWeekTick('2026-12-28')).toBe('28.12.')
+    expect(formatMonth('2026-09')).toBe('September 2026')
+    expect(formatMonth('2026-03', 'short')).toBe('Mär 26')
+    expect(() => formatMonth('2026-13')).toThrow(RangeError)
   })
 })
