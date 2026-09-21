@@ -11,46 +11,29 @@
   - [x] **2a** – QuickAdd-Sheet mit Numpad, Ausgabenliste mit Swipe-to-delete + Undo, Bearbeiten-Sheet, Kategorienverwaltung, Tags mit Autocomplete, Vercel-Anbindung — fertig 2026-09-20 (Branch `phase-2a-expenses`), **abgenommen 2026-09-20 (am iPhone getestet), in `main`**, Notizen unten
   - [x] **2b** – Daueraufträge (weekly/fortnightly/monthly) inkl. Materialisierung, „Woche abschließen" mit Warteschlange + „Woche wieder öffnen", Onboarding (Standard-Einkommen, Budget, Startguthaben, trackingSince), Dashboard v1 mit Empty-States und klarem nächsten Schritt — fertig 2026-09-20 (Branch `phase-2b-weekly-flow`), **abgenommen 2026-09-20 (am iPhone getestet), in `main`**, Notizen unten
 - [x] **Zwischenschritt** – Browser-Journeys als E2E-Smoke-Suite im Repo (`npm run test:e2e`, nicht im Gate) — fertig 2026-09-20 (Branch `e2e-smoke`), **abgenommen 2026-09-20, in `main`**, Notizen unten
-- [ ] **Phase 3** – Budget & Spartöpfe — fertig 2026-09-20 (Branch `phase-3-budget-pots`), _wartet auf Abnahme_, Notizen unten
+- [x] **Phase 3** – Budget & Spartöpfe — fertig 2026-09-20 (Branch `phase-3-budget-pots`), **abgenommen 2026-09-21 (am iPhone getestet), in `main`**, Notizen unten
 - [ ] **Phase 4** – Analyse & Charts
 - [ ] **Phase 5** – Tasks, Insights, Was-wäre-wenn
 - [ ] **Phase 6** – PWA, Export, Polish
 - [ ] Phase 7 (optional) – Sync
 
-## Session-Notiz – Stand 2026-09-20 (Abend)
+## Session-Notiz – Stand 2026-09-21
 
 > Einstieg für die nächste Session. Wird bei jedem Sessionende überschrieben, nicht fortgeschrieben – die dauerhaften Ergebnisse stehen in den Phasen-Notizen unten.
 
 **Wo wir stehen**
 
-- `main` = `2a99ece` (Phase 0–2b + E2E-Smoke-Suite), gepusht, Production READY: https://finance-planner-jonasworkings-projects.vercel.app
-- **Phase 3 ist fertig gebaut und wartet auf deine Abnahme.** Branch `phase-3-budget-pots` (11 Commits, letzter `bf19286` + diese Notiz), gepusht. Preview zum Testen am iPhone (eigene, leere Daten): https://finance-planner-git-phase-3-budget-pots-jonasworkings-projects.vercel.app
-- Letzter Prüfstand: typecheck · lint · build grün · 596 Testläufe · Coverage `src/lib` 99,8 % · Smoke-Suite 8/8 grün – lokal 3× hintereinander und 1× gegen die Preview-URL.
+- **Phase 3 ist abgenommen** (2026-09-21, am iPhone getestet). `main` wurde per Fast-Forward auf `phase-3-budget-pots` gezogen und gepusht → Production: https://finance-planner-jonasworkings-projects.vercel.app
+- **Phase 4 (Analyse & Charts) ist freigegeben** (2026-09-21) und läuft auf Branch `phase-4-analytics`. Reihenfolge: `dataviz`-Skill laden → `recharts` + `react-is` installieren → UI auf `lib/analytics` → Analyse-Route als eigener Lazy-Chunk → neue Journey in der Smoke-Suite (390 px).
 
-**Was du bei der Abnahme ansehen solltest** (das kann nur das echte Gerät zeigen)
+**Offen aus Phase 3** (nicht blockierend, unverändert)
 
-1. Budget-Seite (Mehr → Budget): Regler mit dem Daumen ziehen – greift der Griff gut, scrollt die Seite dabei nicht mit? Schwebt die Speichern-Leiste sauber über der Tab-Bar (Safe-Area)?
-2. Warn-Toast: Budget niedrig setzen oder Ausgabe über 80 % erfassen → genau ein Toast, liegt er irgendwo im Weg?
-3. Dashboard: Ring-Animation, blasser Bogen für Reserviertes (dafür einen Dauerauftrag mit Fälligkeit später in der Woche anlegen), Tipp auf den Ring → Budget.
-4. Töpfe: anlegen → umbuchen aus „Nur gespart" → Verlauf, Buchung wegwischen + Rückgängig; Datumsfeld „Bis wann?" im Sheet (iOS-Datepicker).
-5. Ausgabe aus Topf: „+" → Betrag → Details → „Bezahlt aus". **Bekannt:** Mit offenen Details ist das Sheet höher als der Bildschirm, „Speichern" erreicht man erst nach Scrollen im Sheet. Wenn dich das am Gerät stört, ist das der erste Kandidat zum Nachbessern (z. B. Details einklappen, sobald ein Topf gewählt ist, oder kompakteres Numpad).
-
-**Offen aus Phase 3** (nichts davon blockiert die Abnahme)
-
-- Sheet-Höhe mit offenen Details (siehe oben) – Entscheidung nach deinem Gerätetest.
-- `AnimatedNumber` (Spring-Ticker für Beträge) ist nicht gebaut; der Ring ist animiert, die Zahlen springen.
+- Ausgaben-Sheet mit offenen Details ist höher als der Bildschirm („Speichern" erst nach Scrollen im Sheet).
+- `AnimatedNumber` (Spring-Ticker für Beträge) ist nicht gebaut.
 - Warn-Protokoll liegt in `localStorage`: nach „Alle Daten löschen" mitten in der Woche bleibt es bis zur nächsten Woche stumm.
 - Ausgabe aus einem inzwischen archivierten Topf lässt sich erst nach „Wiederherstellen" des Topfs ändern.
-- Start-Chunk 285 KB gzip (Ziel < 250 KB → Phase 6: Lazy-Routes für Budget/Töpfe/Analyse, `LazyMotion`).
+- Start-Chunk 285 KB gzip (Ziel < 250 KB → Phase 6: Lazy-Routes für Budget/Töpfe, `LazyMotion`).
 - Sortieren per Tastatur (Kategorien) und ein A11y-Pass stehen weiter für Phase 6 an; Töpfe haben noch kein Umsortieren.
-
-**Heute zuletzt gefunden:** Die geseedete Standard-Budgetzeile wird mit der **echten** Uhr datiert. Mein neuer Szenario-Test hing davon ab, dass sie vor den Testwochen liegt, und wäre ab der Woche vom 21.09. rot geworden. Behoben (Test führt jetzt wie die App das Onboarding aus) und mit erzwungenem Seed-Datum Juni / nächste Woche / Oktober geprüft: alle 298 Tests grün. Prüfrezept für künftige Tests mit fester Woche steht in `CLAUDE.md`.
-
-**Als Nächstes**
-
-1. Du testest die Preview am iPhone → „Phase 3 ist abgenommen" (oder Nachbesserungen).
-2. Dann von mir: Abnahme in dieser Datei vermerken (Checkbox Phase 3, diese Notiz ersetzen) → `main` per Fast-Forward auf `phase-3-budget-pots` → pushen → Production-Deployment prüfen → Smoke-Suite einmal gegen Production (`E2E_BASE_URL=… npm run test:e2e`).
-3. **Phase 4 (Analyse & Charts) erst nach deiner Freigabe.** Reihenfolge dort: zuerst den `dataviz`-Skill laden (vor der ersten Zeile Chart-Code) → `recharts` + `react-is` installieren → `lib/analytics` ist seit Phase 1 fertig und getestet, es fehlt nur die UI → Analyse-Route als eigener Lazy-Chunk (hilft auch dem Bundle-Ziel) → neue Journey in der Smoke-Suite für die Analyse-Seite bei 390 px.
 
 ## Phase 0 – Ergebnis & Abweichungen vom Plan
 
