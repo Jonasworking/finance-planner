@@ -4,8 +4,11 @@ import {
   formatAUD,
   formatEUR,
   formatMoney,
+  formatRate,
+  isValidRate,
   moneyDisplay,
   parseAmountInput,
+  parseRateInput,
   ratio,
 } from './money'
 
@@ -88,5 +91,31 @@ describe('ratio', () => {
   it('never divides by zero', () => {
     expect(ratio(200, 400)).toBe(0.5)
     expect(ratio(200, 0)).toBe(0)
+  })
+})
+
+describe('exchange rate input', () => {
+  it.each([
+    ['0,61', 0.61],
+    ['0.61', 0.61],
+    [' 0,6 ', 0.6],
+    ['1', 1],
+    ['.5', 0.5],
+    ['0,60749', 0.6075],
+  ])('parses %j', (input, expected) => {
+    expect(parseRateInput(input)).toBe(expected)
+  })
+
+  it.each(['', '0', '0,00001', '-0,6', 'abc', '0,6,1', '1.000,5', '101'])('rejects %j', (input) => {
+    expect(parseRateInput(input)).toBeNull()
+  })
+
+  it('knows a usable rate and formats it for the field', () => {
+    expect(isValidRate(0.61)).toBe(true)
+    expect(isValidRate(0)).toBe(false)
+    expect(isValidRate(Number.NaN)).toBe(false)
+    expect(isValidRate(Number.POSITIVE_INFINITY)).toBe(false)
+    expect(formatRate(0.6)).toBe('0,60')
+    expect(formatRate(0.6075)).toBe('0,6075')
   })
 })

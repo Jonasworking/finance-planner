@@ -17,6 +17,12 @@ const eurFormat = new Intl.NumberFormat('de-DE', {
   currency: 'EUR',
 })
 
+const rateFormat = new Intl.NumberFormat('de-DE', {
+  minimumFractionDigits: 2,
+  maximumFractionDigits: 4,
+  useGrouping: false,
+})
+
 export interface FormatOptions {
   /** Prefix positive amounts with "+" (deltas, deposits). */
   signed?: boolean
@@ -101,6 +107,28 @@ export function parseAmountInput(input: string): Cents | null {
   if (!/^\d*(\.\d{0,2})?$/.test(normalized) || normalized === '' || normalized === '.') return null
   const value = Number(normalized)
   return Number.isFinite(value) ? Math.round(value * 100) : null
+}
+
+export const MAX_RATE = 100
+
+/** A usable exchange rate: finite, above zero and not absurdly large (typo guard). */
+export const isValidRate = (rate: number): boolean =>
+  Number.isFinite(rate) && rate > 0 && rate <= MAX_RATE
+
+/**
+ * Parses a hand-typed exchange rate ("0,61" or "0.61") to at most four decimals.
+ * Null for anything that is not a usable rate.
+ */
+export function parseRateInput(input: string): number | null {
+  const raw = input.trim().replace(',', '.')
+  if (!/^\d+(\.\d*)?$|^\.\d+$/.test(raw)) return null
+  const rate = Math.round(Number(raw) * 10_000) / 10_000
+  return isValidRate(rate) ? rate : null
+}
+
+/** "0,61" – how a stored rate is shown and pre-filled. */
+export function formatRate(rate: number): string {
+  return rateFormat.format(rate)
 }
 
 /** Safe part/total ratio; 0 when there is no positive total. */

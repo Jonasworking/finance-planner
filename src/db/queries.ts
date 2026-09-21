@@ -124,6 +124,28 @@ export async function loadDashboard(db: FinanceDB) {
   }
 }
 
+/**
+ * The analysis screen: every week, expense and budget row – its ranges, series and comparisons
+ * are all derived from raw rows in `lib/analytics`. Archived categories stay in: past spending
+ * still carries their name and color.
+ */
+export async function loadAnalytics(db: FinanceDB) {
+  const [settings, weeks, budgets, expenses, categories] = await Promise.all([
+    db.settings.get(SETTINGS_ID),
+    db.weeks.toArray(),
+    db.budgets.toArray(),
+    db.expenses.toArray(),
+    db.categories.toArray(),
+  ])
+  return {
+    settings: settings ?? null,
+    weeks: weeks.filter(isActive),
+    budgets,
+    expenses: expenses.filter(isActive),
+    categories: categories.filter(isActive).sort(bySortOrder),
+  }
+}
+
 /** The budget screen and the budget warnings: the running week against the budget rows. */
 export async function loadBudget(db: FinanceDB, today: ISODate) {
   const weekStart = weekStartOf(today)

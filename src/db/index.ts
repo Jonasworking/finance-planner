@@ -7,6 +7,7 @@ export const repos = createRepos(db)
 
 export { DomainError, type DomainErrorCode } from './errors'
 export {
+  loadAnalytics,
   loadAppData,
   loadBudget,
   loadCategories,

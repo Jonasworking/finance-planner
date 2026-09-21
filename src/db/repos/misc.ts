@@ -1,4 +1,5 @@
 import { weekStartOf } from '@/lib/dates'
+import { isValidRate } from '@/lib/money'
 import {
   isActive,
   SETTINGS_ID,
@@ -168,6 +169,9 @@ export function createSettingsRepo({ db, clock }: RepoContext) {
         if (patch.trackingSince) assertDate(patch.trackingSince)
         if (patch.defaultWeeklyIncomeCents !== undefined) {
           assertCents(patch.defaultWeeklyIncomeCents, { allowZero: true })
+        }
+        if (patch.eurRate != null && !isValidRate(patch.eurRate)) {
+          throw new DomainError('invalid-rate', `Not a usable exchange rate: ${patch.eurRate}`)
         }
         const eurRateChanged = patch.eurRate !== undefined && patch.eurRate !== previous.eurRate
         const now = clock.now()

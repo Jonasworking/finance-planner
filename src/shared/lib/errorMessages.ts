@@ -2,6 +2,7 @@
 const MESSAGES: Record<string, string> = {
   'invalid-amount': 'Bitte einen gültigen Betrag eingeben.',
   'invalid-date': 'Das Datum ist ungültig.',
+  'invalid-rate': 'Bitte einen gültigen Kurs eingeben, z. B. 0,61.',
   'not-a-monday': 'Eine Woche muss an einem Montag beginnen.',
   'not-found': 'Der Eintrag existiert nicht mehr.',
   'unknown-category': 'Diese Kategorie gibt es nicht mehr.',

@@ -535,6 +535,9 @@ describe('budgets, categories, tasks, settings', () => {
     const unchanged = await repos.settings.update({ showEur: false })
     expect(unchanged.eurRateUpdatedAt).toBe(after.eurRateUpdatedAt)
     await expectCode(repos.settings.update({ trackingSince: 'x' }), 'invalid-date')
+    await expectCode(repos.settings.update({ eurRate: 0 }), 'invalid-rate')
+    await expectCode(repos.settings.update({ eurRate: Number.NaN }), 'invalid-rate')
+    expect((await repos.settings.update({ eurRate: null })).eurRate).toBeNull()
   })
 })
 
