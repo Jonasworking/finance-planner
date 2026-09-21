@@ -459,3 +459,55 @@ export function categoryDetail(input: {
       .slice(0, topCount),
   }
 }
+
+export interface AnalyticsView {
+  /** Weeks of the selection, oldest first. */
+  weekStarts: ISODate[]
+  summaries: WeekSummary[]
+  totals: RangeTotals
+  flow: FlowPoint[]
+  comparison: PeriodComparison | null
+  /** Null until two weeks are closed – one week is neither best nor worst. */
+  bestWorst: { best: WeekSummary; worst: WeekSummary } | null
+  /** Running total of what the closed weeks of the selection put aside, starting at zero. */
+  cumulative: { weekStart: ISODate; totalCents: Cents }[]
+  /** Budget-relevant spending by category, largest first. */
+  slices: CategorySlice[]
+  /** Active expenses of the selection (drill-down input). */
+  expenses: Expense[]
+  /** Paid from pots in the selection – not part of any number above. */
+  fundedCents: Cents
+}
+
+/** Everything the analysis screen shows for one selection, derived from raw rows. */
+export function buildAnalytics(input: {
+  today: ISODate
+  range: AnalyticsRange
+  granularity: Granularity
+  trackingSince: ISODate
+  weeks: readonly Week[]
+  expenses: readonly Expense[]
+  budgets: readonly Budget[]
+}): AnalyticsView {
+  const weekStarts = analyticsWeeks({
+    range: input.range,
+    granularity: input.granularity,
+    today: input.today,
+    firstWeek: firstAnalyticsWeek(input.trackingSince, input.weeks),
+  })
+  const summaries = summarizeWeeks(weekStarts, input)
+  const expenses = expensesInWeeks(input.expenses, weekStarts)
+  const totals = rangeTotals(summaries)
+  return {
+    weekStarts,
+    summaries,
+    totals,
+    flow: flowSeries(summaries, input.granularity),
+    comparison: latestComparison(summaries, input.granularity),
+    bestWorst: totals.closedWeeks >= 2 ? bestWorstWeek(summaries) : null,
+    cumulative: cumulativeSavings(summaries),
+    slices: categoryBreakdown(expenses),
+    expenses,
+    fundedCents: summaries.reduce((sum, summary) => sum + summary.fundedCents, 0),
+  }
+}

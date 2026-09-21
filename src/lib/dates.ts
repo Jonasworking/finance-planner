@@ -112,9 +112,9 @@ export function formatDayLabel(iso: ISODate, today: ISODate): string {
 }
 
 /** "21.–27. Sep. 2026", "28. Sep. – 4. Okt. 2026" or "28. Dez. 2026 – 3. Jan. 2027". */
-export function formatWeekRange(weekStart: ISODate): string {
-  const start = parseISODate(weekStart)
-  const end = parseISODate(weekEndOf(weekStart))
+export function formatDayRange(from: ISODate, to: ISODate): string {
+  const start = parseISODate(from)
+  const end = parseISODate(to)
   const last = format(end, 'd. MMM yyyy', { locale: de })
   if (start.getFullYear() !== end.getFullYear()) {
     return `${format(start, 'd. MMM yyyy', { locale: de })} – ${last}`
@@ -122,6 +122,11 @@ export function formatWeekRange(weekStart: ISODate): string {
   if (start.getMonth() !== end.getMonth())
     return `${format(start, 'd. MMM', { locale: de })} – ${last}`
   return `${format(start, 'd.', { locale: de })}–${last}`
+}
+
+/** The range label of the week that starts on `weekStart`. */
+export function formatWeekRange(weekStart: ISODate): string {
+  return formatDayRange(weekStart, weekEndOf(weekStart))
 }
 
 /** Axis label of a week: its Monday as "21.9." */

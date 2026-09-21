@@ -3,6 +3,7 @@ import { makeBudget, makeExpense, makeWeek, NOW } from '@/test/fixtures'
 import {
   analyticsWeeks,
   bestWorstWeek,
+  buildAnalytics,
   categoryAverages,
   categoryBreakdown,
   categoryDetail,
@@ -496,5 +497,63 @@ describe('categoryDetail', () => {
     expect(
       categoryDetail({ expenses, categoryId: 'cat:none', weekStarts: [], granularity: 'week' }),
     ).toEqual({ totalCents: 0, avgPerWeekCents: 0, trend: [], largest: [] })
+  })
+})
+
+describe('buildAnalytics', () => {
+  const closed = (id: string, incomeCents = 200_000) => makeWeek(id, { closedAt: NOW, incomeCents })
+  const input = {
+    today: '2026-09-23',
+    range: 8,
+    granularity: 'week',
+    trackingSince: '2026-09-02',
+    weeks: [closed('2026-08-31'), closed('2026-09-07', 150_000), closed('2026-09-14')],
+    expenses: [
+      makeExpense('2026-09-01', 30_000, { categoryId: 'cat:rent' }),
+      makeExpense('2026-09-08', 20_000),
+      makeExpense('2026-09-16', 10_000),
+      makeExpense('2026-09-17', 60_000, { categoryId: 'cat:travel', fundedByPotId: 'pot:trip' }),
+      makeExpense('2026-09-22', 4_000),
+      makeExpense('2026-08-20', 99_000), // before tracking began
+    ],
+    budgets: [makeBudget('2026-08-31', 40_000)],
+  } as const
+
+  it('derives every part of the screen from the same weeks', () => {
+    const view = buildAnalytics(input)
+    expect(view.weekStarts).toEqual(['2026-08-31', '2026-09-07', '2026-09-14', '2026-09-21'])
+    expect(view.totals).toMatchObject({
+      closedWeeks: 3,
+      incomeCents: 550_000,
+      spentCents: 60_000,
+      savedCents: 490_000,
+      openWeeks: 1,
+      openSpentCents: 4_000,
+    })
+    expect(view.flow.map((point) => point.savedCents)).toEqual([170_000, 130_000, 190_000, 0])
+    expect(view.comparison).toMatchObject({ currentKey: '2026-09-14', savedDeltaCents: 60_000 })
+    expect(view.bestWorst?.best.weekStart).toBe('2026-09-14')
+    expect(view.bestWorst?.worst.weekStart).toBe('2026-09-07')
+    expect(view.cumulative.at(-1)).toEqual({ weekStart: '2026-09-14', totalCents: 490_000 })
+    expect(view.slices).toEqual([
+      { categoryId: 'cat:groceries', amountCents: 34_000, share: 34 / 64 },
+      { categoryId: 'cat:rent', amountCents: 30_000, share: 30 / 64 },
+    ])
+    expect(view.fundedCents).toBe(60_000)
+    expect(view.expenses).toHaveLength(5)
+  })
+
+  it('names no best or worst week until two are closed', () => {
+    const view = buildAnalytics({ ...input, weeks: [closed('2026-09-14')] })
+    expect(view.bestWorst).toBeNull()
+    expect(view.comparison).toBeNull()
+    expect(view.cumulative).toHaveLength(1)
+  })
+
+  it('shows just the running week on day one', () => {
+    const view = buildAnalytics({ ...input, trackingSince: '2026-09-23', weeks: [], expenses: [] })
+    expect(view.weekStarts).toEqual(['2026-09-21'])
+    expect(view.totals.closedWeeks).toBe(0)
+    expect(view.slices).toEqual([])
   })
 })

@@ -6,6 +6,7 @@ import {
   dayOfTimestamp,
   daysBetween,
   formatDayLabel,
+  formatDayRange,
   formatMonth,
   formatWeekRange,
   formatWeekTick,
@@ -174,6 +175,11 @@ describe('German labels', () => {
     expect(formatWeekRange('2026-09-21')).toBe('21.–27. Sep. 2026')
     expect(formatWeekRange('2026-09-28')).toBe('28. Sep. – 4. Okt. 2026')
     expect(formatWeekRange('2026-12-28')).toBe('28. Dez. 2026 – 3. Jan. 2027')
+  })
+
+  it('formats any span of days the same way', () => {
+    expect(formatDayRange('2026-08-03', '2026-09-27')).toBe('3. Aug. – 27. Sep. 2026')
+    expect(formatDayRange('2025-12-29', '2026-09-27')).toBe('29. Dez. 2025 – 27. Sep. 2026')
   })
 
   it('labels chart axes by week and by month', () => {

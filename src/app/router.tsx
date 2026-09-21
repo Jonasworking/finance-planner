@@ -1,5 +1,4 @@
 import { createBrowserRouter, type RouteObject } from 'react-router'
-import { AnalyticsPage } from '@/features/analytics'
 import { BudgetPage } from '@/features/budget'
 import { DashboardPage } from '@/features/dashboard'
 import { CategoriesPage, ExpensesPage, RecurringPage } from '@/features/expenses'
@@ -7,6 +6,7 @@ import { PotDetailPage, PotsPage } from '@/features/pots'
 import { SettingsPage } from '@/features/settings'
 import { TasksPage } from '@/features/tasks'
 import { WhatIfPage } from '@/features/whatif'
+import { AnalyticsRoute } from './routes/AnalyticsRoute'
 import { AppShell } from './shell/AppShell'
 import { MorePage } from './shell/MorePage'
 
@@ -31,7 +31,7 @@ export const router = createBrowserRouter([
       { path: 'recurring', Component: RecurringPage },
       { path: 'pots', Component: PotsPage },
       { path: 'pots/:potId', Component: PotDetailPage },
-      { path: 'analytics', Component: AnalyticsPage },
+      { path: 'analytics', Component: AnalyticsRoute },
       { path: 'budget', Component: BudgetPage },
       { path: 'tasks', Component: TasksPage },
       { path: 'what-if', Component: WhatIfPage },
