@@ -3,6 +3,7 @@ import {
   addDaysISO,
   addMonthsClamped,
   addWeeksISO,
+  dayOfTimestamp,
   daysBetween,
   formatDayLabel,
   formatMonth,
@@ -28,6 +29,17 @@ describe('time zone harness', () => {
     const zone = runner.process?.env.TZ
     expect(['Australia/Sydney', 'Europe/Berlin']).toContain(zone)
     expect(Intl.DateTimeFormat().resolvedOptions().timeZone).toBe(zone)
+  })
+})
+
+describe('dayOfTimestamp', () => {
+  it('is the LOCAL day of a timestamp, not the UTC day', () => {
+    // 2026-09-20T15:00:00Z: still Sunday afternoon in Berlin, already Monday 01:00 in Sydney.
+    const timestamp = Date.UTC(2026, 8, 20, 15)
+    const zone = Intl.DateTimeFormat().resolvedOptions().timeZone
+    expect(dayOfTimestamp(timestamp)).toBe(
+      zone === 'Australia/Sydney' ? '2026-09-21' : '2026-09-20',
+    )
   })
 })
 

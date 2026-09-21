@@ -22,6 +22,16 @@ interface UiState {
   closeWeekSession: number
   openCloseWeek: (weekStart: string) => void
   dismissCloseWeek: () => void
+
+  /**
+   * "EUR-Kurs" sheet. `eurRateEnable` = also switch the EUR display on when the rate is saved
+   * (the currency switch opens it that way; the settings screen only edits the rate).
+   */
+  eurRateOpen: boolean
+  eurRateSession: number
+  eurRateEnable: boolean
+  openEurRate: (options?: { enableOnSave?: boolean }) => void
+  closeEurRate: () => void
 }
 
 /** Ephemeral UI state only – persistent data lives in Dexie. */
@@ -51,4 +61,15 @@ export const useUiStore = create<UiState>((set) => ({
       closeWeekSession: state.closeWeekSession + 1,
     })),
   dismissCloseWeek: () => set({ closeWeekOpen: false }),
+
+  eurRateOpen: false,
+  eurRateSession: 0,
+  eurRateEnable: false,
+  openEurRate: (options) =>
+    set((state) => ({
+      eurRateOpen: true,
+      eurRateSession: state.eurRateSession + 1,
+      eurRateEnable: options?.enableOnSave === true,
+    })),
+  closeEurRate: () => set({ eurRateOpen: false }),
 }))

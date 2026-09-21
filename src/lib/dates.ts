@@ -41,6 +41,11 @@ export function toISODate(date: Date): ISODate {
   return format(date, 'yyyy-MM-dd')
 }
 
+/** The local calendar day on which a stored timestamp (`createdAt`, `eurRateUpdatedAt` …) fell. */
+export function dayOfTimestamp(timestamp: number): ISODate {
+  return toISODate(new Date(timestamp))
+}
+
 export function addDaysISO(iso: ISODate, days: number): ISODate {
   return toISODate(addDays(parseISODate(iso), days))
 }
