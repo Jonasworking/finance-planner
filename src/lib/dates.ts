@@ -111,12 +111,22 @@ export function formatDayLabel(iso: ISODate, today: ISODate): string {
   return format(parseISODate(iso), pattern, { locale: de })
 }
 
-/** "21.–27. Sep. 2026", "28. Sep. – 4. Okt. 2026" or "28. Dez. 2026 – 3. Jan. 2027". */
-export function formatDayRange(from: ISODate, to: ISODate): string {
+/**
+ * "21.–27. Sep. 2026", "28. Sep. – 4. Okt. 2026" or "28. Dez. 2026 – 3. Jan. 2027".
+ * `year: false` drops the year for narrow table cells – unless the range crosses a year.
+ */
+export function formatDayRange(
+  from: ISODate,
+  to: ISODate,
+  options: { year?: boolean } = {},
+): string {
   const start = parseISODate(from)
   const end = parseISODate(to)
-  const last = format(end, 'd. MMM yyyy', { locale: de })
-  if (start.getFullYear() !== end.getFullYear()) {
+  const crossesYear = start.getFullYear() !== end.getFullYear()
+  const last = format(end, options.year === false && !crossesYear ? 'd. MMM' : 'd. MMM yyyy', {
+    locale: de,
+  })
+  if (crossesYear) {
     return `${format(start, 'd. MMM yyyy', { locale: de })} – ${last}`
   }
   if (start.getMonth() !== end.getMonth())
@@ -125,8 +135,8 @@ export function formatDayRange(from: ISODate, to: ISODate): string {
 }
 
 /** The range label of the week that starts on `weekStart`. */
-export function formatWeekRange(weekStart: ISODate): string {
-  return formatDayRange(weekStart, weekEndOf(weekStart))
+export function formatWeekRange(weekStart: ISODate, options: { year?: boolean } = {}): string {
+  return formatDayRange(weekStart, weekEndOf(weekStart), options)
 }
 
 /** Axis label of a week: its Monday as "21.9." */

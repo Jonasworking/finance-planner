@@ -1,7 +1,9 @@
 import { describe, expect, it } from 'vitest'
 import {
   AUD_DISPLAY,
+  displayUnits,
   formatAUD,
+  formatDisplayUnits,
   formatEUR,
   formatMoney,
   formatRate,
@@ -91,6 +93,23 @@ describe('ratio', () => {
   it('never divides by zero', () => {
     expect(ratio(200, 400)).toBe(0.5)
     expect(ratio(200, 0)).toBe(0)
+  })
+})
+
+describe('chart axis units', () => {
+  const eur = { currency: 'EUR', rate: 0.6 } as const
+
+  it('counts in the major unit of the shown currency', () => {
+    expect(displayUnits(200_000, AUD_DISPLAY)).toBe(2000)
+    expect(displayUnits(200_000, eur)).toBe(1200)
+    expect(displayUnits(-5_050, AUD_DISPLAY)).toBe(-50.5)
+  })
+
+  it('labels ticks as whole amounts', () => {
+    expect(formatDisplayUnits(2000, AUD_DISPLAY)).toBe('A$2.000')
+    expect(formatDisplayUnits(-500, AUD_DISPLAY)).toBe(`${MINUS}A$500`)
+    expect(formatDisplayUnits(1200, eur)).toBe(`1.200${NBSP}€`)
+    expect(formatDisplayUnits(-0.2, eur)).toBe(`0${NBSP}€`)
   })
 })
 

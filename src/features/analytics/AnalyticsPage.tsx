@@ -10,6 +10,7 @@ import { useAnalyticsStore } from './analyticsStore'
 import { BestWorstCard } from './components/BestWorstCard'
 import { ComparisonCard } from './components/ComparisonCard'
 import { FilterBar } from './components/FilterBar'
+import { FlowCard } from './components/FlowCard'
 import { KpiRow } from './components/KpiRow'
 import { selectionLabel } from './labels'
 
@@ -61,6 +62,7 @@ export function AnalyticsPage() {
           eurRate={settings.eurRate}
         />
         <KpiRow totals={view.totals} display={display} />
+        <FlowCard points={view.flow} granularity={granularity} display={display} />
         {/* minmax(0,…) + min-w-0: grid tracks must not grow to fit long non-wrapping rows */}
         <div className="grid grid-cols-[minmax(0,1fr)] gap-4 lg:grid-cols-[repeat(2,minmax(0,1fr))] lg:items-start">
           <div className="flex min-w-0 flex-col gap-4">

@@ -48,8 +48,32 @@ const bareCn = {
   message: "Import cn from '@/shared/lib/utils' (run `npm run ui:fix-imports` after shadcn add).",
 }
 
-// Folder-specific configs replace (not merge) the rule, so each one carries the cn ban too.
-const restrictImports = (patterns = []) => ['error', { paths: [bareCn], patterns }]
+/*
+ * Recharts weighs ~100 KB gzip. It is imported in ONE folder only, which the analysis screen
+ * loads lazily – an import anywhere else would silently pull it into the start chunk.
+ */
+const rechartsOutsideCharts = {
+  group: ['recharts', 'recharts/*'],
+  message: 'Import Recharts only in src/features/analytics/charts (lazy chunk).',
+}
+
+// Folder-specific configs replace (not merge) the rule, so each one carries the shared bans too.
+const restrictImports = (patterns = [], { allowRecharts = false } = {}) => [
+  'error',
+  { paths: [bareCn], patterns: allowRecharts ? patterns : [...patterns, rechartsOutsideCharts] },
+]
+
+const featureRules = [
+  {
+    group: ['@/features/*/*'],
+    message:
+      'Import other features via their index.ts only (use relative imports inside a feature).',
+  },
+  {
+    group: ['@/app/*'],
+    message: 'Features must not depend on the app shell.',
+  },
+]
 
 export default defineConfig([
   globalIgnores(['dist', 'coverage']),
@@ -127,17 +151,13 @@ export default defineConfig([
   {
     files: ['src/features/**/*.{ts,tsx}'],
     rules: {
-      'no-restricted-imports': restrictImports([
-        {
-          group: ['@/features/*/*'],
-          message:
-            'Import other features via their index.ts only (use relative imports inside a feature).',
-        },
-        {
-          group: ['@/app/*'],
-          message: 'Features must not depend on the app shell.',
-        },
-      ]),
+      'no-restricted-imports': restrictImports(featureRules),
+    },
+  },
+  {
+    files: ['src/features/analytics/charts/**/*.{ts,tsx}'],
+    rules: {
+      'no-restricted-imports': restrictImports(featureRules, { allowRecharts: true }),
     },
   },
 

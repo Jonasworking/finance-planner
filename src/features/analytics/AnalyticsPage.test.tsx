@@ -7,10 +7,22 @@ import { buildAnalytics } from '@/lib/analytics'
 import { formatAUD, formatEUR } from '@/lib/money'
 import { useUiStore } from '@/shared/stores/uiStore'
 import { useAnalyticsStore } from './analyticsStore'
+import { toFlowRows, type FlowRow } from './chartData'
 import { AnalyticsPage } from './AnalyticsPage'
 
 const TODAY = '2026-09-23' // Wednesday of the week starting 2026-09-21
 vi.mock('@/shared/hooks/useToday', () => ({ useToday: () => '2026-09-23' }))
+// jsdom has no layout, so Recharts draws nothing: the charts are replaced by a plain readout of
+// the rows they were given. The SVG itself is covered by the browser smoke suite.
+vi.mock('./charts', () => ({
+  FlowChart: ({ rows }: { rows: FlowRow[] }) => (
+    <ul aria-label="Flow-Chart">
+      {rows.map((row) => (
+        <li key={row.key}>{[row.key, row.spent, row.saved, row.open, row.income].join('|')}</li>
+      ))}
+    </ul>
+  ),
+}))
 vi.mock('sonner', () => ({
   toast: Object.assign(vi.fn(), { success: vi.fn(), error: vi.fn(), warning: vi.fn() }),
 }))
@@ -174,5 +186,35 @@ describe('AnalyticsPage', () => {
     await user.click(screen.getByRole('radio', { name: 'Australische Dollar' }))
     await waitFor(async () => expect((await repos.settings.get()).showEur).toBe(false))
     expect(await within(tile('Gespart')).findByText('A$6.400')).toBeInTheDocument()
+  })
+
+  it('hands the chart the numbers lib computed and offers them as a table', async () => {
+    const user = userEvent.setup()
+    await seedWeeks()
+    const view = await expected(12, 'week')
+    renderPage()
+
+    const chart = await screen.findByRole('list', { name: 'Flow-Chart' })
+    const rows = toFlowRows(view.flow, 'week', { currency: 'AUD' })
+    expect(
+      within(chart)
+        .getAllByRole('listitem')
+        .map((item) => item.textContent),
+    ).toEqual(rows.map((row) => [row.key, row.spent, row.saved, row.open, row.income].join('|')))
+    expect(rows.at(-1)).toMatchObject({ key: '2026-09-21', open: 120, income: null })
+    expect(screen.getByText('noch offen: bisher ausgegeben')).toBeInTheDocument() // legend
+
+    await user.click(
+      screen.getByRole('button', { name: 'Verdient, ausgegeben, gespart: als Tabelle anzeigen' }),
+    )
+    const table = screen.getByRole('table')
+    const newestClosed = within(table).getByRole('row', { name: /14\.–20\. Sep\./ })
+    expect(within(newestClosed).getByText('A$2.000')).toBeInTheDocument()
+    expect(within(newestClosed).getByText('A$200')).toBeInTheDocument()
+    expect(within(newestClosed).getByText('A$1.800')).toBeInTheDocument()
+    const open = within(table).getByRole('row', { name: /21\.–27\. Sep\./ })
+    expect(within(open).getByText('noch offen')).toBeInTheDocument()
+    expect(within(open).getByText('A$120')).toBeInTheDocument()
+    expect(screen.queryByRole('list', { name: 'Flow-Chart' })).not.toBeInTheDocument()
   })
 })

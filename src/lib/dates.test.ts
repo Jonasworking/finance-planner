@@ -180,6 +180,10 @@ describe('German labels', () => {
   it('formats any span of days the same way', () => {
     expect(formatDayRange('2026-08-03', '2026-09-27')).toBe('3. Aug. – 27. Sep. 2026')
     expect(formatDayRange('2025-12-29', '2026-09-27')).toBe('29. Dez. 2025 – 27. Sep. 2026')
+    // Narrow cells drop the year – but never where it is needed to tell the dates apart.
+    expect(formatWeekRange('2026-09-21', { year: false })).toBe('21.–27. Sep.')
+    expect(formatWeekRange('2026-09-28', { year: false })).toBe('28. Sep. – 4. Okt.')
+    expect(formatWeekRange('2026-12-28', { year: false })).toBe('28. Dez. 2026 – 3. Jan. 2027')
   })
 
   it('labels chart axes by week and by month', () => {

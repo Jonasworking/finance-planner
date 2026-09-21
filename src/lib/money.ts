@@ -109,6 +109,23 @@ export function parseAmountInput(input: string): Cents | null {
   return Number.isFinite(value) ? Math.round(value * 100) : null
 }
 
+/**
+ * Cents as a plain number in the major unit of the shown currency – what a chart axis counts
+ * in, so its ticks land on round EUR amounts when EUR is shown.
+ */
+export function displayUnits(cents: Cents, display: MoneyDisplay): number {
+  return (display.currency === 'EUR' ? cents * display.rate : cents) / 100
+}
+
+/** Axis tick for a `displayUnits` value: whole amounts, `A$2.000` or `1.200 €`. */
+export function formatDisplayUnits(units: number, display: MoneyDisplay): string {
+  const abs = Math.abs(units)
+  const sign = Math.round(abs) === 0 ? '' : units < 0 ? MINUS : ''
+  const digits =
+    display.currency === 'EUR' ? eurFormatWhole.format(abs) : `A$${withoutDecimals.format(abs)}`
+  return `${sign}${digits}`
+}
+
 export const MAX_RATE = 100
 
 /** A usable exchange rate: finite, above zero and not absurdly large (typo guard). */
