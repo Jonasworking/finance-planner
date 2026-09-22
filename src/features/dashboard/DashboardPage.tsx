@@ -1,11 +1,13 @@
 import { useLiveQuery } from 'dexie-react-hooks'
 import { db, loadDashboard } from '@/db'
+import { TasksCard } from '@/features/tasks'
 import { resolveBudget, runningWeekBudget } from '@/lib/budget'
 import { nextStep, projectWeek, weekProgress } from '@/lib/dashboard'
 import { formatWeekRange, weekStartOf } from '@/lib/dates'
 import { groupByWeek } from '@/lib/expenses'
 import { pendingWeeks, summarizeWeek } from '@/lib/savings'
 import { computeStreak } from '@/lib/streak'
+import { tasksForDashboard } from '@/lib/tasks'
 import { Page } from '@/shared/components/Page'
 import { useToday } from '@/shared/hooks/useToday'
 import { Skeleton } from '@/shared/ui/skeleton'
@@ -79,6 +81,8 @@ export function DashboardPage() {
     closedWeeks: data.weeks.filter((week) => week.closedAt !== null).length,
   })
 
+  const taskWidget = tasksForDashboard(data.tasks, today)
+
   const recentExpenses = [...(expensesByWeek.get(currentWeek) ?? [])]
     .sort((a, b) => (a.date === b.date ? b.createdAt - a.createdAt : a.date < b.date ? 1 : -1))
     .slice(0, RECENT_EXPENSES)
@@ -97,6 +101,14 @@ export function DashboardPage() {
             today={today}
           />
           <NextStepCard step={step} today={today} />
+          {taskWidget.tasks.length > 0 ? (
+            <TasksCard
+              widget={taskWidget}
+              pots={data.pots}
+              potTransactions={data.potTransactions}
+              today={today}
+            />
+          ) : null}
           {recentExpenses.length > 0 ? (
             <RecentExpensesCard
               expenses={recentExpenses}

@@ -1,6 +1,7 @@
-import { render, screen } from '@testing-library/react'
+import { render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router'
+import { toast } from 'sonner'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { db, repos } from '@/db'
 import { addWeeksISO } from '@/lib/dates'
@@ -8,6 +9,10 @@ import { useUiStore } from '@/shared/stores/uiStore'
 import { DashboardPage } from './DashboardPage'
 
 vi.mock('@/shared/hooks/useToday', () => ({ useToday: () => '2026-09-23' })) // Wednesday
+// The real toaster needs pointer capture, which jsdom lacks – capture the calls instead.
+vi.mock('sonner', () => ({
+  toast: Object.assign(vi.fn(), { success: vi.fn(), error: vi.fn(), warning: vi.fn() }),
+}))
 
 const onboard = (trackingSince: string, openingBalanceCents = 0) =>
   repos.onboarding.complete(
@@ -28,7 +33,13 @@ const renderPage = () =>
   )
 
 beforeEach(async () => {
-  useUiStore.setState({ quickAddOpen: false, closeWeekOpen: false, closeWeekStart: null })
+  useUiStore.setState({
+    quickAddOpen: false,
+    closeWeekOpen: false,
+    closeWeekStart: null,
+    taskOpen: false,
+    taskId: null,
+  })
   await db.delete()
   await db.open()
 })
@@ -52,6 +63,7 @@ describe('DashboardPage', () => {
     expect(screen.queryByText('Letzte Wochen')).not.toBeInTheDocument()
     expect(screen.queryByText('Zuletzt ausgegeben')).not.toBeInTheDocument()
     expect(screen.queryByText('Streak')).not.toBeInTheDocument()
+    expect(screen.queryByRole('region', { name: 'Tasks' })).not.toBeInTheDocument()
     // The ring leads to the budget, "Nur gespart" to its pot:
     expect(screen.getByRole('link', { name: 'Budget anpassen' })).toHaveAttribute('href', '/budget')
     expect(screen.getByRole('link', { name: /Nur gespart/ })).toHaveAttribute(
@@ -145,6 +157,48 @@ describe('DashboardPage', () => {
 
     expect(await screen.findByText('12 Wochen im Budget')).toBeInTheDocument()
     expect(screen.getByText(/Das ist dein Rekord/)).toBeInTheDocument()
+  })
+
+  it('lists the next open tasks – overdue first – and ticks one off with undo', async () => {
+    const user = userEvent.setup()
+    await onboard('2026-09-21')
+    const bali = await repos.pots.create({ name: 'Bali', targetCents: 300_000 })
+    await repos.tasks.add({ title: 'Irgendwann' }) // undated → after every dated task
+    await repos.tasks.add({ title: 'Flug buchen', dueDate: '2026-09-30', linkedPotId: bali.id })
+    await repos.tasks.add({ title: 'Miete überweisen', dueDate: '2026-09-25' })
+    await repos.tasks.add({ title: 'Steuer', dueDate: '2026-09-20' })
+    const done = await repos.tasks.add({ title: 'Schon erledigt' })
+    await repos.tasks.setDone(done.id, true)
+    renderPage()
+
+    const widget = await screen.findByRole('region', { name: 'Tasks' })
+    expect(within(widget).getByText('1 überfällig')).toBeInTheDocument()
+    expect(
+      within(widget)
+        .getAllByRole('checkbox')
+        .map((box) => box.getAttribute('aria-label')),
+    ).toEqual(['„Steuer" erledigen', '„Miete überweisen" erledigen', '„Flug buchen" erledigen'])
+    expect(within(widget).getByText('Seit 3 Tagen überfällig')).toBeInTheDocument()
+    expect(within(widget).getByText('Bali')).toBeInTheDocument() // the pot reference, by name
+    expect(within(widget).getByRole('link', { name: '1 weiterer Task' })).toHaveAttribute(
+      'href',
+      '/tasks',
+    )
+    expect(within(widget).queryByText('Schon erledigt')).not.toBeInTheDocument()
+
+    // Tapping the title opens the sheet; the tick writes with an undo toast.
+    await user.click(within(widget).getByText('Steuer'))
+    expect(useUiStore.getState()).toMatchObject({ taskOpen: true })
+    await user.click(within(widget).getByRole('checkbox', { name: '„Steuer" erledigen' }))
+    await waitFor(() => expect(within(widget).queryByText('Steuer')).not.toBeInTheDocument())
+    expect(within(widget).queryByText('1 überfällig')).not.toBeInTheDocument()
+    expect(within(widget).getByText('Irgendwann')).toBeInTheDocument() // the 4th moved up
+    const [message, options] = vi.mocked(toast).mock.calls.at(-1)!
+    expect(message).toBe('„Steuer" erledigt')
+    const undo = options?.action as { label: string; onClick: () => void }
+    expect(undo.label).toBe('Rückgängig')
+    undo.onClick()
+    expect(await within(widget).findByText('Steuer')).toBeInTheDocument()
   })
 
   it('pauses the streak while finished weeks are still open', async () => {
