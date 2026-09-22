@@ -352,6 +352,41 @@ journey(
   },
 )
 
+journey('a task is created, ticked off and brought back', PHONE, async (page) => {
+  await onboard(page)
+  await goto(page, '/tasks')
+  await waitForText(page, 'Was steht an?') // no tasks yet → the screen explains them
+  await assertFitsViewport(page, 'tasks empty')
+
+  await clickText(page, 'main button', 'Task anlegen', { exact: true })
+  await waitForModals(page, 1)
+  await typeInto(page, 'Titel', 'Steuernummer beantragen')
+  await clickText(page, '[role="dialog"] button', 'Heute', { exact: true })
+  await clickText(page, '[role="dialog"] [role="radio"]', 'Behörden', { exact: true })
+  await assertFitsViewport(page, 'task sheet')
+  await clickText(page, '[role="dialog"] button', 'Task anlegen', { exact: true })
+  await waitForModals(page, 0)
+  await waitForText(page, 'Heute fällig')
+  await waitForText(page, '1 offen')
+  await assertFitsViewport(page, 'tasks list')
+
+  // the tick shows first, then the row moves to "Erledigt" – and the toast offers undo
+  await clickSelector(page, `button[aria-label='„Steuernummer beantragen" erledigen']`)
+  await waitForText(page, '„Steuernummer beantragen" erledigt')
+  await waitForText(page, 'Alles erledigt')
+  await waitForText(page, 'Heute erledigt')
+  await assertFitsViewport(page, 'tasks with a finished task')
+  await clickToastAction(page, 'erledigt', 'Rückgängig')
+  await waitForText(page, '1 offen')
+  await waitForNoText(page, 'Alles erledigt')
+
+  // … and it is back on the home screen
+  await goto(page, '/')
+  await waitForText(page, 'Steuernummer beantragen')
+  await waitForText(page, 'Heute fällig')
+  await assertFitsViewport(page, 'dashboard with a task')
+})
+
 journey('desktop layout keeps every card inside the window', DESKTOP, async (page) => {
   await goto(page, '/')
   await waitForText(page, 'Willkommen beim Finanzplaner')
