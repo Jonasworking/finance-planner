@@ -32,6 +32,13 @@ interface UiState {
   eurRateEnable: boolean
   openEurRate: (options?: { enableOnSave?: boolean }) => void
   closeEurRate: () => void
+
+  /** Task sheet: `null` id = create a new task. Same keep-id-while-closing pattern as above. */
+  taskId: string | null
+  taskOpen: boolean
+  taskSession: number
+  openTask: (id?: string | null) => void
+  closeTask: () => void
 }
 
 /** Ephemeral UI state only – persistent data lives in Dexie. */
@@ -72,4 +79,11 @@ export const useUiStore = create<UiState>((set) => ({
       eurRateEnable: options?.enableOnSave === true,
     })),
   closeEurRate: () => set({ eurRateOpen: false }),
+
+  taskId: null,
+  taskOpen: false,
+  taskSession: 0,
+  openTask: (taskId = null) =>
+    set((state) => ({ taskId, taskOpen: true, taskSession: state.taskSession + 1 })),
+  closeTask: () => set({ taskOpen: false }),
 }))

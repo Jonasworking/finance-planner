@@ -8,6 +8,7 @@ import { EditExpenseSheet, QuickAddSheet, useMaterializeRecurring } from '@/feat
 import { CloseWeekSheet } from '@/features/income'
 import { OnboardingFlow } from '@/features/onboarding'
 import { EurRateSheet } from '@/features/settings'
+import { TaskSheet } from '@/features/tasks'
 import { resolveBudget } from '@/lib/budget'
 import { weekStartOf } from '@/lib/dates'
 import { SETTINGS_ID } from '@/lib/types'
@@ -95,6 +96,7 @@ export function AppShell() {
       <EditExpenseSheet />
       <CloseWeekSheet />
       <EurRateSheet />
+      <TaskSheet />
     </div>
   )
 }
