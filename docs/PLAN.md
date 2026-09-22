@@ -14,7 +14,7 @@
 - [x] **Phase 3** – Budget & Spartöpfe — fertig 2026-09-20 (Branch `phase-3-budget-pots`), **abgenommen 2026-09-21 (am iPhone getestet), in `main`**, Notizen unten
 - [x] **Phase 4** – Analyse & Charts — freigegeben 2026-09-21, fertig 2026-09-21 (Branch `phase-4-analytics`), **abgenommen 2026-09-22, in `main`**, Notizen unten
 - [ ] **Phase 5** – Tasks, Insights, Was-wäre-wenn — Aufteilung in 5a–5d und die folgenden Entscheidungen bestätigt 2026-09-22; alle übrigen Annahmen des Ursprungsplans (§5) gelten unverändert:
-  - [ ] **5a** – Tasks: Fälligkeit, Kategorie, optionale Topf-Kopplung als **Verweis mit Fortschrittsanzeige (keine Automatik)**, Abhak-Animation, überfällige Tasks hervorgehoben, Dashboard-Widget — freigegeben 2026-09-22 (Branch `phase-5a-tasks`)
+  - [ ] **5a** – Tasks: Fälligkeit, Kategorie, optionale Topf-Kopplung als **Verweis mit Fortschrittsanzeige (keine Automatik)**, Abhak-Animation, überfällige Tasks hervorgehoben, Dashboard-Widget — freigegeben 2026-09-22, fertig 2026-09-22 (Branch `phase-5a-tasks`), _wartet auf Abnahme_, Notizen unten
   - [ ] **5b** – Insights: Karten auf dem Dashboard (wegwischbar, max. 3). **Weggewischte Insights liegen in `localStorage`** (gerätelokal, nicht im Backup, kein Schema-Wechsel). Die Regeln „Offene Wochen" und „Backup" erscheinen **nicht** als Karte – offene Wochen deckt schon der Nächste Schritt ab, die Backup-Erinnerung kommt mit Phase 6.
   - [ ] **5c** – Was-wäre-wenn: **Startwert der Prognose = Summe aller Töpfe**; Kategorie-Slider, Zieldatum, Kurve Basis vs. Szenario, Ergebnis „+A$Z bis Datum Y", optional „als Budget übernehmen".
   - [ ] **5d** – geparkt, ohne Umfang.
@@ -27,8 +27,17 @@
 
 **Wo wir stehen**
 
-- **Phase 4 ist abgenommen** (2026-09-22). `main` wurde per Fast-Forward auf `phase-4-analytics` gezogen und gepusht → Production: https://finance-planner-jonasworkings-projects.vercel.app
-- **Phase 5 ist in 5a–5d aufgeteilt** (Entscheidungen oben in der Phasenliste). **5a (Tasks) ist freigegeben** und läuft auf Branch `phase-5a-tasks`: `Task`-Typ, `tasks`-Tabelle und `repos.tasks` existieren seit Phase 1 – es fehlen die `lib`-Regeln (Fälligkeit/überfällig, Sortierung, Dashboard-Auswahl), Queries, UI und die Smoke-Journey „Task anlegen, abhaken, rückgängig".
+- **Phase 4 ist abgenommen** (2026-09-22). `main` = `d059728`, gepusht, Production READY, Smoke-Suite 9/9 gegen Production: https://finance-planner-jonasworkings-projects.vercel.app
+- **Phase 5 ist in 5a–5d aufgeteilt** (Entscheidungen oben in der Phasenliste). **5a (Tasks) ist fertig gebaut und wartet auf deine Abnahme.** Branch `phase-5a-tasks`, gepusht. Preview zum Testen am iPhone (eigene, leere Daten): https://finance-planner-git-phase-5a-tasks-jonasworkings-projects.vercel.app
+- Letzter Prüfstand: typecheck · lint · build grün · 782 Testläufe · Smoke-Suite 10/10 grün, 3× hintereinander (neu: Task-Journey).
+
+**Was du bei der Abnahme ansehen solltest** (das kann nur das echte Gerät zeigen)
+
+1. Mehr → Tasks → „Task anlegen": Titel tippen (Tastatur öffnet sich von selbst?), „Heute"/„Morgen"/„In 7 Tagen" oder das Datumsfeld (iOS-Datepicker), Kategorie, Notiz → anlegen.
+2. Haken antippen: Strich zeichnet sich, Zeile wandert nach „Erledigt", Toast mit „Rückgängig" – fühlt sich das Tempo (≈ 0,3 s bis zur Bewegung) richtig an?
+3. Einen Task mit Datum in der Vergangenheit anlegen → steht oben mit Coral-Kante und „Seit n Tagen überfällig"; Home-Screen zeigt das Widget mit Badge „1 überfällig".
+4. Töpfe → Topf „Bali" mit Ziel anlegen → Task mit Topf-Kopplung: Zeile zeigt Name, Stand und Balken; Tipp auf die Topf-Zeile führt zum Topf.
+5. Zeile nach links wischen → löschen mit Rückgängig; Tipp auf den Titel → Bearbeiten-Sheet mit Löschen-Button.
 
 **Offen aus Phase 3/4** (nicht blockierend, unverändert)
 
@@ -39,7 +48,11 @@
 - Start-Chunk 286 KB gzip (Ziel < 250 KB → Phase 6: Lazy-Routes für Budget/Töpfe, `LazyMotion`).
 - A11y-Pass (Pfeiltasten im Segment-Schalter, Sortieren per Tastatur, `forced-colors`-Textur für Charts) → Phase 6.
 
-**Merker für 5b/5c:** Die Insight-Regeln und `projectScenario` liegen seit Phase 1 getestet in `lib`; die Was-wäre-wenn-Kurve kann `ChartCard`, `ChartTooltip` und die Chart-Tokens aus Phase 4 wiederverwenden (Recharts nur unter `features/analytics/charts` importierbar – für 5c den Chart-Ordner teilen oder die Regel um einen zweiten Ordner erweitern).
+**Als Nächstes**
+
+1. Du testest die Preview am iPhone → „5a ist abgenommen" (oder Nachbesserungen).
+2. Dann von mir: Abnahme hier vermerken → `main` per Fast-Forward auf `phase-5a-tasks` → pushen → Production prüfen → Smoke-Suite einmal gegen Production.
+3. **5b (Insights) erst nach deiner Freigabe.** Die Insight-Regeln liegen seit Phase 1 getestet in `lib/insights` (strukturiert: `kind` + Daten); zu bauen sind die Karten auf dem Dashboard (max. 3, wegwischbar, Weggewischtes in `localStorage`), die Regeln „Offene Wochen" und „Backup" bleiben laut Entscheidung ohne Karte. **5c:** `projectScenario` ist fertig; die Kurve kann `ChartCard`, `ChartTooltip` und die Chart-Tokens aus Phase 4 wiederverwenden (Recharts nur unter `features/analytics/charts` importierbar – Chart-Ordner teilen oder die Lint-Regel um einen zweiten Ordner erweitern); Startwert = Summe aller Töpfe.
 
 ## Phase 0 – Ergebnis & Abweichungen vom Plan
 
@@ -140,6 +153,22 @@
 - **Von der Smoke-Suite gefunden (kein Unit-Test sah es):** Der gleitende Auswahl-Indikator des neuen `SegmentedControl` ragte während der Fahrt aus seinem Button („Wochen needs 92 px, has 75"). Er gleitet jetzt innerhalb der Gruppe. Zwei Eigenheiten der Werkzeuge, **kein App-Fehler:** `innerText` liefert per CSS großgeschriebene Überschriften – aus „Größte" wird „GRÖSSTE", darauf kann man nicht warten; und ein Ganzseiten-Screenshot ändert die Fenstergröße, Recharts animiert dann neu und das Bild zeigt leere Charts (Screenshots mit `prefers-reduced-motion` aufnehmen).
 - **Bundle:** Start-Chunk 286 KB gzip (unverändert; Ziel < 250 KB bleibt Phase 6), `analytics` 8 KB, `charts` 115 KB – beide erst beim Öffnen der Analyse.
 - **Offen / Merker:** keine Direktbeschriftung auf den Säulen (bei 11 px Breite nicht unterzubringen – Legende, Tooltip und Tabelle tragen die Werte) · kein Textur-Modus für `forced-colors`/Druck · Pfeiltasten im `SegmentedControl` und ein A11y-Pass bleiben Phase 6 (Recharts bringt Tastatur-Navigation der Tooltips mit) · `ThemeToggle` könnte auf `SegmentedControl` umziehen · `AnimatedNumber` weiterhin nicht gebaut.
+
+## Phase 5a – Ergebnis & Abweichungen vom Plan
+
+**Geprüft:** typecheck · lint · build grün · **782 Testläufe** (391 Tests × 2 Zeitzonen; neu: `lib/tasks`, Repo-Regeln für Tasks, RTL-Tests der Tasks-Seite mit Sheet gegen die echte DB-Schicht, Dashboard-Widget) · `npm run test:e2e` **10 Journeys grün, 3× hintereinander** (~70 s), neu: „Task anlegen → abhaken → rückgängig → Home-Widget" bei 390 px · Sichtprüfung im echten Chrome (390×844 dunkel **und** hell, 1440×900): leere Seite, Sheet leer/gefüllt, Liste mit überfälligem/heutigem/gekoppeltem Task, Erledigt-Abschnitt, Dashboard-Widget – Konsole fehlerfrei, kein Element außerhalb des Viewports.
+**DoD (Task-Teil von Phase 5):** Anlegen, Bearbeiten, Abhaken, Zurücknehmen und Löschen laufen per Touch (Haken, Wisch, Presets) **und** Tastatur (der Haken ist ein `role="checkbox"`-Button, Löschen sitzt zusätzlich im Bearbeiten-Sheet, Enter im Titel speichert).
+
+- **Datenmodell unverändert** – `Task`, `tasks`-Tabelle und `repos.tasks` stammen aus Phase 1, kein Schema-Sprung. Neu im Repo: Titel wird getrimmt und darf nicht leer sein (`invalid-title`), ein Topf-Verweis muss existieren (`unknown-pot`; archiviert erlaubt, der Fortschritt ist dann Geschichte), `setDone` ist idempotent (zweites Abhaken behält `doneAt`).
+- **Reihenfolge aus `lib/tasks.sortTasks`:** offen vor erledigt; offene nach Fälligkeit (überfällige dadurch automatisch oben), undatierte danach, neueste zuerst; erledigte nach Erledigt-Zeitpunkt. **Gefunden im Dashboard-Test:** zwei Zeilen aus derselben Millisekunde hatten keine feste Reihenfolge (gleiches `createdAt`, zufällige UUID) → letzter Tiebreaker `id`, Regel in `CLAUDE.md`.
+- **Überfällig = offen und `dueDate < today`** – ein zu spät erledigter Task ist einfach erledigt. Anzeige: Coral-Kante links, Label „Seit n Tagen überfällig" in Coral mit Icon, „Heute fällig" in Warning; Zähler im Untertitel („3 offen · 1 überfällig") und als Badge im Home-Widget.
+- **Abhak-Animation mit verzögertem Schreiben:** Der Haken zeigt den Zustand sofort (Spring `bouncy` auf dem Strich, `pathLength` zeichnet), geschrieben wird nach 320 ms – mit Live-Queries wäre die Zeile sonst schon nach „Erledigt" gesprungen, bevor man den Haken sieht. Zurücknehmen schreibt sofort. Toast „„X" erledigt" mit Rückgängig, wie beim Löschen. **Werkzeug-Falle:** eine Keyframe-Liste (`scale: [1, 1.2, 1]`) mit Spring wirft in jsdom (Motion erlaubt Springs nur zwei Keyframes), im Browser fiel es nicht auf – der Überschwinger von `bouncy` ersetzt sie.
+- **Topf-Kopplung = Verweis (Entscheidung):** Die Zeile zeigt Name, „A$1.000 von A$3.000" und den Balken aus `summarizePot`, als Link zum Topf; das Sheet bietet die Töpfe erst an, wenn es neben „Nur gespart" einen weiteren gibt, und sagt dazu „gebucht wird dadurch nichts". Dafür lädt das Dashboard jetzt alle Topf-Buchungen (statt nur die des Primär-Topfs); der Primär-Stand rechnet sich daraus.
+- **Fälligkeit mit Presets** „Heute / Morgen / In 7 Tagen" (44 px, abwählbar) über dem Datumsfeld – am Telefon schneller als der Datepicker und in der Smoke-Suite klickbar. Beschriftung relativ bis sechs Tage („In 3 Tagen fällig"), danach „Fällig am Mo., 5. Okt."
+- **Home-Widget nur mit Inhalt** (Home-Screen-Regel): höchstens 3 offene Tasks in Listenreihenfolge, „n weitere Tasks" als Link, Tipp auf den Titel öffnet das Sheet, Haken schreibt mit Rückgängig. Ohne offene Tasks fehlt die Karte; die Seite erreicht man über „Mehr".
+- **Ein Sheet für alles:** `TaskSheet` ist einmal in `AppShell` gemountet (`uiStore.openTask`), damit Home-Widget und Tasks-Seite dasselbe Sheet nutzen; verschwindet der Task darunter, schließt es sich (Muster aus dem Ausgaben-Sheet).
+- **Bundle:** Start-Chunk 290 KB gzip (+4 KB; Ziel < 250 KB bleibt Phase 6).
+- **Offen / Merker:** keine Sortierung/Filter nach Kategorie (drei Kategorien, bewusst schlicht) · Notiz ist ein einzeiliges Feld · kein Umsortieren per Hand · Wiederkehrende Tasks nicht vorgesehen · Dashboard-Widget steht in der linken Spalte unter dem nächsten Schritt (auf dem Telefon unterhalb der ersten Bildschirmhöhe).
 
 ---
 
