@@ -14,8 +14,8 @@
 - [x] **Phase 3** – Budget & Spartöpfe — fertig 2026-09-20 (Branch `phase-3-budget-pots`), **abgenommen 2026-09-21 (am iPhone getestet), in `main`**, Notizen unten
 - [x] **Phase 4** – Analyse & Charts — freigegeben 2026-09-21, fertig 2026-09-21 (Branch `phase-4-analytics`), **abgenommen 2026-09-22, in `main`**, Notizen unten
 - [ ] **Phase 5** – Tasks, Insights, Was-wäre-wenn — Aufteilung in 5a–5d und die folgenden Entscheidungen bestätigt 2026-09-22; alle übrigen Annahmen des Ursprungsplans (§5) gelten unverändert:
-  - [ ] **5a** – Tasks: Fälligkeit, Kategorie, optionale Topf-Kopplung als **Verweis mit Fortschrittsanzeige (keine Automatik)**, Abhak-Animation, überfällige Tasks hervorgehoben, Dashboard-Widget — freigegeben 2026-09-22, fertig 2026-09-22 (Branch `phase-5a-tasks`), _wartet auf Abnahme_, Notizen unten
-  - [ ] **5b** – Insights: Karten auf dem Dashboard (wegwischbar, max. 3). **Weggewischte Insights liegen in `localStorage`** (gerätelokal, nicht im Backup, kein Schema-Wechsel). Die Regeln „Offene Wochen" und „Backup" erscheinen **nicht** als Karte – offene Wochen deckt schon der Nächste Schritt ab, die Backup-Erinnerung kommt mit Phase 6.
+  - [x] **5a** – Tasks: Fälligkeit, Kategorie, optionale Topf-Kopplung als **Verweis mit Fortschrittsanzeige (keine Automatik)**, Abhak-Animation, überfällige Tasks hervorgehoben, Dashboard-Widget — freigegeben 2026-09-22, fertig 2026-09-22 (Branch `phase-5a-tasks`), **abgenommen 2026-09-22, in `main`**, Notizen unten
+  - [ ] **5b** – Insights: Karten auf dem Dashboard (wegwischbar, max. 3). **Weggewischte Insights liegen in `localStorage`** (gerätelokal, nicht im Backup, kein Schema-Wechsel). Die Regeln „Offene Wochen" und „Backup" erscheinen **nicht** als Karte – offene Wochen deckt schon der Nächste Schritt ab, die Backup-Erinnerung kommt mit Phase 6. — freigegeben 2026-09-22 (Branch `phase-5b-insights`)
   - [ ] **5c** – Was-wäre-wenn: **Startwert der Prognose = Summe aller Töpfe**; Kategorie-Slider, Zieldatum, Kurve Basis vs. Szenario, Ergebnis „+A$Z bis Datum Y", optional „als Budget übernehmen".
   - [ ] **5d** – geparkt, ohne Umfang.
 - [ ] **Phase 6** – PWA, Export, Polish — **Backup-Erinnerung ist Pflichtfeature:** Insight-Karte („Backup älter als 14 Tage" bzw. noch nie) plus Hinweis in den Einstellungen (siehe §5)
@@ -27,17 +27,8 @@
 
 **Wo wir stehen**
 
-- **Phase 4 ist abgenommen** (2026-09-22). `main` = `d059728`, gepusht, Production READY, Smoke-Suite 9/9 gegen Production: https://finance-planner-jonasworkings-projects.vercel.app
-- **Phase 5 ist in 5a–5d aufgeteilt** (Entscheidungen oben in der Phasenliste). **5a (Tasks) ist fertig gebaut und wartet auf deine Abnahme.** Branch `phase-5a-tasks`, gepusht. Preview zum Testen am iPhone (eigene, leere Daten): https://finance-planner-git-phase-5a-tasks-jonasworkings-projects.vercel.app
-- Letzter Prüfstand: typecheck · lint · build grün · 782 Testläufe · Smoke-Suite 10/10 grün, 3× hintereinander (neu: Task-Journey).
-
-**Was du bei der Abnahme ansehen solltest** (das kann nur das echte Gerät zeigen)
-
-1. Mehr → Tasks → „Task anlegen": Titel tippen (Tastatur öffnet sich von selbst?), „Heute"/„Morgen"/„In 7 Tagen" oder das Datumsfeld (iOS-Datepicker), Kategorie, Notiz → anlegen.
-2. Haken antippen: Strich zeichnet sich, Zeile wandert nach „Erledigt", Toast mit „Rückgängig" – fühlt sich das Tempo (≈ 0,3 s bis zur Bewegung) richtig an?
-3. Einen Task mit Datum in der Vergangenheit anlegen → steht oben mit Coral-Kante und „Seit n Tagen überfällig"; Home-Screen zeigt das Widget mit Badge „1 überfällig".
-4. Töpfe → Topf „Bali" mit Ziel anlegen → Task mit Topf-Kopplung: Zeile zeigt Name, Stand und Balken; Tipp auf die Topf-Zeile führt zum Topf.
-5. Zeile nach links wischen → löschen mit Rückgängig; Tipp auf den Titel → Bearbeiten-Sheet mit Löschen-Button.
+- **Phase 5a (Tasks) ist abgenommen** (2026-09-22). `main` wurde per Fast-Forward auf `phase-5a-tasks` gezogen und gepusht → Production: https://finance-planner-jonasworkings-projects.vercel.app
+- **5b (Insights) ist freigegeben** (2026-09-22) und läuft auf Branch `phase-5b-insights`: Karten auf dem Dashboard (max. 3, wegwischbar, Weggewischtes in `localStorage`), Regeln aus `lib/insights` (seit Phase 1 getestet), „Offene Wochen" und „Backup" ohne Karte.
 
 **Offen aus Phase 3/4** (nicht blockierend, unverändert)
 
@@ -50,9 +41,8 @@
 
 **Als Nächstes**
 
-1. Du testest die Preview am iPhone → „5a ist abgenommen" (oder Nachbesserungen).
-2. Dann von mir: Abnahme hier vermerken → `main` per Fast-Forward auf `phase-5a-tasks` → pushen → Production prüfen → Smoke-Suite einmal gegen Production.
-3. **5b (Insights) erst nach deiner Freigabe.** Die Insight-Regeln liegen seit Phase 1 getestet in `lib/insights` (strukturiert: `kind` + Daten); zu bauen sind die Karten auf dem Dashboard (max. 3, wegwischbar, Weggewischtes in `localStorage`), die Regeln „Offene Wochen" und „Backup" bleiben laut Entscheidung ohne Karte. **5c:** `projectScenario` ist fertig; die Kurve kann `ChartCard`, `ChartTooltip` und die Chart-Tokens aus Phase 4 wiederverwenden (Recharts nur unter `features/analytics/charts` importierbar – Chart-Ordner teilen oder die Lint-Regel um einen zweiten Ordner erweitern); Startwert = Summe aller Töpfe.
+1. 5b bauen → Gate + Smoke-Suite (Journey für Insight-Karte erscheint / wegwischen / bleibt weg nach Reload) → Preview zum Testen → Abnahme.
+2. **5c (Was-wäre-wenn) erst nach deiner Freigabe:** `projectScenario` ist fertig; die Kurve kann `ChartCard`, `ChartTooltip` und die Chart-Tokens aus Phase 4 wiederverwenden (Recharts nur unter `features/analytics/charts` importierbar – Chart-Ordner teilen oder die Lint-Regel um einen zweiten Ordner erweitern); Startwert = Summe aller Töpfe.
 
 ## Phase 0 – Ergebnis & Abweichungen vom Plan
 
