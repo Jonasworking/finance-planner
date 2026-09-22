@@ -364,19 +364,26 @@ export async function expenseRow(page, amountText) {
   return row
 }
 
-/** A real pointer drag to the left, in frame-sized steps like a finger would produce. */
-export async function swipeLeft(page, row, distance) {
-  const box = await row.boundingBox()
+/**
+ * A real horizontal pointer drag by `dx` px (negative = to the left), in frame-sized steps like a
+ * finger would produce. The element is first brought to rest and into view – a card under the
+ * tab bar would hand the gesture to the bar.
+ */
+export async function swipe(page, element, dx) {
+  await waitUntilActionable(page, element)
+  const box = await element.boundingBox()
   const y = box.y + box.height / 2
-  const startX = box.x + box.width - 30
+  const startX = dx < 0 ? box.x + box.width - 30 : box.x + 30
   await page.mouse.move(startX, y)
   await page.mouse.down()
   for (let step = 1; step <= 12; step++) {
-    await page.mouse.move(startX - (distance / 12) * step, y)
+    await page.mouse.move(startX + (dx / 12) * step, y)
     await new Promise((resolve) => setTimeout(resolve, 16))
   }
   await page.mouse.up()
 }
+
+export const swipeLeft = (page, row, distance) => swipe(page, row, -distance)
 
 /** Taps the row's content. A revealed row is shifted to the left, so stay inside the screen. */
 export async function tapRow(page, row) {

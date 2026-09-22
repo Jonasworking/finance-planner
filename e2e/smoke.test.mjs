@@ -26,6 +26,7 @@ import {
   sawModal,
   startSuite,
   stopSuite,
+  swipe,
   swipeLeft,
   tapRow,
   typeInto,
@@ -385,6 +386,31 @@ journey('a task is created, ticked off and brought back', PHONE, async (page) =>
   await waitForText(page, 'Steuernummer beantragen')
   await waitForText(page, 'Heute fällig')
   await assertFitsViewport(page, 'dashboard with a task')
+})
+
+journey('an insight card appears, is swiped away and stays away', PHONE, async (page) => {
+  await onboard(page)
+  await clickText(page, 'button', 'Ausgabe erfassen')
+  await fillQuickAdd(page, ['4', '5', '0'], 'Lebensmittel') // A$450 against the A$400 default
+  const card = () => page.waitForSelector('[role="article"][aria-label="A$50,00 über dem Budget"]')
+  await card()
+  await assertFitsViewport(page, 'dashboard with an insight')
+
+  // swipe it away (to the right here; either direction works) – undo brings it back
+  await swipe(page, await card(), 260)
+  await waitForNoText(page, 'A$50,00 über dem Budget')
+  await waitForText(page, 'Hinweis ausgeblendet')
+  assert.equal(await has(page, 'Insights'), false, 'an empty insights section is left out')
+  await clickToastAction(page, 'Hinweis ausgeblendet', 'Rückgängig')
+  await card()
+
+  // the accessible path, then a reload: the dismissal lives on this device
+  await clickSelector(page, 'button[aria-label="Hinweis ausblenden: A$50,00 über dem Budget"]')
+  await waitForNoText(page, 'A$50,00 über dem Budget')
+  await page.reload({ waitUntil: 'networkidle0' })
+  await waitForText(page, 'Zuletzt ausgegeben')
+  assert.equal(await has(page, 'über dem Budget'), false, 'a dismissed insight came back')
+  await assertFitsViewport(page, 'dashboard after dismissing the insight')
 })
 
 journey('desktop layout keeps every card inside the window', DESKTOP, async (page) => {
