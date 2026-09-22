@@ -527,6 +527,33 @@ describe('budgets, categories, tasks, settings', () => {
     await expectCode(repos.tasks.add({ title: 'x', dueDate: 'soon' }), 'invalid-date')
   })
 
+  it('validates a task’s title and pot reference', async () => {
+    await expectCode(repos.tasks.add({ title: '   ' }), 'invalid-title')
+    await expectCode(repos.tasks.add({ title: 'Bali', linkedPotId: 'pot:nope' }), 'unknown-pot')
+    expect(await db.tasks.count()).toBe(0)
+
+    const bali = await repos.pots.create({ name: 'Bali', targetCents: 300_000 })
+    const task = await repos.tasks.add({ title: '  Flug buchen ', linkedPotId: bali.id, note: ' ' })
+    expect(task).toMatchObject({ title: 'Flug buchen', linkedPotId: bali.id, note: undefined })
+
+    await expectCode(repos.tasks.update(task.id, { title: '' }), 'invalid-title')
+    await expectCode(repos.tasks.update(task.id, { linkedPotId: 'pot:nope' }), 'unknown-pot')
+    await repos.tasks.update(task.id, { linkedPotId: null, note: 'Skyscanner' })
+    expect(await db.tasks.get(task.id)).toMatchObject({ linkedPotId: null, note: 'Skyscanner' })
+    await expectCode(repos.tasks.update('task:nope', { title: 'x' }), 'not-found')
+    await expectCode(repos.tasks.setDone('task:nope', true), 'not-found')
+  })
+
+  it('keeps the original doneAt when a finished task is ticked again', async () => {
+    const task = await repos.tasks.add({ title: 'Super prüfen' })
+    await repos.tasks.setDone(task.id, true)
+    const first = await db.tasks.get(task.id)
+    await repos.tasks.setDone(task.id, true)
+    expect(await db.tasks.get(task.id)).toEqual(first)
+    await repos.tasks.setDone(task.id, false)
+    expect(await db.tasks.get(task.id)).toMatchObject({ done: false, doneAt: null })
+  })
+
   it('stamps the EUR rate when it changes', async () => {
     const before = await repos.settings.get()
     expect(before.eurRateUpdatedAt).toBeNull()

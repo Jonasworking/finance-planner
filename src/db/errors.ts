@@ -2,6 +2,7 @@ export type DomainErrorCode =
   | 'invalid-amount'
   | 'invalid-date'
   | 'invalid-rate'
+  | 'invalid-title'
   | 'not-a-monday'
   | 'not-found'
   | 'unknown-category'

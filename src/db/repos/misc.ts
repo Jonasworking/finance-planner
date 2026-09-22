@@ -105,41 +105,64 @@ export function createTasksRepo({ db, clock }: RepoContext) {
     return task
   }
 
+  function cleanTitle(title: string): string {
+    const trimmed = title.trim()
+    if (trimmed === '') throw new DomainError('invalid-title')
+    return trimmed
+  }
+
+  /** A task may point at any pot that still exists (archived included – its progress is history). */
+  async function assertPot(potId: string): Promise<void> {
+    const pot = await db.pots.get(potId)
+    if (!pot || !isActive(pot)) throw new DomainError('unknown-pot')
+  }
+
   return {
-    add: async (input: TaskInput): Promise<Task> => {
-      if (input.dueDate) assertDate(input.dueDate)
-      const now = clock.now()
-      const task: Task = {
-        id: newId(),
-        title: input.title,
-        dueDate: input.dueDate ?? null,
-        done: false,
-        doneAt: null,
-        category: input.category ?? 'Finanzen',
-        linkedPotId: input.linkedPotId ?? null,
-        note: input.note,
-        createdAt: now,
-        updatedAt: now,
-        deletedAt: null,
-      }
-      await db.tasks.add(task)
-      return task
-    },
+    add: (input: TaskInput): Promise<Task> =>
+      db.transaction('rw', db.tasks, db.pots, async () => {
+        if (input.dueDate) assertDate(input.dueDate)
+        if (input.linkedPotId) await assertPot(input.linkedPotId)
+        const now = clock.now()
+        const task: Task = {
+          id: newId(),
+          title: cleanTitle(input.title),
+          dueDate: input.dueDate ?? null,
+          done: false,
+          doneAt: null,
+          category: input.category ?? 'Finanzen',
+          linkedPotId: input.linkedPotId ?? null,
+          note: input.note?.trim() || undefined,
+          createdAt: now,
+          updatedAt: now,
+          deletedAt: null,
+        }
+        await db.tasks.add(task)
+        return task
+      }),
 
-    update: async (id: string, patch: TaskPatch): Promise<void> => {
-      if (patch.dueDate) assertDate(patch.dueDate)
-      await db.tasks.put({ ...(await mustGet(id)), ...patch, updatedAt: clock.now() })
-    },
+    update: (id: string, patch: TaskPatch): Promise<void> =>
+      db.transaction('rw', db.tasks, db.pots, async () => {
+        if (patch.dueDate) assertDate(patch.dueDate)
+        if (patch.linkedPotId) await assertPot(patch.linkedPotId)
+        const previous = await mustGet(id)
+        const next: Task = {
+          ...previous,
+          ...patch,
+          title: patch.title === undefined ? previous.title : cleanTitle(patch.title),
+          note: patch.note === undefined ? previous.note : patch.note.trim() || undefined,
+          updatedAt: clock.now(),
+        }
+        await db.tasks.put(next)
+      }),
 
-    setDone: async (id: string, done: boolean): Promise<void> => {
-      const now = clock.now()
-      await db.tasks.put({
-        ...(await mustGet(id)),
-        done,
-        doneAt: done ? now : null,
-        updatedAt: now,
-      })
-    },
+    /** Idempotent: ticking a finished task again keeps its original `doneAt`. */
+    setDone: (id: string, done: boolean): Promise<void> =>
+      db.transaction('rw', db.tasks, async () => {
+        const task = await mustGet(id)
+        if (task.done === done) return
+        const now = clock.now()
+        await db.tasks.put({ ...task, done, doneAt: done ? now : null, updatedAt: now })
+      }),
 
     remove: async (id: string): Promise<void> => {
       const now = clock.now()

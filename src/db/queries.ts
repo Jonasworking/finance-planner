@@ -1,4 +1,3 @@
-import Dexie from 'dexie'
 import { weekEndOf, weekStartOf } from '@/lib/dates'
 import { potBalance, potBalances } from '@/lib/savings'
 import { collectTags } from '@/lib/tags'
@@ -99,19 +98,20 @@ export async function loadCategories(db: FinanceDB) {
  * runs over every closed week, and ~1,000 rows a year are cheap to read.
  */
 export async function loadDashboard(db: FinanceDB) {
-  const [settings, weeks, budgets, expenses, templates, categories, primaryTx] = await Promise.all([
-    db.settings.get(SETTINGS_ID),
-    db.weeks.toArray(),
-    db.budgets.toArray(),
-    db.expenses.toArray(),
-    db.recurringExpenses.toArray(),
-    db.categories.toArray(),
-    db.potTransactions
-      .where('[potId+date]')
-      .between([PRIMARY_POT_ID, Dexie.minKey], [PRIMARY_POT_ID, Dexie.maxKey])
-      .toArray(),
-  ])
+  const [settings, weeks, budgets, expenses, templates, categories, transactions, tasks, pots] =
+    await Promise.all([
+      db.settings.get(SETTINGS_ID),
+      db.weeks.toArray(),
+      db.budgets.toArray(),
+      db.expenses.toArray(),
+      db.recurringExpenses.toArray(),
+      db.categories.toArray(),
+      db.potTransactions.toArray(),
+      db.tasks.toArray(),
+      db.pots.toArray(),
+    ])
   const activeExpenses = expenses.filter(isActive)
+  const activeTransactions = transactions.filter(isActive)
   return {
     settings: settings ?? null,
     weeks: weeks.filter(isActive),
@@ -119,8 +119,29 @@ export async function loadDashboard(db: FinanceDB) {
     expenses: activeExpenses,
     templates: templates.filter(isActive),
     categories: categories.filter(isActive),
-    primaryBalanceCents: potBalance(primaryTx, PRIMARY_POT_ID),
+    primaryBalanceCents: potBalance(activeTransactions, PRIMARY_POT_ID),
     hasAnyExpense: activeExpenses.length > 0,
+    tasks: tasks.filter(isActive),
+    /** Pots and their bookings, so a task's pot reference can show where the pot stands. */
+    pots: pots.filter(isActive),
+    potTransactions: activeTransactions,
+  }
+}
+
+/**
+ * The tasks screen and the task form: every live task, plus the pots (with their bookings) a
+ * task can point at – the row shows the pot's progress, the form lets you pick one.
+ */
+export async function loadTasks(db: FinanceDB) {
+  const [tasks, pots, transactions] = await Promise.all([
+    db.tasks.toArray(),
+    db.pots.toArray(),
+    db.potTransactions.toArray(),
+  ])
+  return {
+    tasks: tasks.filter(isActive),
+    pots: pots.filter(isActive).sort(byPotOrder),
+    transactions: transactions.filter(isActive),
   }
 }
 
