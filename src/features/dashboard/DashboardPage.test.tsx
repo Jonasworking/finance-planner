@@ -1,9 +1,10 @@
-import { render, screen, waitFor, within } from '@testing-library/react'
+import { act, render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router'
 import { toast } from 'sonner'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { db, repos } from '@/db'
+import { clearDismissedInsights } from '@/features/insights'
 import { addWeeksISO } from '@/lib/dates'
 import { useUiStore } from '@/shared/stores/uiStore'
 import { DashboardPage } from './DashboardPage'
@@ -33,6 +34,7 @@ const renderPage = () =>
   )
 
 beforeEach(async () => {
+  clearDismissedInsights()
   useUiStore.setState({
     quickAddOpen: false,
     closeWeekOpen: false,
@@ -64,6 +66,7 @@ describe('DashboardPage', () => {
     expect(screen.queryByText('Zuletzt ausgegeben')).not.toBeInTheDocument()
     expect(screen.queryByText('Streak')).not.toBeInTheDocument()
     expect(screen.queryByRole('region', { name: 'Tasks' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('region', { name: 'Insights' })).not.toBeInTheDocument()
     // The ring leads to the budget, "Nur gespart" to its pot:
     expect(screen.getByRole('link', { name: 'Budget anpassen' })).toHaveAttribute('href', '/budget')
     expect(screen.getByRole('link', { name: /Nur gespart/ })).toHaveAttribute(
@@ -199,6 +202,45 @@ describe('DashboardPage', () => {
     expect(undo.label).toBe('Rückgängig')
     undo.onClick()
     expect(await within(widget).findByText('Steuer')).toBeInTheDocument()
+  })
+
+  it('shows insight cards, lets one be dismissed with undo and remembers it per device', async () => {
+    const user = userEvent.setup()
+    await onboard('2026-09-21')
+    await repos.expenses.add({
+      date: '2026-09-22',
+      amountCents: 45_000,
+      categoryId: 'cat:groceries',
+    })
+    const { unmount } = renderPage()
+
+    const section = await screen.findByRole('region', { name: 'Insights' })
+    const card = within(section).getByRole('article', { name: 'A$50,00 über dem Budget' })
+    expect(within(card).getByRole('link', { name: 'Budget' })).toHaveAttribute('href', '/budget')
+
+    await user.click(within(card).getByRole('button', { name: /Hinweis ausblenden/ }))
+    await waitFor(() =>
+      expect(screen.queryByRole('region', { name: 'Insights' })).not.toBeInTheDocument(),
+    )
+    expect(JSON.parse(localStorage.getItem('fp.insightsDismissed')!)).toEqual([
+      'budget-over:2026-09-21',
+    ])
+    const [message, options] = vi.mocked(toast).mock.calls.at(-1)!
+    expect(message).toBe('Hinweis ausgeblendet')
+
+    // A fresh render (as after a reload) keeps it hidden …
+    unmount()
+    renderPage()
+    expect(await screen.findByText('Zuletzt ausgegeben')).toBeInTheDocument()
+    expect(screen.queryByRole('region', { name: 'Insights' })).not.toBeInTheDocument()
+
+    // … until "Rückgängig".
+    const undo = options?.action as { label: string; onClick: () => void }
+    expect(undo.label).toBe('Rückgängig')
+    act(() => undo.onClick())
+    expect(
+      await screen.findByRole('article', { name: 'A$50,00 über dem Budget' }),
+    ).toBeInTheDocument()
   })
 
   it('pauses the streak while finished weeks are still open', async () => {

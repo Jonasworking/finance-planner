@@ -1,10 +1,12 @@
 import { useLiveQuery } from 'dexie-react-hooks'
 import { db, loadDashboard } from '@/db'
+import { InsightCards, useDismissedInsights } from '@/features/insights'
 import { TasksCard } from '@/features/tasks'
 import { resolveBudget, runningWeekBudget } from '@/lib/budget'
 import { nextStep, projectWeek, weekProgress } from '@/lib/dashboard'
-import { formatWeekRange, weekStartOf } from '@/lib/dates'
+import { formatWeekRange, parseISODate, weekStartOf } from '@/lib/dates'
 import { groupByWeek } from '@/lib/expenses'
+import { dashboardRules, runInsights } from '@/lib/insights'
 import { pendingWeeks, summarizeWeek } from '@/lib/savings'
 import { computeStreak } from '@/lib/streak'
 import { tasksForDashboard } from '@/lib/tasks'
@@ -24,6 +26,7 @@ const RECENT_WEEKS = 6
 export function DashboardPage() {
   const today = useToday()
   const data = useLiveQuery(() => loadDashboard(db), [])
+  const dismissed = useDismissedInsights()
   const currentWeek = weekStartOf(today)
 
   if (!data?.settings) {
@@ -72,14 +75,33 @@ export function DashboardPage() {
     .map((week) => summarize(week.id))
   const streak = computeStreak(closedWeeks, today)
 
+  const pending = pendingWeeks(data.weeks, settings.trackingSince, today)
   const step = nextStep({
     today,
-    pendingWeeks: pendingWeeks(data.weeks, settings.trackingSince, today),
+    pendingWeeks: pending,
     hasAnyExpense: data.hasAnyExpense,
     hasRecurring: data.templates.length > 0,
     currentWeekClosed: summary.closed,
-    closedWeeks: data.weeks.filter((week) => week.closedAt !== null).length,
+    closedWeeks: closedWeeks.length,
   })
+
+  const insights = runInsights(
+    {
+      today,
+      // Day granularity is all the rules need ("n Tage alt") – noon of today keeps it pure.
+      now: parseISODate(today).getTime(),
+      currentWeek: summary,
+      history: closedWeeks,
+      currentUsage: usage,
+      expenses: data.expenses,
+      pots: data.pots,
+      potTransactions: data.potTransactions,
+      streak,
+      pendingWeeks: pending,
+      settings,
+    },
+    { rules: dashboardRules, dismissed },
+  )
 
   const taskWidget = tasksForDashboard(data.tasks, today)
 
@@ -101,6 +123,12 @@ export function DashboardPage() {
             today={today}
           />
           <NextStepCard step={step} today={today} />
+          {insights.length > 0 ? (
+            <InsightCards
+              insights={insights}
+              refs={{ categories: data.categories, pots: data.pots, today }}
+            />
+          ) : null}
           {taskWidget.tasks.length > 0 ? (
             <TasksCard
               widget={taskWidget}
