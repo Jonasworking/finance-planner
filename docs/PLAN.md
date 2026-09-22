@@ -12,31 +12,25 @@
   - [x] **2b** – Daueraufträge (weekly/fortnightly/monthly) inkl. Materialisierung, „Woche abschließen" mit Warteschlange + „Woche wieder öffnen", Onboarding (Standard-Einkommen, Budget, Startguthaben, trackingSince), Dashboard v1 mit Empty-States und klarem nächsten Schritt — fertig 2026-09-20 (Branch `phase-2b-weekly-flow`), **abgenommen 2026-09-20 (am iPhone getestet), in `main`**, Notizen unten
 - [x] **Zwischenschritt** – Browser-Journeys als E2E-Smoke-Suite im Repo (`npm run test:e2e`, nicht im Gate) — fertig 2026-09-20 (Branch `e2e-smoke`), **abgenommen 2026-09-20, in `main`**, Notizen unten
 - [x] **Phase 3** – Budget & Spartöpfe — fertig 2026-09-20 (Branch `phase-3-budget-pots`), **abgenommen 2026-09-21 (am iPhone getestet), in `main`**, Notizen unten
-- [ ] **Phase 4** – Analyse & Charts — freigegeben 2026-09-21, fertig 2026-09-21 (Branch `phase-4-analytics`), _wartet auf Abnahme_, Notizen unten
-- [ ] **Phase 5** – Tasks, Insights, Was-wäre-wenn
-- [ ] **Phase 6** – PWA, Export, Polish
+- [x] **Phase 4** – Analyse & Charts — freigegeben 2026-09-21, fertig 2026-09-21 (Branch `phase-4-analytics`), **abgenommen 2026-09-22, in `main`**, Notizen unten
+- [ ] **Phase 5** – Tasks, Insights, Was-wäre-wenn — Aufteilung in 5a–5d und die folgenden Entscheidungen bestätigt 2026-09-22; alle übrigen Annahmen des Ursprungsplans (§5) gelten unverändert:
+  - [ ] **5a** – Tasks: Fälligkeit, Kategorie, optionale Topf-Kopplung als **Verweis mit Fortschrittsanzeige (keine Automatik)**, Abhak-Animation, überfällige Tasks hervorgehoben, Dashboard-Widget — freigegeben 2026-09-22 (Branch `phase-5a-tasks`)
+  - [ ] **5b** – Insights: Karten auf dem Dashboard (wegwischbar, max. 3). **Weggewischte Insights liegen in `localStorage`** (gerätelokal, nicht im Backup, kein Schema-Wechsel). Die Regeln „Offene Wochen" und „Backup" erscheinen **nicht** als Karte – offene Wochen deckt schon der Nächste Schritt ab, die Backup-Erinnerung kommt mit Phase 6.
+  - [ ] **5c** – Was-wäre-wenn: **Startwert der Prognose = Summe aller Töpfe**; Kategorie-Slider, Zieldatum, Kurve Basis vs. Szenario, Ergebnis „+A$Z bis Datum Y", optional „als Budget übernehmen".
+  - [ ] **5d** – geparkt, ohne Umfang.
+- [ ] **Phase 6** – PWA, Export, Polish — **Backup-Erinnerung ist Pflichtfeature:** Insight-Karte („Backup älter als 14 Tage" bzw. noch nie) plus Hinweis in den Einstellungen (siehe §5)
 - [ ] Phase 7 (optional) – Sync
 
-## Session-Notiz – Stand 2026-09-21
+## Session-Notiz – Stand 2026-09-22
 
 > Einstieg für die nächste Session. Wird bei jedem Sessionende überschrieben, nicht fortgeschrieben – die dauerhaften Ergebnisse stehen in den Phasen-Notizen unten.
 
 **Wo wir stehen**
 
-- `main` = `30204bd` (Phase 0–3 + E2E-Smoke-Suite), gepusht, Production: https://finance-planner-jonasworkings-projects.vercel.app
-- **Phase 4 (Analyse & Charts) ist fertig gebaut und wartet auf deine Abnahme.** Branch `phase-4-analytics`, gepusht – nach jedem Teilschritt committet. Preview zum Testen am iPhone (eigene, leere Daten): https://finance-planner-git-phase-4-analytics-jonasworkings-projects.vercel.app
-- Letzter Prüfstand: typecheck · lint · build grün · 736 Testläufe · Coverage `src/lib` 99,9 % · Smoke-Suite 9/9 grün, 3× hintereinander.
+- **Phase 4 ist abgenommen** (2026-09-22). `main` wurde per Fast-Forward auf `phase-4-analytics` gezogen und gepusht → Production: https://finance-planner-jonasworkings-projects.vercel.app
+- **Phase 5 ist in 5a–5d aufgeteilt** (Entscheidungen oben in der Phasenliste). **5a (Tasks) ist freigegeben** und läuft auf Branch `phase-5a-tasks`: `Task`-Typ, `tasks`-Tabelle und `repos.tasks` existieren seit Phase 1 – es fehlen die `lib`-Regeln (Fälligkeit/überfällig, Sortierung, Dashboard-Auswahl), Queries, UI und die Smoke-Journey „Task anlegen, abhaken, rückgängig".
 
-**Was du bei der Abnahme ansehen solltest** (das kann nur das echte Gerät zeigen)
-
-1. Die Preview startet leer: im Onboarding „Eigenes Datum" wählen (z. B. vor vier Wochen) → die wartenden Wochen der Reihe nach abschließen, am besten mit unterschiedlichem Einkommen → ein paar Ausgaben in verschiedenen Kategorien erfassen (Datum über „Details" auch in vergangene Wochen). Ab zwei Abschlüssen zeigt die Analyse alles; die laufende Woche erscheint als blasse Säule.
-2. Analyse-Tab: Lädt der Screen zügig nach (eigener Chunk)? Filterzeile mit dem Daumen: Wochen/Monate, 8 W … Alles, A$/€.
-3. Säulen-Chart antippen und den Finger ziehen → Tooltip folgt; verdeckt der Finger zu viel? Tabellen-Symbol oben rechts an jeder Karte.
-4. Donut: Segment oder Zeile antippen → Drilldown, „Alle Kategorien" zurück; „Übrige" aufklappen (erst ab 7 Kategorien mit Ausgaben).
-5. € antippen → Sheet „EUR-Kurs" (Dezimal-Tastatur, Feld nicht von der Tastatur verdeckt?) → speichern → alle Beträge und Achsen in €.
-6. Helles Theme: Kategorie-Farben sind dort jetzt kräftiger (auch in Ausgabenliste und Kategorien) – gefällt dir das?
-
-**Offen aus Phase 3/4** (nichts davon blockiert die Abnahme)
+**Offen aus Phase 3/4** (nicht blockierend, unverändert)
 
 - Ausgaben-Sheet mit offenen Details ist höher als der Bildschirm („Speichern" erst nach Scrollen im Sheet).
 - `AnimatedNumber` (Spring-Ticker für Beträge) ist nicht gebaut.
@@ -45,11 +39,7 @@
 - Start-Chunk 286 KB gzip (Ziel < 250 KB → Phase 6: Lazy-Routes für Budget/Töpfe, `LazyMotion`).
 - A11y-Pass (Pfeiltasten im Segment-Schalter, Sortieren per Tastatur, `forced-colors`-Textur für Charts) → Phase 6.
 
-**Als Nächstes**
-
-1. Du testest die Preview am iPhone → „Phase 4 ist abgenommen" (oder Nachbesserungen).
-2. Dann von mir: Abnahme hier vermerken → `main` per Fast-Forward auf `phase-4-analytics` → pushen → Production prüfen → Smoke-Suite einmal gegen Production.
-3. **Phase 5 (Tasks, Insights, Was-wäre-wenn) erst nach deiner Freigabe.** Die Insight-Regeln und `projectScenario` liegen seit Phase 1 getestet in `lib`; die Was-wäre-wenn-Kurve kann `ChartCard`, `ChartTooltip` und die Chart-Tokens aus Phase 4 wiederverwenden (Recharts nur unter `features/analytics/charts` importierbar – für Phase 5 den Chart-Ordner teilen oder die Regel um einen zweiten Ordner erweitern).
+**Merker für 5b/5c:** Die Insight-Regeln und `projectScenario` liegen seit Phase 1 getestet in `lib`; die Was-wäre-wenn-Kurve kann `ChartCard`, `ChartTooltip` und die Chart-Tokens aus Phase 4 wiederverwenden (Recharts nur unter `features/analytics/charts` importierbar – für 5c den Chart-Ordner teilen oder die Regel um einen zweiten Ordner erweitern).
 
 ## Phase 0 – Ergebnis & Abweichungen vom Plan
 
@@ -525,7 +515,8 @@ Tasks (Fälligkeit, Kategorie, optional Topf-Kopplung, Abhak-Animation, überfä
 ### Phase 6 – PWA, Export, Polish
 
 `vite-plugin-pwa` (generateSW, alles precachen, `navigateFallback`, Update-Toast; zusätzlich `registration.update()` gedrosselt bei `visibilitychange`, weil eine fortgesetzte PWA selten navigiert) · Icons/Maskable/Apple-Touch + `apple-touch-startup-image` aus einer SVG · Manifest (standalone, Theme-Colors) · Statusbar: `black-translucent` rendert immer weiße Schrift → im Light-Theme dunkler Streifen darunter oder `default` (am Gerät entscheiden) · iOS-Install-Sheet (Safari && nicht standalone), erscheint **vor** dem Onboarding · `navigator.storage.persist()` im Standalone-Modus, Ergebnis in den Einstellungen sichtbar · JSON-Export: `navigator.share({files})` hinter `canShare`, Blob **vor** dem Tap bauen (User-Activation läuft ab), Fallback `<a download>`, `AbortError` schlucken · Import: `accept=".json,application/json,text/plain"`, Inhalt validieren, `input.value` zurücksetzen, Sicherheitskopie + „Import rückgängig" · CSV-Export · „Daten prüfen" · „Alle Daten löschen" (Halten-zum-Bestätigen, vorher Export anbieten) · Settings komplett · A11y-Pass (Fokus, ARIA für Ring/Slider, Kontrast) · Reduced Motion · Performance · Vercel: SPA-Rewrite, `sw.js`/`index.html` no-cache, Assets immutable.
-**DoD:** App startet im Flugmodus vollständig · auf iPhone installiert, Safe-Areas/Statusbar korrekt · Export → „Alle Daten löschen" → Import stellt identischen Zustand her (automatisierter Roundtrip-Test + manuell am Gerät) · Lighthouse Performance/Best Practices/A11y ≥ 90 · initiales JS < 250 KB gzip · Production-URL steht.
+**Backup-Erinnerung ist Pflichtfeature (bestätigt 2026-09-22):** Sie kommt in dieser Phase als **Insight-Karte auf dem Dashboard** (Regel „Backup älter als 14 Tage" bzw. noch nie gesichert, aus `lib/insights`) **plus Hinweis in den Einstellungen** (Datum des letzten Backups, Aufforderung, wenn es fehlt oder alt ist). Grund: Auf iOS löscht das Entfernen des App-Icons die Daten (siehe Hinweis unter Phase 7).
+**DoD:** App startet im Flugmodus vollständig · auf iPhone installiert, Safe-Areas/Statusbar korrekt · Export → „Alle Daten löschen" → Import stellt identischen Zustand her (automatisierter Roundtrip-Test + manuell am Gerät) · Backup-Erinnerung erscheint als Insight-Karte und in den Einstellungen · Lighthouse Performance/Best Practices/A11y ≥ 90 · initiales JS < 250 KB gzip · Production-URL steht.
 _Die iOS-Punkte stammen teils aus Erfahrungswissen, nicht aus aktueller iOS-26-Doku → werden in dieser Phase am echten Gerät verifiziert._
 
 ### Phase 7 (optional, separate Entscheidung) – Sync
