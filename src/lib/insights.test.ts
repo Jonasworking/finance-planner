@@ -10,6 +10,8 @@ import {
   pendingWeeksRule,
   potDeadlineRule,
   runInsights,
+  dashboardRules,
+  defaultRules,
   savingsRateRule,
   streakMilestoneRule,
   type InsightContext,
@@ -321,5 +323,13 @@ describe('runInsights', () => {
       runInsights(busy, { rules: [streakMilestoneRule] }).map((insight) => insight.kind),
     ).toEqual(['streak-milestone'])
     expect(runInsights(context())).toEqual([])
+  })
+
+  it('leaves pending weeks and the backup reminder out of the home-screen cards', () => {
+    expect(runInsights(busy, { rules: dashboardRules }).map((insight) => insight.kind)).toEqual([
+      'budget-over',
+      'streak-milestone',
+    ])
+    expect(dashboardRules).toHaveLength(defaultRules.length - 2)
   })
 })

@@ -296,6 +296,15 @@ export const defaultRules: InsightRule[] = [
   eurRateStaleRule,
 ]
 
+/**
+ * What the home screen shows as insight cards. Pending weeks are already THE next step there
+ * (a second card would nag twice), and the backup reminder gets its card together with the
+ * export in phase 6 – until then a reminder without a way to act on it would only annoy.
+ */
+export const dashboardRules: InsightRule[] = defaultRules.filter(
+  (rule) => rule !== pendingWeeksRule && rule !== backupStaleRule,
+)
+
 /** Runs all rules and keeps the `max` most important insights that were not dismissed. */
 export function runInsights(
   context: InsightContext,
