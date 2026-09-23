@@ -90,7 +90,7 @@ async function expected(cuts: Record<string, number>, until: string) {
     startBalanceCents: base.startBalanceCents,
     baselineWeeklySavingCents: base.baselineWeeklySavingCents,
     adjustments: toAdjustments(base.categories, cuts),
-    from: TODAY,
+    from: base.fromWeek,
     until,
   })
   return { base, scenario }

@@ -120,6 +120,7 @@ describe('whatIfBase', () => {
       ],
     })
     expect(result.startBalanceCents).toBe(175_000)
+    expect(result.fromWeek).toBe('2026-09-21') // the running week is still open
     expect(result.baselineWeeklySavingCents).toBe(160_000)
     expect(result.basisWeeks).toBe(0)
     // no spending and no limits yet: nothing to cut
@@ -147,11 +148,21 @@ describe('whatIfBase', () => {
       ],
     })
     expect(result.basisWeeks).toBe(8)
+    expect(result.fromWeek).toBe('2026-09-21')
     // 7 × 200 000 + 100 000 income, 40 020 spent → (1 500 000 − 40 020) / 8
     expect(result.baselineWeeklySavingCents).toBe(182_498)
     expect(result.categories).toEqual([
       { categoryId: 'cat:eating-out', averageCents: 5_003, limitCents: null, maxCents: 5_500 },
     ])
+  })
+
+  it('starts the projection next week once the running week is closed – its saving is in the pots', () => {
+    const result = base({ weeks: [closed('2026-09-21')] })
+    expect(result.basisWeeks).toBe(1)
+    expect(result.fromWeek).toBe('2026-09-28')
+    expect(
+      base({ weeks: [makeWeek('2026-09-21', { closedAt: NOW, deletedAt: NOW })] }).fromWeek,
+    ).toBe('2026-09-21')
   })
 
   it('offers a category by its limit too, and takes the larger of limit and average', () => {

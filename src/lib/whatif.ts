@@ -1,6 +1,6 @@
 import { categoryAverages, summarizeWeeks } from './analytics'
 import { BUDGET_STEP_CENTS, resolveBudget, roundToBudgetStep, type ResolvedBudget } from './budget'
-import { addMonthsClamped, listWeeks, maxISO, weekStartOf } from './dates'
+import { addMonthsClamped, addWeeksISO, listWeeks, maxISO, weekStartOf } from './dates'
 import { potBalances, type WeekSummary } from './savings'
 import {
   isActive,
@@ -104,6 +104,11 @@ export interface WhatIfCategory {
 export interface WhatIfBase {
   /** Every pot added up – "Nur gespart" and the rest. */
   startBalanceCents: Cents
+  /**
+   * First week the projection adds: the running week, or – once it is closed and its saving is
+   * already in the pots – the next one.
+   */
+  fromWeek: ISODate
   baselineWeeklySavingCents: Cents
   /** Closed weeks the baseline averages; 0 = no history, the baseline is income − budget. */
   basisWeeks: number
@@ -154,8 +159,14 @@ export function whatIfBase(input: {
     return maxCents > 0 ? [{ categoryId: id, averageCents, limitCents, maxCents }] : []
   })
 
+  const currentWeek = weekStartOf(input.today)
+  const currentClosed = input.weeks.some(
+    (week) => week.id === currentWeek && isActive(week) && week.closedAt !== null,
+  )
+
   return {
     startBalanceCents,
+    fromWeek: currentClosed ? addWeeksISO(currentWeek, 1) : currentWeek,
     baselineWeeklySavingCents: baselineWeeklySaving(summaries, fallbackCents, WHATIF_WINDOW_WEEKS),
     basisWeeks: closedWeekStarts.length,
     categories,

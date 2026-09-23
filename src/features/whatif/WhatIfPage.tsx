@@ -59,7 +59,7 @@ export function WhatIfPage() {
             startBalanceCents: base.startBalanceCents,
             baselineWeeklySavingCents: base.baselineWeeklySavingCents,
             adjustments,
-            from: today,
+            from: base.fromWeek,
             until,
           })
         : null,
