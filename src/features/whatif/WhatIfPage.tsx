@@ -63,7 +63,7 @@ export function WhatIfPage() {
             until,
           })
         : null,
-    [base, adjustments, today, until],
+    [base, adjustments, until],
   )
   // The numbers follow the thumb at once; the curve may trail a frame while it is dragged.
   const chartPoints = useDeferredValue(scenario?.points ?? [])
