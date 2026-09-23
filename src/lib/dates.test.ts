@@ -7,6 +7,7 @@ import {
   daysBetween,
   formatDayLabel,
   formatDayRange,
+  formatDate,
   formatMonth,
   formatWeekRange,
   formatWeekTick,
@@ -192,5 +193,10 @@ describe('German labels', () => {
     expect(formatMonth('2026-09')).toBe('September 2026')
     expect(formatMonth('2026-03', 'short')).toBe('Mär 26')
     expect(() => formatMonth('2026-13')).toThrow(RangeError)
+  })
+
+  it('writes a single day with its year', () => {
+    expect(formatDate('2027-09-23')).toBe('23. Sep. 2027')
+    expect(formatDate('2026-03-01')).toBe('1. März 2026')
   })
 })

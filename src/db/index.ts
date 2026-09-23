@@ -18,6 +18,7 @@ export {
   loadPots,
   loadRecurring,
   loadTasks,
+  loadWhatIf,
 } from './queries'
 export { createRepos, type Repos } from './repos'
 export { FinanceDB } from './schema'

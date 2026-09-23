@@ -103,6 +103,11 @@ export function monthOfWeek(weekStart: ISODate): string {
 export const minISO = (a: ISODate, b: ISODate): ISODate => (a <= b ? a : b)
 export const maxISO = (a: ISODate, b: ISODate): ISODate => (a >= b ? a : b)
 
+/** A calendar day on its own: "23. Sep. 2027". */
+export function formatDate(iso: ISODate): string {
+  return format(parseISODate(iso), 'd. MMM yyyy', { locale: de })
+}
+
 /** "Heute", "Gestern", otherwise "Mo., 21. Sep." (with the year when it is not today's year). */
 export function formatDayLabel(iso: ISODate, today: ISODate): string {
   if (iso === today) return 'Heute'

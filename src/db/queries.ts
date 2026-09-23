@@ -167,6 +167,33 @@ export async function loadAnalytics(db: FinanceDB) {
   }
 }
 
+/**
+ * The what-if calculator: history for the baseline tempo and the category averages, the budget
+ * it can turn into, and every pot with its bookings for the starting balance.
+ */
+export async function loadWhatIf(db: FinanceDB) {
+  const [settings, weeks, budgets, expenses, categories, pots, transactions] = await Promise.all([
+    db.settings.get(SETTINGS_ID),
+    db.weeks.toArray(),
+    db.budgets.toArray(),
+    db.expenses.toArray(),
+    db.categories.toArray(),
+    db.pots.toArray(),
+    db.potTransactions.toArray(),
+  ])
+  return {
+    settings: settings ?? null,
+    weeks: weeks.filter(isActive),
+    budgets,
+    expenses: expenses.filter(isActive),
+    categories: categories
+      .filter((category) => isActive(category) && !category.archived)
+      .sort(bySortOrder),
+    pots: pots.filter(isActive),
+    potTransactions: transactions.filter(isActive),
+  }
+}
+
 /** The budget screen and the budget warnings: the running week against the budget rows. */
 export async function loadBudget(db: FinanceDB, today: ISODate) {
   const weekStart = weekStartOf(today)
