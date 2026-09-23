@@ -5,7 +5,7 @@ import type { ISODate } from '@/lib/types'
 import { Money } from '@/shared/components/Money'
 import { toCumulativeRows } from '../chartData'
 import { weeksLabel } from '../labels'
-import { ChartCard, type ChartTable } from './ChartCard'
+import { ChartCard, type ChartTable } from '@/shared/components/ChartCard'
 
 const CumulativeChart = lazy(() =>
   import('../charts').then((module) => ({ default: module.CumulativeChart })),

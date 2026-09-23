@@ -2,8 +2,8 @@ import { useReducedMotion } from 'motion/react'
 import { Cell, Pie, PieChart, ResponsiveContainer, Tooltip } from 'recharts'
 import { formatMoney, formatPercent, type MoneyDisplay } from '@/lib/money'
 import type { DonutRow } from '../chartData'
-import { ChartTooltip } from './ChartTooltip'
-import { ANIMATION_MS } from './theme'
+import { ChartTooltip } from '@/shared/components/ChartTooltip'
+import { ANIMATION_MS } from '@/shared/lib/chartTheme'
 
 interface DonutTooltipProps {
   active?: boolean

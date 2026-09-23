@@ -11,8 +11,14 @@ import {
 } from 'recharts'
 import { formatDisplayUnits, formatMoney, type MoneyDisplay } from '@/lib/money'
 import type { CumulativeRow } from '../chartData'
-import { ChartTooltip } from './ChartTooltip'
-import { ANIMATION_MS, AXIS_TICK, BASELINE_STROKE, GRID_STROKE, SERIES } from './theme'
+import { ChartTooltip } from '@/shared/components/ChartTooltip'
+import {
+  ANIMATION_MS,
+  AXIS_TICK,
+  BASELINE_STROKE,
+  GRID_STROKE,
+  SERIES,
+} from '@/shared/lib/chartTheme'
 
 interface CumulativeTooltipProps {
   active?: boolean

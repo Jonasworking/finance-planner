@@ -49,12 +49,12 @@ const bareCn = {
 }
 
 /*
- * Recharts weighs ~100 KB gzip. It is imported in ONE folder only, which the analysis screen
- * loads lazily – an import anywhere else would silently pull it into the start chunk.
+ * Recharts weighs ~100 KB gzip. It is imported only in a feature's `charts/` folder, which that
+ * screen loads lazily – an import anywhere else would silently pull it into the start chunk.
  */
 const rechartsOutsideCharts = {
   group: ['recharts', 'recharts/*'],
-  message: 'Import Recharts only in src/features/analytics/charts (lazy chunk).',
+  message: 'Import Recharts only in src/features/<name>/charts (lazy chunk).',
 }
 
 // Folder-specific configs replace (not merge) the rule, so each one carries the shared bans too.
@@ -155,7 +155,7 @@ export default defineConfig([
     },
   },
   {
-    files: ['src/features/analytics/charts/**/*.{ts,tsx}'],
+    files: ['src/features/*/charts/**/*.{ts,tsx}'],
     rules: {
       'no-restricted-imports': restrictImports(featureRules, { allowRecharts: true }),
     },

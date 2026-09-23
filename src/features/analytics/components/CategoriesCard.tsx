@@ -12,7 +12,7 @@ import { useUiStore } from '@/shared/stores/uiStore'
 import { Skeleton } from '@/shared/ui/skeleton'
 import { REST_SLICE_ID, toDonutRows, toTrendRows, type DonutRow } from '../chartData'
 import { periodLabel } from '../labels'
-import { ChartCard, type ChartTable } from './ChartCard'
+import { ChartCard, type ChartTable } from '@/shared/components/ChartCard'
 
 const CategoryDonut = lazy(() =>
   import('../charts').then((module) => ({ default: module.CategoryDonut })),

@@ -5,7 +5,7 @@ import type { MoneyDisplay } from '@/lib/money'
 import { Money } from '@/shared/components/Money'
 import { toFlowRows } from '../chartData'
 import { periodLabel, weeksLabel } from '../labels'
-import { ChartCard, type ChartTable, type LegendItem } from './ChartCard'
+import { ChartCard, type ChartTable, type LegendItem } from '@/shared/components/ChartCard'
 
 const FlowChart = lazy(() => import('../charts').then((module) => ({ default: module.FlowChart })))
 

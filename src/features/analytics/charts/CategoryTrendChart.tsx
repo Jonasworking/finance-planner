@@ -2,7 +2,7 @@ import { useReducedMotion } from 'motion/react'
 import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
 import { formatDisplayUnits, formatMoney, type MoneyDisplay } from '@/lib/money'
 import type { TrendRow } from '../chartData'
-import { ChartTooltip } from './ChartTooltip'
+import { ChartTooltip } from '@/shared/components/ChartTooltip'
 import {
   ANIMATION_MS,
   AXIS_TICK,
@@ -10,7 +10,7 @@ import {
   CURSOR_FILL,
   GRID_STROKE,
   MAX_BAR_SIZE,
-} from './theme'
+} from '@/shared/lib/chartTheme'
 
 interface TrendTooltipProps {
   active?: boolean

@@ -14,7 +14,7 @@ import type { Granularity } from '@/lib/analytics'
 import { formatDisplayUnits, formatMoney, type MoneyDisplay } from '@/lib/money'
 import type { FlowRow } from '../chartData'
 import { weeksLabel } from '../labels'
-import { ChartTooltip, type TooltipRow } from './ChartTooltip'
+import { ChartTooltip, type TooltipRow } from '@/shared/components/ChartTooltip'
 import {
   ANIMATION_MS,
   AXIS_TICK,
@@ -23,7 +23,7 @@ import {
   GRID_STROKE,
   MAX_BAR_SIZE,
   SERIES,
-} from './theme'
+} from '@/shared/lib/chartTheme'
 
 const RADIUS = 4
 /** Surface-colored gap between the two segments of a column. */
