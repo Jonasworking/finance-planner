@@ -15,20 +15,20 @@
 - [x] **Phase 4** – Analyse & Charts — freigegeben 2026-09-21, fertig 2026-09-21 (Branch `phase-4-analytics`), **abgenommen 2026-09-22, in `main`**, Notizen unten
 - [ ] **Phase 5** – Tasks, Insights, Was-wäre-wenn — Aufteilung in 5a–5d und die folgenden Entscheidungen bestätigt 2026-09-22; alle übrigen Annahmen des Ursprungsplans (§5) gelten unverändert:
   - [x] **5a** – Tasks: Fälligkeit, Kategorie, optionale Topf-Kopplung als **Verweis mit Fortschrittsanzeige (keine Automatik)**, Abhak-Animation, überfällige Tasks hervorgehoben, Dashboard-Widget — freigegeben 2026-09-22, fertig 2026-09-22 (Branch `phase-5a-tasks`), **abgenommen 2026-09-22, in `main`**, Notizen unten
-  - [ ] **5b** – Insights: Karten auf dem Dashboard (wegwischbar, max. 3). **Weggewischte Insights liegen in `localStorage`** (gerätelokal, nicht im Backup, kein Schema-Wechsel). Die Regeln „Offene Wochen" und „Backup" erscheinen **nicht** als Karte – offene Wochen deckt schon der Nächste Schritt ab, die Backup-Erinnerung kommt mit Phase 6. — freigegeben 2026-09-22 (Branch `phase-5b-insights`)
+  - [ ] **5b** – Insights: Karten auf dem Dashboard (wegwischbar, max. 3). **Weggewischte Insights liegen in `localStorage`** (gerätelokal, nicht im Backup, kein Schema-Wechsel). Die Regeln „Offene Wochen" und „Backup" erscheinen **nicht** als Karte – offene Wochen deckt schon der Nächste Schritt ab, die Backup-Erinnerung kommt mit Phase 6. — freigegeben 2026-09-22, fertig 2026-09-23 (Branch `phase-5b-insights`), Notizen unten
   - [ ] **5c** – Was-wäre-wenn: **Startwert der Prognose = Summe aller Töpfe**; Kategorie-Slider, Zieldatum, Kurve Basis vs. Szenario, Ergebnis „+A$Z bis Datum Y", optional „als Budget übernehmen".
   - [ ] **5d** – geparkt, ohne Umfang.
 - [ ] **Phase 6** – PWA, Export, Polish — **Backup-Erinnerung ist Pflichtfeature:** Insight-Karte („Backup älter als 14 Tage" bzw. noch nie) plus Hinweis in den Einstellungen (siehe §5)
 - [ ] Phase 7 (optional) – Sync
 
-## Session-Notiz – Stand 2026-09-22
+## Session-Notiz – Stand 2026-09-23
 
 > Einstieg für die nächste Session. Wird bei jedem Sessionende überschrieben, nicht fortgeschrieben – die dauerhaften Ergebnisse stehen in den Phasen-Notizen unten.
 
 **Wo wir stehen**
 
-- **Phase 5a (Tasks) ist abgenommen** (2026-09-22). `main` wurde per Fast-Forward auf `phase-5a-tasks` gezogen und gepusht → Production: https://finance-planner-jonasworkings-projects.vercel.app
-- **5b (Insights) ist freigegeben** (2026-09-22) und läuft auf Branch `phase-5b-insights`: Karten auf dem Dashboard (max. 3, wegwischbar, Weggewischtes in `localStorage`), Regeln aus `lib/insights` (seit Phase 1 getestet), „Offene Wochen" und „Backup" ohne Karte.
+- **5b (Insights) ist fertig** (2026-09-23) und wartet auf deine Abnahme. Branch `phase-5b-insights` ist gepusht → Preview: https://finance-planner-git-phase-5b-insights-jonasworkings-projects.vercel.app (Smoke-Suite dort grün).
+- Production zeigt weiter den Stand von 5a: https://finance-planner-jonasworkings-projects.vercel.app
 
 **Offen aus Phase 3/4** (nicht blockierend, unverändert)
 
@@ -36,12 +36,12 @@
 - `AnimatedNumber` (Spring-Ticker für Beträge) ist nicht gebaut.
 - Warn-Protokoll liegt in `localStorage`: nach „Alle Daten löschen" mitten in der Woche bleibt es bis zur nächsten Woche stumm.
 - Ausgabe aus einem inzwischen archivierten Topf lässt sich erst nach „Wiederherstellen" des Topfs ändern.
-- Start-Chunk 286 KB gzip (Ziel < 250 KB → Phase 6: Lazy-Routes für Budget/Töpfe, `LazyMotion`).
+- Start-Chunk 295 KB gzip (Ziel < 250 KB → Phase 6: Lazy-Routes für Budget/Töpfe, `LazyMotion`).
 - A11y-Pass (Pfeiltasten im Segment-Schalter, Sortieren per Tastatur, `forced-colors`-Textur für Charts) → Phase 6.
 
 **Als Nächstes**
 
-1. 5b bauen → Gate + Smoke-Suite (Journey für Insight-Karte erscheint / wegwischen / bleibt weg nach Reload) → Preview zum Testen → Abnahme.
+1. 5b auf der Preview testen → Abnahme → `main` per Fast-Forward auf `phase-5b-insights`, pushen.
 2. **5c (Was-wäre-wenn) erst nach deiner Freigabe:** `projectScenario` ist fertig; die Kurve kann `ChartCard`, `ChartTooltip` und die Chart-Tokens aus Phase 4 wiederverwenden (Recharts nur unter `features/analytics/charts` importierbar – Chart-Ordner teilen oder die Lint-Regel um einen zweiten Ordner erweitern); Startwert = Summe aller Töpfe.
 
 ## Phase 0 – Ergebnis & Abweichungen vom Plan
@@ -159,6 +159,17 @@
 - **Ein Sheet für alles:** `TaskSheet` ist einmal in `AppShell` gemountet (`uiStore.openTask`), damit Home-Widget und Tasks-Seite dasselbe Sheet nutzen; verschwindet der Task darunter, schließt es sich (Muster aus dem Ausgaben-Sheet).
 - **Bundle:** Start-Chunk 290 KB gzip (+4 KB; Ziel < 250 KB bleibt Phase 6).
 - **Offen / Merker:** keine Sortierung/Filter nach Kategorie (drei Kategorien, bewusst schlicht) · Notiz ist ein einzeiliges Feld · kein Umsortieren per Hand · Wiederkehrende Tasks nicht vorgesehen · Dashboard-Widget steht in der linken Spalte unter dem nächsten Schritt (auf dem Telefon unterhalb der ersten Bildschirmhöhe).
+
+## Phase 5b – Ergebnis & Abweichungen vom Plan
+
+**Geprüft:** typecheck · lint · build grün · **812 Testläufe** (406 Tests × 2 Zeitzonen; neu: `dashboardRules`, deutsche Texte je Insight-Art, Karte mit Wisch/X/Link, Merkliste in `localStorage`, Dashboard mit/ohne Karten) · `npm run test:e2e` **11 Journeys grün**, lokal und gegen die Preview, neu: „Insight erscheint → wegwischen → Rückgängig → per X ausblenden → bleibt nach Reload weg" bei 390 px · Sichtprüfung im echten Chrome (390×844 dunkel **und** hell, mit Demo-Daten: drei Karten Budget-Warnung, Topf vor dem Plan, Serie) – Konsole fehlerfrei, kein Element außerhalb des Viewports.
+
+- **Regeln unverändert aus `lib/insights`** (seit Phase 1 getestet); neu ist nur `dashboardRules` = alle Regeln ohne `pending-weeks` (macht der Nächste Schritt) und `backup-stale` (kommt mit dem Export in Phase 6). Höchstens drei Karten nach Priorität, weggewischte werden vor dem Kürzen herausgefiltert – dann rückt die nächste nach.
+- **Texte rendert die UI** (`features/insights/insightCopy.ts`): Titel, Satz, Icon (bei Kategorie/Topf dessen eigene Kachel) und ein Link zum Handeln („Budget", „Zum Topf", …).
+- **Wegwischen** in beide Richtungen oder per X (Tastatur/Screenreader), Toast „Hinweis ausgeblendet" mit Rückgängig. Die IDs tragen die Woche, eine neue Woche bringt also einen neuen Hinweis; die Merkliste in `localStorage` (`fp.insightsDismissed`) ist auf 100 Einträge gedeckelt und synct zwischen Tabs.
+- **Abschnitt nur mit Inhalt** (Home-Screen-Regel): ohne Karten fehlt die Überschrift „Insights" ganz. Karten stehen unter dem Nächsten Schritt, vor dem Tasks-Widget.
+- **Bundle:** Start-Chunk 295 KB gzip (+5 KB; Ziel < 250 KB bleibt Phase 6).
+- **Offen / Merker:** kein „Hinweise zurücksetzen" in den Einstellungen (Funktion `clearDismissedInsights` existiert) · wie das Warn-Protokoll gerätelokal, ein zweites Gerät zeigt weggewischte Karten wieder (gewollt).
 
 ---
 
