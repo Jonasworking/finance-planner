@@ -15,8 +15,8 @@
 - [x] **Phase 4** – Analyse & Charts — freigegeben 2026-09-21, fertig 2026-09-21 (Branch `phase-4-analytics`), **abgenommen 2026-09-22, in `main`**, Notizen unten
 - [ ] **Phase 5** – Tasks, Insights, Was-wäre-wenn — Aufteilung in 5a–5d und die folgenden Entscheidungen bestätigt 2026-09-22; alle übrigen Annahmen des Ursprungsplans (§5) gelten unverändert:
   - [x] **5a** – Tasks: Fälligkeit, Kategorie, optionale Topf-Kopplung als **Verweis mit Fortschrittsanzeige (keine Automatik)**, Abhak-Animation, überfällige Tasks hervorgehoben, Dashboard-Widget — freigegeben 2026-09-22, fertig 2026-09-22 (Branch `phase-5a-tasks`), **abgenommen 2026-09-22, in `main`**, Notizen unten
-  - [ ] **5b** – Insights: Karten auf dem Dashboard (wegwischbar, max. 3). **Weggewischte Insights liegen in `localStorage`** (gerätelokal, nicht im Backup, kein Schema-Wechsel). Die Regeln „Offene Wochen" und „Backup" erscheinen **nicht** als Karte – offene Wochen deckt schon der Nächste Schritt ab, die Backup-Erinnerung kommt mit Phase 6. — freigegeben 2026-09-22, fertig 2026-09-23 (Branch `phase-5b-insights`), Notizen unten
-  - [ ] **5c** – Was-wäre-wenn: **Startwert der Prognose = Summe aller Töpfe**; Kategorie-Slider, Zieldatum, Kurve Basis vs. Szenario, Ergebnis „+A$Z bis Datum Y", optional „als Budget übernehmen".
+  - [x] **5b** – Insights: Karten auf dem Dashboard (wegwischbar, max. 3). **Weggewischte Insights liegen in `localStorage`** (gerätelokal, nicht im Backup, kein Schema-Wechsel). Die Regeln „Offene Wochen" und „Backup" erscheinen **nicht** als Karte – offene Wochen deckt schon der Nächste Schritt ab, die Backup-Erinnerung kommt mit Phase 6. — freigegeben 2026-09-22, fertig 2026-09-23 (Branch `phase-5b-insights`), **abgenommen 2026-09-23 (am iPhone getestet), in `main`**, Notizen unten
+  - [ ] **5c** – Was-wäre-wenn: **Startwert der Prognose = Summe aller Töpfe**; Kategorie-Slider, Zieldatum, Kurve Basis vs. Szenario, Ergebnis „+A$Z bis Datum Y", optional „als Budget übernehmen". — freigegeben 2026-09-23 (Branch `phase-5c-whatif`)
   - [ ] **5d** – geparkt, ohne Umfang.
 - [ ] **Phase 6** – PWA, Export, Polish — **Backup-Erinnerung ist Pflichtfeature:** Insight-Karte („Backup älter als 14 Tage" bzw. noch nie) plus Hinweis in den Einstellungen (siehe §5)
 - [ ] Phase 7 (optional) – Sync
@@ -27,8 +27,8 @@
 
 **Wo wir stehen**
 
-- **5b (Insights) ist fertig** (2026-09-23) und wartet auf deine Abnahme. Branch `phase-5b-insights` ist gepusht → Preview: https://finance-planner-git-phase-5b-insights-jonasworkings-projects.vercel.app (Smoke-Suite dort grün).
-- Production zeigt weiter den Stand von 5a: https://finance-planner-jonasworkings-projects.vercel.app
+- **5b (Insights) ist abgenommen** (2026-09-23, am iPhone getestet). `main` per Fast-Forward auf `phase-5b-insights` gezogen und gepusht → Production: https://finance-planner-jonasworkings-projects.vercel.app
+- **5c (Was-wäre-wenn) ist freigegeben** (2026-09-23) und läuft auf Branch `phase-5c-whatif`.
 
 **Offen aus Phase 3/4** (nicht blockierend, unverändert)
 
@@ -41,8 +41,7 @@
 
 **Als Nächstes**
 
-1. 5b auf der Preview testen → Abnahme → `main` per Fast-Forward auf `phase-5b-insights`, pushen.
-2. **5c (Was-wäre-wenn) erst nach deiner Freigabe:** `projectScenario` ist fertig; die Kurve kann `ChartCard`, `ChartTooltip` und die Chart-Tokens aus Phase 4 wiederverwenden (Recharts nur unter `features/analytics/charts` importierbar – Chart-Ordner teilen oder die Lint-Regel um einen zweiten Ordner erweitern); Startwert = Summe aller Töpfe.
+1. 5c bauen: Kategorie-Slider „minus X pro Woche", Zieldatum, Live-Kurve Basis vs. Szenario, Ergebnis „+A$Z bis Datum Y", Startwert = Summe aller Töpfe, optional „als Budget übernehmen" → Gate + Smoke-Suite mit Rechner-Journey → Preview → Abnahme. `projectScenario` ist fertig; die Kurve kann `ChartCard`, `ChartTooltip` und die Chart-Tokens aus Phase 4 wiederverwenden (Recharts nur unter `features/analytics/charts` importierbar – Chart-Ordner teilen oder die Lint-Regel um einen zweiten Ordner erweitern).
 
 ## Phase 0 – Ergebnis & Abweichungen vom Plan
 
