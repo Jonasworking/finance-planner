@@ -13,6 +13,7 @@ import { PRIMARY_POT_ID } from './types'
 import {
   baselineWeeklySaving,
   budgetFromScenario,
+  horizonUntil,
   projectScenario,
   toAdjustments,
   whatIfBase,
@@ -46,6 +47,7 @@ describe('projectScenario', () => {
     expect(scenario.weeks).toBe(4)
     expect(scenario.extraPerWeekCents).toBe(7_000)
     expect(scenario.gainCents).toBe(28_000)
+    expect(scenario.gainByCategory).toEqual({ 'cat:eating-out': 20_000, 'cat:fun': 8_000 })
     expect(scenario.points[0]).toEqual({
       weekStart: '2026-09-21',
       baselineCents: 1_160_000,
@@ -67,7 +69,13 @@ describe('projectScenario', () => {
     })
     expect(more.gainCents).toBe(-100)
     const past = projectScenario({ ...base, adjustments: [], until: '2026-09-01' })
-    expect(past).toEqual({ points: [], weeks: 0, extraPerWeekCents: 0, gainCents: 0 })
+    expect(past).toEqual({
+      points: [],
+      weeks: 0,
+      extraPerWeekCents: 0,
+      gainCents: 0,
+      gainByCategory: {},
+    })
   })
 })
 
@@ -159,6 +167,8 @@ describe('whatIfBase', () => {
       ],
     })
     expect(result.budget?.totalLimitCents).toBe(40_000)
+    // an archived category's limit is not offered, but kept for "als Budget übernehmen"
+    expect(result.budget?.categoryLimits['cat:old']).toBe(5_000)
     expect(result.categories).toEqual([
       { categoryId: 'cat:eating-out', averageCents: 0, limitCents: 6_000, maxCents: 6_000 },
       { categoryId: 'cat:groceries', averageCents: 12_300, limitCents: 10_000, maxCents: 12_500 },
@@ -225,5 +235,14 @@ describe('budgetFromScenario', () => {
       budgetFromScenario(null, categories, [{ categoryId: 'cat:fun', deltaCentsPerWeek: 500 }]),
     ).toBeNull()
     expect(budgetFromScenario(budget, categories, [])).toBeNull()
+  })
+})
+
+describe('horizonUntil', () => {
+  it('counts months from today, clamps month ends and never goes back in time', () => {
+    expect(horizonUntil('2026-09-23', 12)).toBe('2027-09-23')
+    expect(horizonUntil('2026-08-31', 6)).toBe('2027-02-28')
+    expect(horizonUntil('2026-09-23', '2026-12-24')).toBe('2026-12-24')
+    expect(horizonUntil('2026-09-23', '2026-01-01')).toBe('2026-09-23')
   })
 })

@@ -1,6 +1,6 @@
 import { categoryAverages, summarizeWeeks } from './analytics'
 import { BUDGET_STEP_CENTS, resolveBudget, roundToBudgetStep, type ResolvedBudget } from './budget'
-import { listWeeks, weekStartOf } from './dates'
+import { addMonthsClamped, listWeeks, maxISO, weekStartOf } from './dates'
 import { potBalances, type WeekSummary } from './savings'
 import {
   isActive,
@@ -33,6 +33,8 @@ export interface Scenario {
   extraPerWeekCents: Cents
   /** "… habe ich bis Datum Y Z A$ mehr". */
   gainCents: Cents
+  /** What each adjustment alone adds by the end (category id → cents). */
+  gainByCategory: Record<string, Cents>
 }
 
 /** Projects savings week by week: baseline tempo vs. tempo with the adjustments applied. */
@@ -59,6 +61,9 @@ export function projectScenario(input: {
     weeks: points.length,
     extraPerWeekCents,
     gainCents: extraPerWeekCents * points.length,
+    gainByCategory: Object.fromEntries(
+      input.adjustments.map((a) => [a.categoryId, a.deltaCentsPerWeek * points.length]),
+    ),
   }
 }
 
@@ -123,8 +128,8 @@ export function whatIfBase(input: {
   pots: readonly Pot[]
   potTransactions: readonly PotTransaction[]
 }): WhatIfBase {
-  const activeIds = new Set(input.categories.map((category) => category.id))
-  const budget = resolveBudget(input.budgets, weekStartOf(input.today), activeIds)
+  // Unfiltered: limits of archived categories must survive "als Budget übernehmen".
+  const budget = resolveBudget(input.budgets, weekStartOf(input.today))
 
   const closedWeekStarts = input.weeks
     .filter((week) => isActive(week) && week.closedAt !== null)
@@ -219,4 +224,9 @@ export function budgetFromScenario(
       ...categoryChanges,
     ],
   }
+}
+
+/** The target date: a horizon in months from today, or a picked day – never before today. */
+export function horizonUntil(today: ISODate, horizon: number | ISODate): ISODate {
+  return typeof horizon === 'number' ? addMonthsClamped(today, horizon) : maxISO(horizon, today)
 }

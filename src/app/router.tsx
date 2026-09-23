@@ -5,8 +5,8 @@ import { CategoriesPage, ExpensesPage, RecurringPage } from '@/features/expenses
 import { PotDetailPage, PotsPage } from '@/features/pots'
 import { SettingsPage } from '@/features/settings'
 import { TasksPage } from '@/features/tasks'
-import { WhatIfPage } from '@/features/whatif'
 import { AnalyticsRoute } from './routes/AnalyticsRoute'
+import { WhatIfRoute } from './routes/WhatIfRoute'
 import { AppShell } from './shell/AppShell'
 import { MorePage } from './shell/MorePage'
 
@@ -34,7 +34,7 @@ export const router = createBrowserRouter([
       { path: 'analytics', Component: AnalyticsRoute },
       { path: 'budget', Component: BudgetPage },
       { path: 'tasks', Component: TasksPage },
-      { path: 'what-if', Component: WhatIfPage },
+      { path: 'what-if', Component: WhatIfRoute },
       { path: 'settings', Component: SettingsPage },
       { path: 'more', Component: MorePage },
       ...devRoutes,
