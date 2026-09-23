@@ -16,19 +16,19 @@
 - [ ] **Phase 5** – Tasks, Insights, Was-wäre-wenn — Aufteilung in 5a–5d und die folgenden Entscheidungen bestätigt 2026-09-22; alle übrigen Annahmen des Ursprungsplans (§5) gelten unverändert:
   - [x] **5a** – Tasks: Fälligkeit, Kategorie, optionale Topf-Kopplung als **Verweis mit Fortschrittsanzeige (keine Automatik)**, Abhak-Animation, überfällige Tasks hervorgehoben, Dashboard-Widget — freigegeben 2026-09-22, fertig 2026-09-22 (Branch `phase-5a-tasks`), **abgenommen 2026-09-22, in `main`**, Notizen unten
   - [x] **5b** – Insights: Karten auf dem Dashboard (wegwischbar, max. 3). **Weggewischte Insights liegen in `localStorage`** (gerätelokal, nicht im Backup, kein Schema-Wechsel). Die Regeln „Offene Wochen" und „Backup" erscheinen **nicht** als Karte – offene Wochen deckt schon der Nächste Schritt ab, die Backup-Erinnerung kommt mit Phase 6. — freigegeben 2026-09-22, fertig 2026-09-23 (Branch `phase-5b-insights`), **abgenommen 2026-09-23 (am iPhone getestet), in `main`**, Notizen unten
-  - [ ] **5c** – Was-wäre-wenn: **Startwert der Prognose = Summe aller Töpfe**; Kategorie-Slider, Zieldatum, Kurve Basis vs. Szenario, Ergebnis „+A$Z bis Datum Y", optional „als Budget übernehmen". — freigegeben 2026-09-23 (Branch `phase-5c-whatif`)
+  - [ ] **5c** – Was-wäre-wenn: **Startwert der Prognose = Summe aller Töpfe**; Kategorie-Slider, Zieldatum, Kurve Basis vs. Szenario, Ergebnis „+A$Z bis Datum Y", optional „als Budget übernehmen". — freigegeben 2026-09-23, fertig 2026-09-24 (Branch `phase-5c-whatif`), Notizen unten
   - [ ] **5d** – geparkt, ohne Umfang.
 - [ ] **Phase 6** – PWA, Export, Polish — **Backup-Erinnerung ist Pflichtfeature:** Insight-Karte („Backup älter als 14 Tage" bzw. noch nie) plus Hinweis in den Einstellungen (siehe §5)
 - [ ] Phase 7 (optional) – Sync
 
-## Session-Notiz – Stand 2026-09-23
+## Session-Notiz – Stand 2026-09-24
 
 > Einstieg für die nächste Session. Wird bei jedem Sessionende überschrieben, nicht fortgeschrieben – die dauerhaften Ergebnisse stehen in den Phasen-Notizen unten.
 
 **Wo wir stehen**
 
-- **5b (Insights) ist abgenommen** (2026-09-23, am iPhone getestet). `main` per Fast-Forward auf `phase-5b-insights` gezogen und gepusht → Production: https://finance-planner-jonasworkings-projects.vercel.app
-- **5c (Was-wäre-wenn) ist freigegeben** (2026-09-23) und läuft auf Branch `phase-5c-whatif`.
+- **5b ist abgenommen** (2026-09-23, am iPhone getestet) und in `main` → Production: https://finance-planner-jonasworkings-projects.vercel.app (Smoke-Suite gegen Production 11/11 grün).
+- **5c (Was-wäre-wenn) ist fertig** (2026-09-24) und wartet auf deine Abnahme. Branch `phase-5c-whatif` → Preview: https://finance-planner-git-phase-5c-whatif-jonasworkings-projects.vercel.app
 
 **Offen aus Phase 3/4** (nicht blockierend, unverändert)
 
@@ -41,7 +41,8 @@
 
 **Als Nächstes**
 
-1. 5c bauen: Kategorie-Slider „minus X pro Woche", Zieldatum, Live-Kurve Basis vs. Szenario, Ergebnis „+A$Z bis Datum Y", Startwert = Summe aller Töpfe, optional „als Budget übernehmen" → Gate + Smoke-Suite mit Rechner-Journey → Preview → Abnahme. `projectScenario` ist fertig; die Kurve kann `ChartCard`, `ChartTooltip` und die Chart-Tokens aus Phase 4 wiederverwenden (Recharts nur unter `features/analytics/charts` importierbar – Chart-Ordner teilen oder die Lint-Regel um einen zweiten Ordner erweitern).
+1. 5c auf der Preview testen → Abnahme → `main` per Fast-Forward auf `phase-5c-whatif`, pushen.
+2. Danach: 5d ist geparkt (ohne Umfang) → Phase 6 (PWA, Export, Backup-Erinnerung, Bundle < 250 KB) erst nach deiner Freigabe.
 
 ## Phase 0 – Ergebnis & Abweichungen vom Plan
 
@@ -169,6 +170,21 @@
 - **Abschnitt nur mit Inhalt** (Home-Screen-Regel): ohne Karten fehlt die Überschrift „Insights" ganz. Karten stehen unter dem Nächsten Schritt, vor dem Tasks-Widget.
 - **Bundle:** Start-Chunk 295 KB gzip (+5 KB; Ziel < 250 KB bleibt Phase 6).
 - **Offen / Merker:** kein „Hinweise zurücksetzen" in den Einstellungen (Funktion `clearDismissedInsights` existiert) · wie das Warn-Protokoll gerätelokal, ein zweites Gerät zeigt weggewischte Karten wieder (gewollt).
+
+## Phase 5c – Ergebnis & Abweichungen vom Plan
+
+**Geprüft:** typecheck · lint · build grün · **844 Testläufe** (422 Tests × 2 Zeitzonen; Coverage `src/lib` 99,9 % Zeilen, `whatif.ts` 100 %; neu: `whatIfBase`, `toAdjustments`, `budgetFromScenario`, `horizonUntil`, `gainByCategory`, `formatDate`, Chart-Zeilen, RTL-Tests der Seite gegen die echte DB-Schicht: Startwert/Basis, Regler → Ergebnis = `projectScenario` für dieselben Zeilen, Zieldatum per Preset/Hand, Übernehmen mit Rückgängig, Selbsterklärung ohne Daten) · `npm run test:e2e` **12 Journeys grün**, neu: Rechner mit echtem Drag am Regler, Pfeiltasten, Kurve in beiden Ansichten, Preset, „Als Budget übernehmen" → Dashboard „von A$380" · Sichtprüfung im echten Chrome (390×844 dunkel **und** hell, 1440×900) mit Demo-Daten, Konsole fehlerfrei · Mutationsproben: ohne Zurücksetzen der Regler nach dem Übernehmen wird der RTL-Test rot; ohne `fromWeek` die neue Journey („+A$3.180" erscheint nie).
+**DoD (Rechner-Teil von Phase 5):** Kurve folgt dem Ziehen ohne Animation (Punkte per `useDeferredValue`) · Ergebnis = `projectScenario` für dieselben Zeilen (RTL-Test vergleicht Zahl für Zahl, auch die Chart-Punkte).
+
+- **Startwert = Summe aller Töpfe** (gelöschte Töpfe zählen nicht, archivierte sind per Regel leer). **Basis** = Ø Gespartes der letzten 8 abgeschlossenen Wochen; ohne abgeschlossene Woche Standard-Einkommen − Wochenbudget (so erklärt es die Karte auch).
+- **Gefundener Rechenfehler (beim Schreiben der Journey):** Ist die laufende Woche schon abgeschlossen (Sa/So), steckt ihr Gespartes bereits im Topf – `projectScenario` hätte sie ein zweites Mal addiert. `whatIfBase.fromWeek` beginnt dann mit der nächsten Woche.
+- **Regler „−A$X pro Woche"** je Kategorie, Spanne = max(Ø der letzten 8 abgeschlossenen Wochen, Limit), A$5-Schritte wie das Budget; Kategorien ohne Ausgaben und ohne Limit fehlen (nichts zu kürzen). Jede Zeile zeigt ihren eigenen Beitrag („+A$1.080 bis 20. Sep. 2027"), damit man am Telefon beim Ziehen etwas sieht, auch wenn das Ergebnis oben aus dem Bild ist.
+- **Zieldatum:** Presets 3 Mon./6 Mon./1 Jahr (Standard)/2 Jahre plus Datumsfeld (nie vor heute).
+- **Abweichung Kurve (Entscheidung):** Auf voller Skala liegen Basis und Szenario praktisch aufeinander (Demo: A$1.326 Basis pro Woche gegen A$30 Kürzung), beim Ziehen bewegt sich nichts Sichtbares. Deshalb zeigt die Kurve standardmäßig den **Unterschied** (Basis = Nulllinie in Grau, Vorsprung als Mint-Fläche), Umschalter „Gesamt" zeigt beide Stände mit angepasster Achse. Tabellen-Zwilling je Monatsende.
+- **„Als Budget übernehmen":** Sheet zeigt alle Änderungen („Wochenbudget A$400 → A$370", „Essen gehen: kein Limit → A$40"), schreibt das Budget dieser Woche (gilt ab dieser Woche, frühere bleiben), setzt die Regler zurück (sonst würde ein zweites Übernehmen doppelt kürzen), Toast mit Rückgängig (stellt Budget und Regler wieder her). Folge: Liegt eine Kategorie diese Woche schon über dem neuen Limit, meldet sich sofort die übliche Budget-Warnung – gewollt, das Limit gilt ab jetzt.
+- **Architektur:** `ChartCard`, `ChartTooltip` und das Chart-Theme liegen jetzt in `shared`, Recharts ist in jedem `features/<name>/charts/` erlaubt (ESLint) – beide Screens teilen sich den Recharts-Chunk. Route lazy (`WhatIfRoute`); `PlaceholderPage` entfernt (nicht mehr benutzt).
+- **Bundle:** Start-Chunk 291 KB gzip (−4 KB durch die Lazy-Route; Ziel < 250 KB bleibt Phase 6).
+- **Offen / Merker:** Szenario lebt nur bis zum Reload (bewusst: Skizze, kein Datensatz) · kein „mehr ausgeben"-Szenario (Regler nur nach unten, wie beauftragt) · offene vergangene Wochen fließen nicht in den Startwert (ihr Einkommen fehlt noch).
 
 ---
 
