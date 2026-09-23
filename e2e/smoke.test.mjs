@@ -413,6 +413,54 @@ journey('an insight card appears, is swiped away and stays away', PHONE, async (
   await assertFitsViewport(page, 'dashboard after dismissing the insight')
 })
 
+journey('the what-if calculator answers live and becomes the budget', PHONE, async (page) => {
+  // one closed week with A$60 eating out: that is what the slider can cut
+  await onboard(page)
+  await clickText(page, 'button', 'Ausgabe erfassen')
+  await fillQuickAdd(page, ['6', '0'], 'Essen gehen')
+  await clickText(page, 'button', 'Diese Woche abschließen')
+  await waitForModals(page, 1)
+  await clickText(page, 'button', 'Woche abschließen', { exact: true })
+  await waitForText(page, 'In „Nur gespart" gebucht')
+  await clickText(page, 'button', 'Fertig', { exact: true })
+  await waitForModals(page, 0)
+
+  // reached through "Mehr" – the route loads lazily
+  await clickSelector(page, 'a[aria-label="Mehr"]')
+  await clickText(page, 'a', 'Was-wäre-wenn')
+  await waitForText(page, 'Bis 20. Sep. 2027 in allen Töpfen')
+  await waitForText(page, 'Start: A$1.940 in allen Töpfen')
+  await assertFitsViewport(page, 'what-if before a cut')
+
+  // a real drag to the end of the track: A$60 less a week, 53 weeks from the next Monday
+  const slider = '[role="slider"][aria-label="Weniger für Essen gehen pro Woche"]'
+  await swipe(page, await page.waitForSelector(slider), 400)
+  await waitForText(page, 'Bis 20. Sep. 2027 mehr gespart')
+  await waitForText(page, '+A$3.180')
+  // arrow keys step by A$5
+  await page.focus(slider)
+  for (let step = 0; step < 8; step++) await page.keyboard.press('ArrowLeft')
+  await waitForText(page, '+A$1.060 bis 20. Sep. 2027')
+  await waitForChart(page, 'Verlauf: Chart')
+  await clickText(page, '[role="radio"]', 'Gesamt')
+  await waitForChart(page, 'Verlauf: Chart')
+  await clickText(page, '[role="radio"]', '3 Mon.')
+  await waitForText(page, 'Bis 20. Dez. 2026 mehr gespart')
+  await assertFitsViewport(page, 'what-if with a cut')
+
+  await clickText(page, 'main button', 'Als Budget übernehmen')
+  await waitForModals(page, 1)
+  await waitForText(page, 'kein Limit') // eating out had none: A$60 average − A$20
+  await assertFitsViewport(page, 'adopt-as-budget sheet')
+  await clickText(page, 'button', 'Übernehmen', { exact: true })
+  await waitForText(page, 'Budget übernommen')
+  await waitForModals(page, 0)
+  await waitForText(page, 'Bis 20. Dez. 2026 in allen Töpfen') // the sliders start over
+
+  await goto(page, '/')
+  await waitForText(page, 'von A$380')
+})
+
 journey('desktop layout keeps every card inside the window', DESKTOP, async (page) => {
   await goto(page, '/')
   await waitForText(page, 'Willkommen beim Finanzplaner')
