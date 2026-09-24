@@ -8,6 +8,14 @@ const APP_BACKGROUND = '#0B0C0F'
 
 // https://vite.dev/config/
 export default defineConfig({
+  // Shown under "Über die App": which build is running (Vercel sets the commit SHA).
+  define: {
+    __APP_BUILD__: JSON.stringify({
+      sha: (process.env.VERCEL_GIT_COMMIT_SHA ?? 'lokal').slice(0, 7),
+      // The build day where the app lives (Sydney), as YYYY-MM-DD.
+      date: new Intl.DateTimeFormat('sv-SE', { timeZone: 'Australia/Sydney' }).format(new Date()),
+    }),
+  },
   plugins: [
     react(),
     tailwindcss(),

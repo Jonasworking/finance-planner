@@ -1,6 +1,6 @@
 import { categoryAverages } from './analytics'
 import type { BudgetUsage } from './budget'
-import { addWeeksISO, listWeeks, monthOfWeek } from './dates'
+import { addWeeksISO, daysBetween, dayOfTimestamp, listWeeks, monthOfWeek } from './dates'
 import { expensesInWeek, isBudgetRelevant } from './expenses'
 import { deadlineDelta, forecastPot, requiredWeeklyForDeadline, weeklyPace } from './forecast'
 import { potBalances, type WeekSummary } from './savings'
@@ -256,13 +256,17 @@ export interface BackupState {
   due: boolean
 }
 
-/** What the settings say about backups – the same age and threshold as the home-screen card. */
+/**
+ * What the settings say about backups – the same threshold as the home-screen card. Counted in
+ * calendar days (a backup from this evening is "heute", never "vor −1 Tagen").
+ */
 export function backupState(
   lastBackupAt: number | null,
-  now: number,
+  today: ISODate,
   hasData: boolean,
 ): BackupState {
-  const days = lastBackupAt === null ? null : Math.floor((now - lastBackupAt) / DAY_MS)
+  const days =
+    lastBackupAt === null ? null : Math.max(0, daysBetween(dayOfTimestamp(lastBackupAt), today))
   return { days, due: hasData && (days === null || days >= BACKUP_STALE_DAYS) }
 }
 

@@ -88,9 +88,14 @@ export async function stopSuite() {
   preview?.kill()
 }
 
-/** One journey = one browser context = fresh storage, i.e. an empty database. */
-export async function openSession(viewport) {
-  const context = await browser.createBrowserContext()
+/**
+ * One journey = one browser context = fresh storage, i.e. an empty database. `downloadPath`
+ * lets the context save downloads (backup, CSV) into that folder.
+ */
+export async function openSession(viewport, { downloadPath } = {}) {
+  const context = await browser.createBrowserContext(
+    downloadPath ? { downloadBehavior: { policy: 'allow', downloadPath } } : undefined,
+  )
   const page = await context.newPage()
   page.setDefaultTimeout(10_000)
   await page.setViewport(viewport)
@@ -501,4 +506,20 @@ export async function fillQuickAdd(page, keys, category) {
   await clickText(page, '[role="radio"]', category)
   await clickText(page, 'button', 'Speichern', { exact: true })
   await waitForModals(page, 0)
+}
+
+// ---------- files ----------
+
+/** Waits until a finished download whose name matches `pattern` lies in `dir`; returns its path. */
+export async function waitForDownload(dir, pattern, timeout = 10_000) {
+  const { readdirSync } = await import('node:fs')
+  const until = Date.now() + timeout
+  while (Date.now() < until) {
+    const name = readdirSync(dir).find(
+      (file) => pattern.test(file) && !file.endsWith('.crdownload'),
+    )
+    if (name) return `${dir}/${name}`
+    await new Promise((resolve) => setTimeout(resolve, 100))
+  }
+  throw new Error(`no download matching ${pattern} in ${dir}`)
 }

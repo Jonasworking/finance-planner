@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { makeExpense, makePot, makeSettings, makeTx, NOW } from '@/test/fixtures'
 import { budgetUsage } from './budget'
-import { addWeeksISO } from './dates'
+import { addWeeksISO, parseISODate } from './dates'
 import {
   backupState,
   backupStaleRule,
@@ -337,11 +337,21 @@ describe('runInsights', () => {
 })
 
 describe('backupState', () => {
-  it('tells the settings how old the backup is and whether one is due', () => {
-    expect(backupState(null, NOW, false)).toEqual({ days: null, due: false })
-    expect(backupState(null, NOW, true)).toEqual({ days: null, due: true })
-    expect(backupState(NOW - 13 * DAY, NOW, true)).toEqual({ days: 13, due: false })
-    expect(backupState(NOW - 14 * DAY, NOW, true)).toEqual({ days: 14, due: true })
-    expect(backupState(NOW - 20 * DAY, NOW, false)).toEqual({ days: 20, due: false })
+  it('tells the settings how old the backup is, in calendar days, and whether one is due', () => {
+    const today = '2026-09-20'
+    const at = (day: string, hour: number) => {
+      const date = parseISODate(day)
+      date.setHours(hour)
+      return date.getTime()
+    }
+    expect(backupState(null, today, false)).toEqual({ days: null, due: false })
+    expect(backupState(null, today, true)).toEqual({ days: null, due: true })
+    // this evening is still "today" – and a clock running ahead never makes it negative
+    expect(backupState(at('2026-09-20', 21), today, true)).toEqual({ days: 0, due: false })
+    expect(backupState(at('2026-09-21', 9), today, true)).toEqual({ days: 0, due: false })
+    expect(backupState(at('2026-09-19', 23), today, true)).toEqual({ days: 1, due: false })
+    expect(backupState(at('2026-09-07', 8), today, true)).toEqual({ days: 13, due: false })
+    expect(backupState(at('2026-09-06', 8), today, true)).toEqual({ days: 14, due: true })
+    expect(backupState(at('2026-08-01', 8), today, false)).toEqual({ days: 50, due: false })
   })
 })

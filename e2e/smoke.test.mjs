@@ -4,6 +4,9 @@
  * Every journey starts with an empty database and a pinned clock (see harness.mjs).
  */
 import assert from 'node:assert/strict'
+import { mkdtempSync, readFileSync } from 'node:fs'
+import { tmpdir } from 'node:os'
+import { join } from 'node:path'
 import { after, before, test } from 'node:test'
 import {
   DESKTOP,
@@ -32,6 +35,7 @@ import {
   typeInto,
   waitForAmount,
   waitForChart,
+  waitForDownload,
   waitForExpenseRows,
   waitForModals,
   waitForNoText,
@@ -44,9 +48,9 @@ before(async () => {
 })
 after(stopSuite)
 
-function journey(name, viewport, run) {
+function journey(name, viewport, run, options = {}) {
   test(name, { timeout: 120_000 }, async () => {
-    const session = await openSession(viewport)
+    const session = await openSession(viewport, options)
     try {
       await run(session.page)
       assert.deepEqual(session.problems, [], 'the browser console must stay clean')
@@ -487,6 +491,70 @@ journey('the installed app starts and works without network', PHONE, async (page
     await page.setOfflineMode(false)
   }
 })
+
+const DOWNLOADS = mkdtempSync(join(tmpdir(), 'fp-e2e-'))
+
+journey(
+  'a backup is saved, played back, undone – and "Alle Daten löschen" starts over',
+  PHONE,
+  async (page) => {
+    await onboard(page)
+    await clickText(page, 'button', 'Ausgabe erfassen')
+    await fillQuickAdd(page, ['1', '2'], 'Lebensmittel')
+
+    // save: a real download of the JSON (on an iPhone it would be the share sheet)
+    await goto(page, '/settings')
+    await waitForText(page, 'Noch kein Backup gespeichert')
+    await assertFitsViewport(page, 'settings')
+    await clickText(page, 'main button', 'Backup speichern')
+    await waitForText(page, 'Letztes Backup: heute.')
+    const file = await waitForDownload(DOWNLOADS, /^finanzplaner-backup-.*\.json$/)
+    const backup = JSON.parse(readFileSync(file, 'utf8'))
+    assert.equal(backup.app, 'finance-planner')
+    assert.deepEqual(
+      backup.data.expenses.map((expense) => expense.amountCents),
+      [1200],
+    )
+
+    // one more expense, then play the file back: the second one is gone again
+    await goto(page, '/')
+    await clickSelector(page, 'button[aria-label="Neue Ausgabe"]')
+    await fillQuickAdd(page, ['3', '4'], 'Transport')
+    await goto(page, '/settings')
+    await waitForText(page, 'Letztes Backup: heute.')
+    const input = await page.$('input[type="file"]')
+    await input.uploadFile(file)
+    await waitForModals(page, 1)
+    await waitForText(page, 'Ersetzt alle Daten auf diesem Gerät')
+    await clickText(page, '[role="dialog"] button', 'Einspielen', { exact: true })
+    await waitForText(page, 'Backup eingespielt') // after the reload
+    await goto(page, '/expenses')
+    await waitForExpenseRows(page, 1)
+
+    // "Import rückgängig" brings the state from before the import back
+    await goto(page, '/settings')
+    await clickText(page, 'main button', 'Import rückgängig')
+    await waitForText(page, 'Import rückgängig gemacht')
+    await goto(page, '/expenses')
+    await waitForExpenseRows(page, 2)
+
+    // "Alle Daten löschen": a tap does nothing, holding the key does it
+    await goto(page, '/settings')
+    await clickText(page, 'main button', 'Alle Daten löschen')
+    await waitForModals(page, 1)
+    await clickText(page, '[role="dialog"] button', 'Gedrückt halten zum Löschen')
+    assert.equal(await openModals(page), 1, 'a tap must not delete anything')
+    await page.evaluate(() =>
+      [...document.querySelectorAll('[role="dialog"] button')]
+        .find((button) => button.textContent === 'Gedrückt halten zum Löschen')
+        .focus(),
+    )
+    await page.keyboard.down(' ')
+    await waitForText(page, 'Willkommen beim Finanzplaner') // wiped and reloaded
+    await page.keyboard.up(' ')
+  },
+  { downloadPath: DOWNLOADS },
+)
 
 journey('desktop layout keeps every card inside the window', DESKTOP, async (page) => {
   await goto(page, '/')
