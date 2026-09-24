@@ -5,6 +5,8 @@
  */
 
 :root {
+  /* Behind the always-white iOS status bar of the installed app (light theme only uses it). */
+  --statusbar-underlay: #0b0c0f;
   color-scheme: dark;
 
   /* Surfaces */

@@ -159,6 +159,22 @@
     touch-action: manipulation;
   }
 
+  /*
+   * Installed on iOS, the status bar is "black-translucent": its text is always white. In the
+   * light theme a dark strip under it keeps the time and battery readable.
+   */
+  @media (display-mode: standalone) {
+    html[data-theme='light'] body::before {
+      content: '';
+      position: fixed;
+      inset: 0 0 auto;
+      z-index: 60;
+      height: env(safe-area-inset-top);
+      background: var(--statusbar-underlay);
+      pointer-events: none;
+    }
+  }
+
   /* iOS zooms into inputs below 16px */
   input,
   textarea,

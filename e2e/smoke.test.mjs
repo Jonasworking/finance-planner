@@ -461,6 +461,33 @@ journey('the what-if calculator answers live and becomes the budget', PHONE, asy
   await waitForText(page, 'von A$380')
 })
 
+journey('the installed app starts and works without network', PHONE, async (page) => {
+  await onboard(page)
+  await clickText(page, 'button', 'Ausgabe erfassen')
+  await fillQuickAdd(page, ['1', '2'], 'Lebensmittel')
+  // the service worker has installed (precache complete); the first visit is not controlled
+  // yet – after one reload the worker serves every request
+  await page.evaluate(() => navigator.serviceWorker.ready)
+  await page.reload({ waitUntil: 'networkidle0' })
+  assert.ok(await page.evaluate(() => navigator.serviceWorker.controller !== null))
+
+  await page.setOfflineMode(true)
+  try {
+    await page.reload({ waitUntil: 'domcontentloaded' })
+    await waitForText(page, 'Zuletzt ausgegeben') // data from IndexedDB, code from the cache
+    await waitForText(page, 'A$12,00')
+    // a lazy route and a deep link work offline too
+    await clickText(page, 'nav a', 'Ausgaben')
+    await waitForExpenseRows(page, 1)
+    await page.goto(page.url().replace(/\/expenses$/, '/what-if'), {
+      waitUntil: 'domcontentloaded',
+    })
+    await waitForText(page, 'Zieldatum')
+  } finally {
+    await page.setOfflineMode(false)
+  }
+})
+
 journey('desktop layout keeps every card inside the window', DESKTOP, async (page) => {
   await goto(page, '/')
   await waitForText(page, 'Willkommen beim Finanzplaner')
