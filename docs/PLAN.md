@@ -17,7 +17,8 @@
   - [x] **5a** – Tasks: Fälligkeit, Kategorie, optionale Topf-Kopplung als **Verweis mit Fortschrittsanzeige (keine Automatik)**, Abhak-Animation, überfällige Tasks hervorgehoben, Dashboard-Widget — freigegeben 2026-09-22, fertig 2026-09-22 (Branch `phase-5a-tasks`), **abgenommen 2026-09-22, in `main`**, Notizen unten
   - [x] **5b** – Insights: Karten auf dem Dashboard (wegwischbar, max. 3). **Weggewischte Insights liegen in `localStorage`** (gerätelokal, nicht im Backup, kein Schema-Wechsel). Die Regeln „Offene Wochen" und „Backup" erscheinen **nicht** als Karte – offene Wochen deckt schon der Nächste Schritt ab, die Backup-Erinnerung kommt mit Phase 6. — freigegeben 2026-09-22, fertig 2026-09-23 (Branch `phase-5b-insights`), **abgenommen 2026-09-23 (am iPhone getestet), in `main`**, Notizen unten
   - [x] **5c** – Was-wäre-wenn: **Startwert der Prognose = Summe aller Töpfe**; Kategorie-Slider, Zieldatum, Kurve Basis vs. Szenario, Ergebnis „+A$Z bis Datum Y", optional „als Budget übernehmen". — freigegeben 2026-09-23, fertig 2026-09-24 (Branch `phase-5c-whatif`), **abgenommen 2026-09-24, in `main`**, Notizen unten
-- [ ] **Phase 6** – PWA, Export, Polish — **Backup-Erinnerung ist Pflichtfeature:** Insight-Karte („Backup älter als 14 Tage" bzw. noch nie) plus Hinweis in den Einstellungen (siehe §5) — freigegeben 2026-09-24, fertig 2026-09-24 (Branch `phase-6-pwa`), Notizen unten. **Endgültige Adresse: https://jonas-finanzen.vercel.app** (fest am Projekt eingetragen am 2026-09-24, Entscheidung des Nutzers). Zusätzlich gewünscht: ein deutlich sichtbarer Hinweis, ab wann echte Daten gefahrlos erfasst werden können.
+- [x] **Phase 6** – PWA, Export, Polish — **Backup-Erinnerung ist Pflichtfeature:** Insight-Karte („Backup älter als 14 Tage" bzw. noch nie) plus Hinweis in den Einstellungen (siehe §5) — freigegeben 2026-09-24, fertig 2026-09-24 (Branch `phase-6-pwa`), **abgenommen 2026-09-24, in `main`**, Notizen unten. **Endgültige Adresse: https://jonas-finanzen.vercel.app** (fest am Projekt eingetragen am 2026-09-24, Entscheidung des Nutzers). Zusätzlich gewünscht: ein deutlich sichtbarer Hinweis, ab wann echte Daten gefahrlos erfasst werden können.
+- [x] **v1 fertig (2026-09-24)** – Phasen 0–6 abgenommen und in `main`; Production: https://jonas-finanzen.vercel.app
 - [ ] Phase 7 (optional) – Sync
 
 ## Session-Notiz – Stand 2026-09-24
@@ -26,9 +27,9 @@
 
 **Wo wir stehen**
 
-- **Phase 6 (PWA, Export, Polish) ist fertig** (2026-09-24) und wartet auf deine Abnahme am iPhone. Branch `phase-6-pwa` → Preview: https://finance-planner-git-phase-6-pwa-jonasworkings-projects.vercel.app (zeigt absichtlich den Hinweis „Vorschau zum Testen").
-- **Endgültige Adresse: https://jonas-finanzen.vercel.app** – fest am Projekt eingetragen; liefert bis zur Abnahme noch den Stand von 5c aus.
-- **Ab wann echte Daten:** nach der Abnahme (Merge nach `main`), in der **installierten** App unter `jonas-finanzen.vercel.app`, sobald die Karte „Bereit für echte Daten" alle vier Haken zeigt (Adresse · installiert · Speicher dauerhaft · ein Backup gespeichert).
+- **v1 ist fertig** (2026-09-24): Phase 6 abgenommen, `main` per Fast-Forward auf `phase-6-pwa` gezogen und gepusht → Production: **https://jonas-finanzen.vercel.app** (Smoke-Suite dort grün).
+- **Ab wann echte Daten:** jetzt – in der **installierten** App unter `jonas-finanzen.vercel.app`, sobald die Karte „Bereit für echte Daten" alle vier Haken zeigt (Adresse · installiert · Speicher dauerhaft · ein Backup gespeichert).
+- Alte Adressen (`finance-planner-jonasworkings-projects.vercel.app`, `finance-planner-gilt-eight.vercel.app`) und Previews laufen weiter, zeigen aber den Warnhinweis – dort nie echte Daten erfassen.
 
 **Offen** (nicht blockierend)
 
@@ -40,8 +41,9 @@
 
 **Als Nächstes**
 
-1. Du: Preview kurz ansehen; nach der Abnahme `main` per Fast-Forward → `jonas-finanzen.vercel.app` in Safari öffnen → „Zum Home-Bildschirm" → App öffnen → Onboarding → Backup einmal speichern → Karte zeigt „Bereit für echte Daten".
-2. Danach: ein paar Wochen nutzen; was fehlt, bauen wir gezielt (5d ist gestrichen). Phase 7 (Sync) bleibt optional.
+1. Du: `jonas-finanzen.vercel.app` in Safari → „Zum Home-Bildschirm" → App öffnen → Onboarding → einmal Backup speichern → Karte „Bereit für echte Daten". Dabei die Gerätepunkte aus „Offen" ansehen (Statusleiste hell, Startbild, Teilen-Menü, Flugmodus-Start).
+2. Ein paar Wochen nutzen; was fehlt, bauen wir gezielt als neue Phase. Phase 7 (Sync) bleibt optional.
+3. **Ab jetzt gilt für jede Änderung:** echte Daten liegen in Production – Schema-Änderungen nur mit Dexie-`version(n+1)` + Migration + `migrateBackup`, und vor riskanten Releases an ein Backup erinnern.
 
 ## Phase 0 – Ergebnis & Abweichungen vom Plan
 
