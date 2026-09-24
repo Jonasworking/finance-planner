@@ -200,6 +200,7 @@
 - **Behoben aus der Offen-Liste:** „Alle Daten löschen" vergisst jetzt auch Warn-Protokoll und weggewischte Hinweise.
 - **A11y:** Kontrast `fg-subtle` und die hellen Signalfarben auf ≥ 4,5:1 gehoben (Chart-Flächen unverändert), Radio-Gruppen mit Pfeiltasten, Regler und Budget-Ring sprechen Beträge, Kategorien per Tastatur sortierbar (Griff ist ein Button, Live-Ansage der Position), Reduced Motion auch für CSS-Übergänge.
 - **Import-Undo** leert die Sicherheitskopie danach (einmal rückgängig pro Import).
+- **Gefunden beim Deployment:** ein Header-Muster mit verschachtelter Gruppe in `vercel.json` ließ Vercel das Branch-Deployment still verwerfen (kein Build, kein Fehler im Push) – erst ein API-Deploy zeigte `invalid_header`. Muster jetzt einzeln; Header auf der Preview geprüft (`sw.js`/Manifest/`index.html` `max-age=0`, `/assets` immutable), Smoke-Suite gegen die Preview 14/14 grün.
 
 ---
 
