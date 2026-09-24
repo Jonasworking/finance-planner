@@ -17,9 +17,11 @@ interface SortableRowProps {
   category: Category
   onEdit: () => void
   onDrop: () => void
+  /** Keyboard sorting: one step up (-1) or down (+1). */
+  onMove: (step: -1 | 1) => void
 }
 
-function SortableRow({ category, onEdit, onDrop }: SortableRowProps) {
+function SortableRow({ category, onEdit, onDrop, onMove }: SortableRowProps) {
   const controls = useDragControls()
   return (
     <Reorder.Item
@@ -40,14 +42,24 @@ function SortableRow({ category, onEdit, onDrop }: SortableRowProps) {
           <span className="block text-label text-fg-muted">{category.group}</span>
         </span>
       </button>
-      {/* Only the handle starts a drag, so the list still scrolls on touch. */}
-      <span
+      {/*
+       * Only the handle starts a drag, so the list still scrolls on touch. It is a button, too:
+       * with the keyboard, arrow up/down move the category.
+       */}
+      <button
+        type="button"
         onPointerDown={(event) => controls.start(event)}
-        aria-hidden
-        className="grid h-16 w-12 shrink-0 cursor-grab touch-none place-items-center text-fg-subtle active:cursor-grabbing"
+        onKeyDown={(event) => {
+          if (event.key !== 'ArrowUp' && event.key !== 'ArrowDown') return
+          event.preventDefault()
+          onMove(event.key === 'ArrowUp' ? -1 : 1)
+        }}
+        aria-label={`„${category.name}" verschieben`}
+        aria-describedby="category-sort-hint"
+        className="grid h-16 w-12 shrink-0 cursor-grab touch-none place-items-center text-fg-subtle outline-none focus-visible:bg-surface-3/60 focus-visible:text-fg active:cursor-grabbing"
       >
-        <GripVertical className="size-5" />
-      </span>
+        <GripVertical className="size-5" aria-hidden />
+      </button>
     </Reorder.Item>
   )
 }
@@ -70,6 +82,25 @@ export function CategoriesPage() {
   const active = data?.active ?? []
   const order = dragOrder ?? active.map((category) => category.id)
   const byId = new Map(active.map((category) => [category.id, category]))
+
+  const [announcement, setAnnouncement] = useState('')
+
+  const moveByKeyboard = async (id: string, step: -1 | 1) => {
+    const from = order.indexOf(id)
+    const to = from + step
+    if (from < 0 || to < 0 || to >= order.length) return
+    const next = [...order]
+    next.splice(from, 1)
+    next.splice(to, 0, id)
+    try {
+      await repos.categories.reorder(next)
+      setAnnouncement(
+        `„${byId.get(id)?.name ?? ''}" ist jetzt an Position ${to + 1} von ${next.length}.`,
+      )
+    } catch (error) {
+      toast.error(errorMessage(error))
+    }
+  }
 
   const persistOrder = async () => {
     if (!dragOrder) return
@@ -101,6 +132,12 @@ export function CategoriesPage() {
         </div>
       ) : (
         <div className="flex flex-col gap-6">
+          <p id="category-sort-hint" className="sr-only">
+            Mit Pfeil hoch und Pfeil runter verschieben.
+          </p>
+          <p aria-live="polite" className="sr-only">
+            {announcement}
+          </p>
           <GlassCard padded={false} className="overflow-hidden">
             <Reorder.Group
               axis="y"
@@ -116,6 +153,7 @@ export function CategoriesPage() {
                     category={category}
                     onEdit={() => openSheet(category)}
                     onDrop={() => void persistOrder()}
+                    onMove={(step) => void moveByKeyboard(id, step)}
                   />
                 ) : null
               })}

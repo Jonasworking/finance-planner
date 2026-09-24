@@ -122,9 +122,12 @@ describe('DashboardPage', () => {
     expect(
       await screen.findByText(/\+ A\$180,00 reserviert \(Miete, Fr\., 25\. Sep\.\)/),
     ).toBeInTheDocument()
-    expect(screen.getByRole('progressbar', { name: 'Wochenbudget verbraucht' })).toHaveAttribute(
-      'aria-valuenow',
-      '75',
+    const ring = screen.getByRole('progressbar', { name: 'Wochenbudget verbraucht' })
+    expect(ring).toHaveAttribute('aria-valuenow', '75')
+    // read out as amounts, not only a percentage
+    expect(ring).toHaveAttribute(
+      'aria-valuetext',
+      'A$120 von A$400 ausgegeben, A$180 reserviert, A$100 übrig',
     )
     expect(screen.getByText('A$1.700,00')).toBeInTheDocument()
 

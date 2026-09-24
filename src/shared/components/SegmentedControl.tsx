@@ -1,4 +1,5 @@
 import { m } from 'motion/react'
+import { useRef, type KeyboardEvent } from 'react'
 import { cn } from '@/shared/lib/utils'
 import { spring } from '@/shared/motion'
 
@@ -27,10 +28,33 @@ export function SegmentedControl<T extends string | number>({
   className,
 }: SegmentedControlProps<T>) {
   const activeIndex = options.findIndex((option) => option.value === value)
+  const buttons = useRef<(HTMLButtonElement | null)[]>([])
+
+  // Radio-group keyboard pattern: one tab stop, arrows move AND select (wrapping), Home/End.
+  const onKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
+    const step =
+      event.key === 'ArrowRight' || event.key === 'ArrowDown'
+        ? 1
+        : event.key === 'ArrowLeft' || event.key === 'ArrowUp'
+          ? -1
+          : 0
+    let next: number
+    if (step !== 0) next = (Math.max(activeIndex, 0) + step + options.length) % options.length
+    else if (event.key === 'Home') next = 0
+    else if (event.key === 'End') next = options.length - 1
+    else return
+    event.preventDefault()
+    const option = options[next]
+    if (!option) return
+    onChange(option.value)
+    buttons.current[next]?.focus()
+  }
+
   return (
     <div
       role="radiogroup"
       aria-label={label}
+      onKeyDown={onKeyDown}
       className={cn(
         'relative grid auto-cols-fr grid-flow-col rounded-md bg-surface-3 p-1',
         className,
@@ -51,11 +75,16 @@ export function SegmentedControl<T extends string | number>({
           style={{ width: `calc((100% - 0.5rem) / ${options.length})` }}
         />
       ) : null}
-      {options.map((option) => {
+      {options.map((option, index) => {
         const active = option.value === value
         return (
           <button
             key={option.value}
+            ref={(element) => {
+              buttons.current[index] = element
+            }}
+            // One tab stop: the selected segment (the first one when nothing is selected).
+            tabIndex={active || (activeIndex < 0 && index === 0) ? 0 : -1}
             type="button"
             role="radio"
             aria-checked={active}

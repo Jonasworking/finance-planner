@@ -1,5 +1,5 @@
 import { Slider as SliderPrimitive } from 'radix-ui'
-import type { Cents } from '@/lib/money'
+import { formatAUD, type Cents } from '@/lib/money'
 import { cn } from '@/shared/lib/utils'
 
 type SliderTone = 'saved' | 'warning' | 'spent'
@@ -16,6 +16,8 @@ export interface AmountSliderProps {
   stepCents: Cents
   onValueChange: (cents: Cents) => void
   'aria-label': string
+  /** What a screen reader says for the value (default: the amount, "A$20"). */
+  valueText?: (cents: Cents) => string
   tone?: SliderTone
   className?: string
 }
@@ -30,6 +32,7 @@ export function AmountSlider({
   stepCents,
   onValueChange,
   tone = 'saved',
+  valueText = (cents) => formatAUD(cents, { decimals: cents % 100 !== 0 }),
   className,
   ...aria
 }: AmountSliderProps) {
@@ -47,6 +50,7 @@ export function AmountSlider({
       </SliderPrimitive.Track>
       <SliderPrimitive.Thumb
         {...aria}
+        aria-valuetext={valueText(Math.min(valueCents, maxCents))}
         className="relative block size-7 rounded-full border border-border-strong bg-fg shadow-card outline-none after:absolute after:-inset-2 focus-visible:ring-3 focus-visible:ring-ring/50"
       />
     </SliderPrimitive.Root>

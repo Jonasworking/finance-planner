@@ -71,6 +71,7 @@ export function HoldButton({
     >
       <span
         aria-hidden
+        data-motion-essential
         className="absolute inset-y-0 left-0 -z-10 bg-danger/35"
         style={{
           width: holding ? '100%' : '0%',

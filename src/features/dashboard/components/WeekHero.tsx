@@ -10,6 +10,19 @@ import { GlassCard } from '@/shared/components/GlassCard'
 import { Money } from '@/shared/components/Money'
 import { ProgressRing } from '@/shared/components/ProgressRing'
 
+const whole = (cents: number) => formatAUD(cents, { decimals: false })
+
+/** What the ring says to a screen reader: the amounts, not just a percentage. */
+function ringValueText(usage: Usage): string {
+  if (usage.limitCents === null || usage.remainingCents === null) return ''
+  const reserved = usage.reservedCents > 0 ? `, ${whole(usage.reservedCents)} reserviert` : ''
+  const rest =
+    usage.remainingCents >= 0
+      ? `${whole(usage.remainingCents)} übrig`
+      : `${whole(-usage.remainingCents)} drüber`
+  return `${whole(usage.spentCents)} von ${whole(usage.limitCents)} ausgegeben${reserved}, ${rest}`
+}
+
 export interface WeekHeroProps {
   summary: WeekSummary
   /** The running week against its budget (`runningWeekBudget`); null without a budget. */
@@ -40,6 +53,7 @@ export function WeekHero({ summary, usage, projection, reserved, daysLeft, today
           value={usage?.spentRatio ?? 0}
           reserved={usage?.reservedRatio ?? 0}
           label="Wochenbudget verbraucht"
+          valueText={usage ? ringValueText(usage) : undefined}
           tone={RING_TONE[usage?.level ?? 'ok']}
           size={168}
         >

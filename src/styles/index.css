@@ -175,6 +175,22 @@
     }
   }
 
+  /*
+   * Reduced motion: motion (MotionConfig) and the charts already honour it; this catches the CSS
+   * side – sheet and dialog transitions, skeleton pulses. Progress that carries meaning (the
+   * fill of HoldButton) opts out with data-motion-essential.
+   */
+  @media (prefers-reduced-motion: reduce) {
+    *:not([data-motion-essential]),
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
+
   /* iOS zooms into inputs below 16px */
   input,
   textarea,

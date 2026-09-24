@@ -29,10 +29,13 @@ describe('AmountSlider', () => {
     render(<Harness initial={40_000} />)
     const slider = screen.getByRole('slider', { name: 'Wochenbudget' })
     expect(slider).toHaveAttribute('aria-valuenow', '40000')
+    // a screen reader hears the amount, not the cents
+    expect(slider).toHaveAttribute('aria-valuetext', 'A$400')
 
     slider.focus()
     await user.keyboard('{ArrowRight}{ArrowRight}{ArrowLeft}')
     expect(screen.getByRole('status')).toHaveTextContent('40500')
+    expect(slider).toHaveAttribute('aria-valuetext', 'A$405')
 
     await user.keyboard('{Home}')
     expect(screen.getByRole('status')).toHaveTextContent('0')

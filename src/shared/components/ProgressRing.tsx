@@ -22,6 +22,8 @@ export interface ProgressRingProps {
   reserved?: number
   /** Accessible name, e.g. "Wochenbudget verbraucht". */
   label: string
+  /** Spoken instead of the bare percentage, e.g. "A$339 von A$400, A$61 übrig". */
+  valueText?: string
   size?: number
   strokeWidth?: number
   tone?: RingTone
@@ -35,6 +37,7 @@ export function ProgressRing({
   value,
   reserved = 0,
   label,
+  valueText,
   size = 160,
   strokeWidth = 12,
   tone = 'saved',
@@ -71,6 +74,7 @@ export function ProgressRing({
       aria-valuemin={0}
       aria-valuemax={100}
       aria-valuenow={Math.round(committed * 100)}
+      aria-valuetext={valueText}
       className={cn('relative inline-grid place-items-center', className)}
       style={{ width: size, height: size }}
     >

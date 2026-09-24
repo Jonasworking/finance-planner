@@ -6,6 +6,7 @@
  *   E2E_BASE_URL  test a running server (dev server, Vercel URL) instead of building + previewing
  *   CHROME_PATH   Chrome/Chromium binary (default: the macOS app)
  *   E2E_HEADFUL   set to 1 to watch the run
+ *   E2E_REDUCED_MOTION  set to 1 to run every journey with prefers-reduced-motion: reduce
  */
 import assert from 'node:assert/strict'
 import { spawn, spawnSync } from 'node:child_process'
@@ -100,6 +101,9 @@ export async function openSession(viewport, { downloadPath } = {}) {
   page.setDefaultTimeout(10_000)
   await page.setViewport(viewport)
   await page.emulateTimezone(TIME_ZONE)
+  if (process.env.E2E_REDUCED_MOTION === '1') {
+    await page.emulateMediaFeatures([{ name: 'prefers-reduced-motion', value: 'reduce' }])
+  }
   await page.evaluateOnNewDocument((offset) => {
     const RealDate = Date
     class ShiftedDate extends RealDate {
