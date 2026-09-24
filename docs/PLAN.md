@@ -13,12 +13,11 @@
 - [x] **Zwischenschritt** – Browser-Journeys als E2E-Smoke-Suite im Repo (`npm run test:e2e`, nicht im Gate) — fertig 2026-09-20 (Branch `e2e-smoke`), **abgenommen 2026-09-20, in `main`**, Notizen unten
 - [x] **Phase 3** – Budget & Spartöpfe — fertig 2026-09-20 (Branch `phase-3-budget-pots`), **abgenommen 2026-09-21 (am iPhone getestet), in `main`**, Notizen unten
 - [x] **Phase 4** – Analyse & Charts — freigegeben 2026-09-21, fertig 2026-09-21 (Branch `phase-4-analytics`), **abgenommen 2026-09-22, in `main`**, Notizen unten
-- [ ] **Phase 5** – Tasks, Insights, Was-wäre-wenn — Aufteilung in 5a–5d und die folgenden Entscheidungen bestätigt 2026-09-22; alle übrigen Annahmen des Ursprungsplans (§5) gelten unverändert:
+- [x] **Phase 5** – Tasks, Insights, Was-wäre-wenn — Aufteilung in 5a–5c (5d am 2026-09-24 gestrichen: was nach ein paar Wochen Nutzung fehlt, wird gezielt gebaut) und die folgenden Entscheidungen bestätigt 2026-09-22; alle übrigen Annahmen des Ursprungsplans (§5) gelten unverändert:
   - [x] **5a** – Tasks: Fälligkeit, Kategorie, optionale Topf-Kopplung als **Verweis mit Fortschrittsanzeige (keine Automatik)**, Abhak-Animation, überfällige Tasks hervorgehoben, Dashboard-Widget — freigegeben 2026-09-22, fertig 2026-09-22 (Branch `phase-5a-tasks`), **abgenommen 2026-09-22, in `main`**, Notizen unten
   - [x] **5b** – Insights: Karten auf dem Dashboard (wegwischbar, max. 3). **Weggewischte Insights liegen in `localStorage`** (gerätelokal, nicht im Backup, kein Schema-Wechsel). Die Regeln „Offene Wochen" und „Backup" erscheinen **nicht** als Karte – offene Wochen deckt schon der Nächste Schritt ab, die Backup-Erinnerung kommt mit Phase 6. — freigegeben 2026-09-22, fertig 2026-09-23 (Branch `phase-5b-insights`), **abgenommen 2026-09-23 (am iPhone getestet), in `main`**, Notizen unten
   - [x] **5c** – Was-wäre-wenn: **Startwert der Prognose = Summe aller Töpfe**; Kategorie-Slider, Zieldatum, Kurve Basis vs. Szenario, Ergebnis „+A$Z bis Datum Y", optional „als Budget übernehmen". — freigegeben 2026-09-23, fertig 2026-09-24 (Branch `phase-5c-whatif`), **abgenommen 2026-09-24, in `main`**, Notizen unten
-  - [ ] **5d** – geparkt, ohne Umfang.
-- [ ] **Phase 6** – PWA, Export, Polish — **Backup-Erinnerung ist Pflichtfeature:** Insight-Karte („Backup älter als 14 Tage" bzw. noch nie) plus Hinweis in den Einstellungen (siehe §5)
+- [ ] **Phase 6** – PWA, Export, Polish — **Backup-Erinnerung ist Pflichtfeature:** Insight-Karte („Backup älter als 14 Tage" bzw. noch nie) plus Hinweis in den Einstellungen (siehe §5) — freigegeben 2026-09-24 (Branch `phase-6-pwa`). **Endgültige Adresse: https://jonas-finanzen.vercel.app** (fest am Projekt eingetragen am 2026-09-24, Entscheidung des Nutzers). Zusätzlich gewünscht: ein deutlich sichtbarer Hinweis, ab wann echte Daten gefahrlos erfasst werden können.
 - [ ] Phase 7 (optional) – Sync
 
 ## Session-Notiz – Stand 2026-09-24
@@ -27,8 +26,9 @@
 
 **Wo wir stehen**
 
-- **5c (Was-wäre-wenn) ist abgenommen** (2026-09-24). `main` per Fast-Forward auf `phase-5c-whatif` gezogen und gepusht → Production: https://finance-planner-jonasworkings-projects.vercel.app
-- Phase 5: 5a, 5b, 5c abgenommen; 5d ist geparkt (ohne Umfang).
+- **Phase 5 ist komplett** (5a–5c abgenommen, 5d gestrichen). Production = Stand 5c.
+- **Phase 6 ist freigegeben** (2026-09-24) und läuft auf Branch `phase-6-pwa`.
+- **Domain entschieden (2026-09-24): `jonas-finanzen.vercel.app`** ist als Projekt-Domain eingetragen und liefert Production aus. Hintergrund: `finance-planner-jonasworkings-projects.vercel.app` ist nur ein automatischer Alias aus Projektname + Team-Slug (ändert sich bei Umbenennung); fest eingetragen war bisher nur `finance-planner-gilt-eight.vercel.app`. Beide alten Adressen laufen weiter, sind aber eigene Origins (eigene Datenbank) – nie dort echte Daten erfassen.
 
 **Offen aus Phase 3/4** (nicht blockierend, unverändert)
 
@@ -41,8 +41,7 @@
 
 **Als Nächstes**
 
-1. Entscheiden, ob 5d einen Umfang bekommt oder entfällt.
-2. **Phase 6 (PWA, Export, Polish) erst nach deiner Freigabe** – Pflicht: Backup-Erinnerung (Insight-Karte + Einstellungen), initiales JS < 250 KB gzip (aktuell 291 KB: Lazy-Routes für Budget/Töpfe, `LazyMotion`), A11y-Pass.
+1. Phase 6 bauen (Bundle < 250 KB, PWA, Backup-UI, Backup-Erinnerung, Einstellungen, A11y, Hinweis „echte Daten") → Gate + Smoke-Suite → Preview → Abnahme am iPhone unter `jonas-finanzen.vercel.app`.
 
 ## Phase 0 – Ergebnis & Abweichungen vom Plan
 
