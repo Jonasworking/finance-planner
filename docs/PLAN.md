@@ -16,7 +16,7 @@
 - [ ] **Phase 5** – Tasks, Insights, Was-wäre-wenn — Aufteilung in 5a–5d und die folgenden Entscheidungen bestätigt 2026-09-22; alle übrigen Annahmen des Ursprungsplans (§5) gelten unverändert:
   - [x] **5a** – Tasks: Fälligkeit, Kategorie, optionale Topf-Kopplung als **Verweis mit Fortschrittsanzeige (keine Automatik)**, Abhak-Animation, überfällige Tasks hervorgehoben, Dashboard-Widget — freigegeben 2026-09-22, fertig 2026-09-22 (Branch `phase-5a-tasks`), **abgenommen 2026-09-22, in `main`**, Notizen unten
   - [x] **5b** – Insights: Karten auf dem Dashboard (wegwischbar, max. 3). **Weggewischte Insights liegen in `localStorage`** (gerätelokal, nicht im Backup, kein Schema-Wechsel). Die Regeln „Offene Wochen" und „Backup" erscheinen **nicht** als Karte – offene Wochen deckt schon der Nächste Schritt ab, die Backup-Erinnerung kommt mit Phase 6. — freigegeben 2026-09-22, fertig 2026-09-23 (Branch `phase-5b-insights`), **abgenommen 2026-09-23 (am iPhone getestet), in `main`**, Notizen unten
-  - [ ] **5c** – Was-wäre-wenn: **Startwert der Prognose = Summe aller Töpfe**; Kategorie-Slider, Zieldatum, Kurve Basis vs. Szenario, Ergebnis „+A$Z bis Datum Y", optional „als Budget übernehmen". — freigegeben 2026-09-23, fertig 2026-09-24 (Branch `phase-5c-whatif`), Notizen unten
+  - [x] **5c** – Was-wäre-wenn: **Startwert der Prognose = Summe aller Töpfe**; Kategorie-Slider, Zieldatum, Kurve Basis vs. Szenario, Ergebnis „+A$Z bis Datum Y", optional „als Budget übernehmen". — freigegeben 2026-09-23, fertig 2026-09-24 (Branch `phase-5c-whatif`), **abgenommen 2026-09-24, in `main`**, Notizen unten
   - [ ] **5d** – geparkt, ohne Umfang.
 - [ ] **Phase 6** – PWA, Export, Polish — **Backup-Erinnerung ist Pflichtfeature:** Insight-Karte („Backup älter als 14 Tage" bzw. noch nie) plus Hinweis in den Einstellungen (siehe §5)
 - [ ] Phase 7 (optional) – Sync
@@ -27,8 +27,8 @@
 
 **Wo wir stehen**
 
-- **5b ist abgenommen** (2026-09-23, am iPhone getestet) und in `main` → Production: https://finance-planner-jonasworkings-projects.vercel.app (Smoke-Suite gegen Production 11/11 grün).
-- **5c (Was-wäre-wenn) ist fertig** (2026-09-24) und wartet auf deine Abnahme. Branch `phase-5c-whatif` → Preview: https://finance-planner-git-phase-5c-whatif-jonasworkings-projects.vercel.app
+- **5c (Was-wäre-wenn) ist abgenommen** (2026-09-24). `main` per Fast-Forward auf `phase-5c-whatif` gezogen und gepusht → Production: https://finance-planner-jonasworkings-projects.vercel.app
+- Phase 5: 5a, 5b, 5c abgenommen; 5d ist geparkt (ohne Umfang).
 
 **Offen aus Phase 3/4** (nicht blockierend, unverändert)
 
@@ -41,8 +41,8 @@
 
 **Als Nächstes**
 
-1. 5c auf der Preview testen → Abnahme → `main` per Fast-Forward auf `phase-5c-whatif`, pushen.
-2. Danach: 5d ist geparkt (ohne Umfang) → Phase 6 (PWA, Export, Backup-Erinnerung, Bundle < 250 KB) erst nach deiner Freigabe.
+1. Entscheiden, ob 5d einen Umfang bekommt oder entfällt.
+2. **Phase 6 (PWA, Export, Polish) erst nach deiner Freigabe** – Pflicht: Backup-Erinnerung (Insight-Karte + Einstellungen), initiales JS < 250 KB gzip (aktuell 291 KB: Lazy-Routes für Budget/Töpfe, `LazyMotion`), A11y-Pass.
 
 ## Phase 0 – Ergebnis & Abweichungen vom Plan
 
