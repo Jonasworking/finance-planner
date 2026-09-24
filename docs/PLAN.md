@@ -17,7 +17,7 @@
   - [x] **5a** – Tasks: Fälligkeit, Kategorie, optionale Topf-Kopplung als **Verweis mit Fortschrittsanzeige (keine Automatik)**, Abhak-Animation, überfällige Tasks hervorgehoben, Dashboard-Widget — freigegeben 2026-09-22, fertig 2026-09-22 (Branch `phase-5a-tasks`), **abgenommen 2026-09-22, in `main`**, Notizen unten
   - [x] **5b** – Insights: Karten auf dem Dashboard (wegwischbar, max. 3). **Weggewischte Insights liegen in `localStorage`** (gerätelokal, nicht im Backup, kein Schema-Wechsel). Die Regeln „Offene Wochen" und „Backup" erscheinen **nicht** als Karte – offene Wochen deckt schon der Nächste Schritt ab, die Backup-Erinnerung kommt mit Phase 6. — freigegeben 2026-09-22, fertig 2026-09-23 (Branch `phase-5b-insights`), **abgenommen 2026-09-23 (am iPhone getestet), in `main`**, Notizen unten
   - [x] **5c** – Was-wäre-wenn: **Startwert der Prognose = Summe aller Töpfe**; Kategorie-Slider, Zieldatum, Kurve Basis vs. Szenario, Ergebnis „+A$Z bis Datum Y", optional „als Budget übernehmen". — freigegeben 2026-09-23, fertig 2026-09-24 (Branch `phase-5c-whatif`), **abgenommen 2026-09-24, in `main`**, Notizen unten
-- [ ] **Phase 6** – PWA, Export, Polish — **Backup-Erinnerung ist Pflichtfeature:** Insight-Karte („Backup älter als 14 Tage" bzw. noch nie) plus Hinweis in den Einstellungen (siehe §5) — freigegeben 2026-09-24 (Branch `phase-6-pwa`). **Endgültige Adresse: https://jonas-finanzen.vercel.app** (fest am Projekt eingetragen am 2026-09-24, Entscheidung des Nutzers). Zusätzlich gewünscht: ein deutlich sichtbarer Hinweis, ab wann echte Daten gefahrlos erfasst werden können.
+- [ ] **Phase 6** – PWA, Export, Polish — **Backup-Erinnerung ist Pflichtfeature:** Insight-Karte („Backup älter als 14 Tage" bzw. noch nie) plus Hinweis in den Einstellungen (siehe §5) — freigegeben 2026-09-24, fertig 2026-09-24 (Branch `phase-6-pwa`), Notizen unten. **Endgültige Adresse: https://jonas-finanzen.vercel.app** (fest am Projekt eingetragen am 2026-09-24, Entscheidung des Nutzers). Zusätzlich gewünscht: ein deutlich sichtbarer Hinweis, ab wann echte Daten gefahrlos erfasst werden können.
 - [ ] Phase 7 (optional) – Sync
 
 ## Session-Notiz – Stand 2026-09-24
@@ -26,22 +26,22 @@
 
 **Wo wir stehen**
 
-- **Phase 5 ist komplett** (5a–5c abgenommen, 5d gestrichen). Production = Stand 5c.
-- **Phase 6 ist freigegeben** (2026-09-24) und läuft auf Branch `phase-6-pwa`.
-- **Domain entschieden (2026-09-24): `jonas-finanzen.vercel.app`** ist als Projekt-Domain eingetragen und liefert Production aus. Hintergrund: `finance-planner-jonasworkings-projects.vercel.app` ist nur ein automatischer Alias aus Projektname + Team-Slug (ändert sich bei Umbenennung); fest eingetragen war bisher nur `finance-planner-gilt-eight.vercel.app`. Beide alten Adressen laufen weiter, sind aber eigene Origins (eigene Datenbank) – nie dort echte Daten erfassen.
+- **Phase 6 (PWA, Export, Polish) ist fertig** (2026-09-24) und wartet auf deine Abnahme am iPhone. Branch `phase-6-pwa` → Preview: https://finance-planner-git-phase-6-pwa-jonasworkings-projects.vercel.app (zeigt absichtlich den Hinweis „Vorschau zum Testen").
+- **Endgültige Adresse: https://jonas-finanzen.vercel.app** – fest am Projekt eingetragen; liefert bis zur Abnahme noch den Stand von 5c aus.
+- **Ab wann echte Daten:** nach der Abnahme (Merge nach `main`), in der **installierten** App unter `jonas-finanzen.vercel.app`, sobald die Karte „Bereit für echte Daten" alle vier Haken zeigt (Adresse · installiert · Speicher dauerhaft · ein Backup gespeichert).
 
-**Offen aus Phase 3/4** (nicht blockierend, unverändert)
+**Offen** (nicht blockierend)
 
 - Ausgaben-Sheet mit offenen Details ist höher als der Bildschirm („Speichern" erst nach Scrollen im Sheet).
 - `AnimatedNumber` (Spring-Ticker für Beträge) ist nicht gebaut.
-- Warn-Protokoll liegt in `localStorage`: nach „Alle Daten löschen" mitten in der Woche bleibt es bis zur nächsten Woche stumm.
 - Ausgabe aus einem inzwischen archivierten Topf lässt sich erst nach „Wiederherstellen" des Topfs ändern.
-- Start-Chunk 295 KB gzip (Ziel < 250 KB → Phase 6: Lazy-Routes für Budget/Töpfe, `LazyMotion`).
-- A11y-Pass (Pfeiltasten im Segment-Schalter, Sortieren per Tastatur, `forced-colors`-Textur für Charts) → Phase 6.
+- `forced-colors`-Textur für Charts (Tabellen-Zwilling deckt den Inhalt ab).
+- Am Gerät zu prüfen: Statusleiste im Light-Theme (dunkler Streifen), Startbild, Teilen-Menü beim Backup, `storage.persist()` in der installierten App.
 
 **Als Nächstes**
 
-1. Phase 6 bauen (Bundle < 250 KB, PWA, Backup-UI, Backup-Erinnerung, Einstellungen, A11y, Hinweis „echte Daten") → Gate + Smoke-Suite → Preview → Abnahme am iPhone unter `jonas-finanzen.vercel.app`.
+1. Du: Preview kurz ansehen; nach der Abnahme `main` per Fast-Forward → `jonas-finanzen.vercel.app` in Safari öffnen → „Zum Home-Bildschirm" → App öffnen → Onboarding → Backup einmal speichern → Karte zeigt „Bereit für echte Daten".
+2. Danach: ein paar Wochen nutzen; was fehlt, bauen wir gezielt (5d ist gestrichen). Phase 7 (Sync) bleibt optional.
 
 ## Phase 0 – Ergebnis & Abweichungen vom Plan
 
@@ -184,6 +184,22 @@
 - **Architektur:** `ChartCard`, `ChartTooltip` und das Chart-Theme liegen jetzt in `shared`, Recharts ist in jedem `features/<name>/charts/` erlaubt (ESLint) – beide Screens teilen sich den Recharts-Chunk. Route lazy (`WhatIfRoute`); `PlaceholderPage` entfernt (nicht mehr benutzt).
 - **Bundle:** Start-Chunk 291 KB gzip (−4 KB durch die Lazy-Route; Ziel < 250 KB bleibt Phase 6).
 - **Offen / Merker:** Szenario lebt nur bis zum Reload (bewusst: Skizze, kein Datensatz) · kein „mehr ausgeben"-Szenario (Regler nur nach unten, wie beauftragt) · offene vergangene Wochen fließen nicht in den Startwert (ihr Einkommen fehlt noch).
+
+## Phase 6 – Ergebnis & Abweichungen vom Plan
+
+**Geprüft:** typecheck · lint · build grün · **888 Testläufe** (444 Tests × 2 Zeitzonen) · `npm run test:e2e` **14 Journeys grün**, auch komplett mit `E2E_REDUCED_MOTION=1`; neu: **Offline-Start** (Service Worker übernimmt, Netz aus, Reload → Daten, Lazy-Route, Deep-Link) und **Backup als echter Download → einspielen → „Import rückgängig" → „Alle Daten löschen" per Halten** · **Lighthouse (mobil, mit durchgespielter App, 8 Screens, dunkel UND hell): Performance 100 · Accessibility 100 · Best Practices 100** · **initiales JS 237 KB gzip** (vorher 291; `npm run check:bundle` wacht darüber) · Export → Löschen → Import identisch (Roundtrip-Test seit Phase 1, jetzt zusätzlich im Browser) · Sichtprüfung 390×844 (dunkel/hell) und 1440×900, Konsole fehlerfrei.
+**DoD offen bis zur Abnahme am Gerät:** „auf iPhone installiert, Safe-Areas/Statusbar korrekt", „App startet im Flugmodus" (im Chrome belegt, am iPhone noch nicht), Backup-Roundtrip manuell über das Teilen-Menü.
+
+- **Domain (Entscheidung 2026-09-24):** `jonas-finanzen.vercel.app` als feste Projekt-Domain. `finance-planner-jonasworkings-projects.vercel.app` war nur ein automatischer Alias aus Projekt- und Team-Namen (hätte sich bei Umbenennung geändert). Alte Adressen und Previews zeigen auf jeder Seite einen Warnhinweis (`AddressBanner` in `Page`, auch im Onboarding/Installationshinweis).
+- **„Bereit für echte Daten" (Nutzerwunsch):** Karte ganz oben auf dem Home-Screen mit vier Haken – endgültige Adresse, als App installiert, Speicher dauerhaft, ein Backup gespeichert. Erst wenn alle stimmen: „Bereit für echte Daten – ab jetzt kannst du gefahrlos echte Daten erfassen" mit „Verstanden"; danach verschwindet sie (dauerhaft in den Einstellungen nachzulesen).
+- **Bundle:** Lazy-Routes (alle Seiten außer Home über `lazyPage`, Seiten in `features/*/pages.ts`), Shell-Sheets und Onboarding lazy (`features/*/sheets.ts` – nimmt vaul, Dialog und Scroll-Lock aus dem Start), `LazyMotion` mit `domMax` im eigenen Chunk, `m.*` statt `motion.*` (ESLint).
+- **PWA:** generateSW mit Prompt („Neue Version verfügbar" → „Aktualisieren"), Update-Prüfung beim Zurückkommen (höchstens alle 15 min), Precache nur Latin-Schriften, Icons/maskable/Apple-Touch und 16 iOS-Startbilder (aktuelle iPhones, dunkel) aus einer SVG. Statusleiste `black-translucent`; im Light-Theme ein dunkler Streifen dahinter (nur installiert). Vercel-Header: `sw.js`/`index.html`/Manifest nie gecacht, Assets immutable.
+- **iOS:** Installationsanleitung vor dem Onboarding (Safari und App haben getrennte Daten), „Trotzdem im Browser weiter" wird gemerkt. Die installierte App fragt `storage.persist()` selbst.
+- **Einstellungen komplett:** Checkliste, Backup (speichern: iPhone Teilen-Menü / sonst Download, Datei entsteht vor dem Tipp; einspielen mit Vorschau „ersetzt alle Daten" + Sicherheitskopie + „Import rückgängig"; CSV), Standard-Einkommen, Farbschema, EUR-Kurs, „Daten prüfen", „Alle Daten löschen" (Backup anbieten, dann nur per Halten – Touch und Tastatur), Über die App (Version, Adresse, installiert, Speicher, Belegung), „Hinweise zurückholen".
+- **Backup-Erinnerung (Pflicht):** Home-Karte „Noch kein Backup" / „Letztes Backup vor n Tagen" (ab 14 Tagen bzw. zwei Wochen nach der ersten Ausgabe) mit Link direkt zum Backup; in den Einstellungen Warnung, sobald ein Backup fällig ist. **Gefunden:** das Alter wurde gegen „heute 12 Uhr" gerechnet – ein Backup vom Abend hätte „vor −1 Tagen" gezeigt; jetzt in Kalendertagen.
+- **Behoben aus der Offen-Liste:** „Alle Daten löschen" vergisst jetzt auch Warn-Protokoll und weggewischte Hinweise.
+- **A11y:** Kontrast `fg-subtle` und die hellen Signalfarben auf ≥ 4,5:1 gehoben (Chart-Flächen unverändert), Radio-Gruppen mit Pfeiltasten, Regler und Budget-Ring sprechen Beträge, Kategorien per Tastatur sortierbar (Griff ist ein Button, Live-Ansage der Position), Reduced Motion auch für CSS-Übergänge.
+- **Import-Undo** leert die Sicherheitskopie danach (einmal rückgängig pro Import).
 
 ---
 
