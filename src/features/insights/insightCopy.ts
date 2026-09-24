@@ -127,7 +127,7 @@ export function describeInsight(insight: Insight, refs: InsightRefs): InsightCop
             ? 'Noch kein Backup'
             : `Letztes Backup vor ${daysAgo(insight.days)}`,
         text: 'Deine Daten liegen nur auf diesem Gerät – sichere sie als Datei.',
-        action: { label: 'Einstellungen', to: '/settings' },
+        action: { label: 'Backup speichern', to: '/settings#backup' },
       }
     case 'eur-rate-stale':
       return {

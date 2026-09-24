@@ -566,6 +566,14 @@ describe('budgets, categories, tasks, settings', () => {
     await expectCode(repos.settings.update({ eurRate: Number.NaN }), 'invalid-rate')
     expect((await repos.settings.update({ eurRate: null })).eurRate).toBeNull()
   })
+
+  it('remembers that the install guide was dismissed', async () => {
+    expect((await repos.settings.get()).installHintDismissedAt).toBeNull()
+    await repos.settings.dismissInstallHint()
+    const settings = await repos.settings.get()
+    expect(settings.installHintDismissedAt).toBe(settings.updatedAt)
+    expect(settings.installHintDismissedAt).toBeGreaterThan(1_000_000)
+  })
 })
 
 describe('soft delete', () => {

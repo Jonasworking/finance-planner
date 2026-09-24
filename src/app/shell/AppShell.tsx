@@ -5,10 +5,12 @@ import { Outlet, useLocation } from 'react-router'
 import { db } from '@/db'
 import { useBudgetWarnings } from '@/features/budget'
 import { useMaterializeRecurring } from '@/features/expenses'
+import { useDeviceSetup } from '@/features/setup'
 import { resolveBudget } from '@/lib/budget'
 import { weekStartOf } from '@/lib/dates'
 import { SETTINGS_ID } from '@/lib/types'
 import { useToday } from '@/shared/hooks/useToday'
+import { useDeviceStore } from '@/shared/stores/deviceStore'
 import { spring } from '@/shared/motion'
 import { useUiStore } from '@/shared/stores/uiStore'
 import { BottomTabs } from './BottomTabs'
@@ -34,6 +36,9 @@ const EurRateSheet = lazy(() =>
 )
 const TaskSheet = lazy(() =>
   import('@/features/tasks/sheets').then((module) => ({ default: module.TaskSheet })),
+)
+const InstallGuide = lazy(() =>
+  import('@/features/setup/sheets').then((module) => ({ default: module.InstallGuide })),
 )
 const OnboardingFlow = lazy(() =>
   import('@/features/onboarding').then((module) => ({ default: module.OnboardingFlow })),
@@ -63,6 +68,9 @@ export function AppShell() {
   }, [])
   const onboarded = boot?.settings?.onboardingDone === true
 
+  useDeviceSetup()
+  const installFirst = useDeviceStore((state) => state.ios && !state.standalone)
+
   useMaterializeRecurring(today, onboarded)
   useBudgetWarnings(today)
 
@@ -82,6 +90,15 @@ export function AppShell() {
 
   // Still reading the settings: keep the (dark) background, no flash of the wrong screen.
   if (boot === undefined) return <div className="h-dvh bg-bg" />
+
+  // iPhone in the browser: Safari and the installed app keep separate data – install first.
+  if (installFirst && boot.settings?.installHintDismissedAt == null) {
+    return (
+      <Suspense fallback={<div className="h-dvh bg-bg" />}>
+        <InstallGuide />
+      </Suspense>
+    )
+  }
 
   if (!onboarded) {
     return (

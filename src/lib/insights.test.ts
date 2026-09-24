@@ -3,6 +3,7 @@ import { makeExpense, makePot, makeSettings, makeTx, NOW } from '@/test/fixtures
 import { budgetUsage } from './budget'
 import { addWeeksISO } from './dates'
 import {
+  backupState,
   backupStaleRule,
   budgetRule,
   categoryOverAverageRule,
@@ -325,11 +326,22 @@ describe('runInsights', () => {
     expect(runInsights(context())).toEqual([])
   })
 
-  it('leaves pending weeks and the backup reminder out of the home-screen cards', () => {
+  it('leaves pending weeks out of the home-screen cards – they are the next step there', () => {
     expect(runInsights(busy, { rules: dashboardRules }).map((insight) => insight.kind)).toEqual([
       'budget-over',
+      'backup-stale',
       'streak-milestone',
     ])
-    expect(dashboardRules).toHaveLength(defaultRules.length - 2)
+    expect(dashboardRules).toHaveLength(defaultRules.length - 1)
+  })
+})
+
+describe('backupState', () => {
+  it('tells the settings how old the backup is and whether one is due', () => {
+    expect(backupState(null, NOW, false)).toEqual({ days: null, due: false })
+    expect(backupState(null, NOW, true)).toEqual({ days: null, due: true })
+    expect(backupState(NOW - 13 * DAY, NOW, true)).toEqual({ days: 13, due: false })
+    expect(backupState(NOW - 14 * DAY, NOW, true)).toEqual({ days: 14, due: true })
+    expect(backupState(NOW - 20 * DAY, NOW, false)).toEqual({ days: 20, due: false })
   })
 })

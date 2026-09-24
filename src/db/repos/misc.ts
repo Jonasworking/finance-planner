@@ -185,6 +185,12 @@ export function createSettingsRepo({ db, clock }: RepoContext) {
       return settings
     },
 
+    /** "Trotzdem im Browser weiter" on the install guide: it does not come back on this device. */
+    dismissInstallHint: async (): Promise<void> => {
+      const now = clock.now()
+      await db.settings.update(SETTINGS_ID, { installHintDismissedAt: now, updatedAt: now })
+    },
+
     update: (patch: SettingsPatch): Promise<Settings> =>
       db.transaction('rw', db.settings, async () => {
         const previous = await db.settings.get(SETTINGS_ID)

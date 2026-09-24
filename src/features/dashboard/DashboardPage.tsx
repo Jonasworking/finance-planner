@@ -1,6 +1,7 @@
 import { useLiveQuery } from 'dexie-react-hooks'
 import { db, loadDashboard } from '@/db'
 import { InsightCards, useDismissedInsights } from '@/features/insights'
+import { ReadinessCard } from '@/features/setup'
 import { TasksCard } from '@/features/tasks'
 import { resolveBudget, runningWeekBudget } from '@/lib/budget'
 import { nextStep, projectWeek, weekProgress } from '@/lib/dashboard'
@@ -111,6 +112,8 @@ export function DashboardPage() {
 
   return (
     <Page title="Diese Woche" subtitle={formatWeekRange(currentWeek)}>
+      {/* Until this device is ready for real data, that is the first thing on the home screen. */}
+      <ReadinessCard variant="home" lastBackupAt={settings.lastBackupAt} className="mb-4" />
       {/* minmax(0,…) + min-w-0: grid tracks must not grow to fit long non-wrapping rows */}
       <div className="grid grid-cols-[minmax(0,1fr)] gap-4 lg:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)] lg:items-start">
         <div className="flex min-w-0 flex-col gap-4">

@@ -67,7 +67,8 @@ const CATEGORY_MIN_AVERAGE_CENTS = 1_000
 const CATEGORY_OVER_RATIO = 0.2
 const STREAK_MILESTONES = [3, 5, 10, 15, 20, 26, 39, 52]
 const SAVINGS_RATE_DELTA = 0.1
-const BACKUP_STALE_DAYS = 14
+/** A backup older than this is due (card on the home screen, warning in the settings). */
+export const BACKUP_STALE_DAYS = 14
 const EUR_RATE_STALE_DAYS = 30
 
 export const budgetRule: InsightRule = ({ currentUsage, currentWeek }) => {
@@ -248,6 +249,23 @@ export const savingsRateRule: InsightRule = ({ currentWeek, history }) => {
   ]
 }
 
+export interface BackupState {
+  /** Whole days since the last backup; null = never backed up. */
+  days: number | null
+  /** Time for a (first) backup: there is data, and it was never saved or not for 14 days. */
+  due: boolean
+}
+
+/** What the settings say about backups – the same age and threshold as the home-screen card. */
+export function backupState(
+  lastBackupAt: number | null,
+  now: number,
+  hasData: boolean,
+): BackupState {
+  const days = lastBackupAt === null ? null : Math.floor((now - lastBackupAt) / DAY_MS)
+  return { days, due: hasData && (days === null || days >= BACKUP_STALE_DAYS) }
+}
+
 /** Data lives only on this device – nag (once per week) when the last backup is old. */
 export const backupStaleRule: InsightRule = ({ settings, expenses, now, currentWeek }) => {
   const firstEntry = expenses.reduce<number | null>(
@@ -297,12 +315,11 @@ export const defaultRules: InsightRule[] = [
 ]
 
 /**
- * What the home screen shows as insight cards. Pending weeks are already THE next step there
- * (a second card would nag twice), and the backup reminder gets its card together with the
- * export in phase 6 – until then a reminder without a way to act on it would only annoy.
+ * What the home screen shows as insight cards. Pending weeks are already THE next step there –
+ * a second card would nag twice.
  */
 export const dashboardRules: InsightRule[] = defaultRules.filter(
-  (rule) => rule !== pendingWeeksRule && rule !== backupStaleRule,
+  (rule) => rule !== pendingWeeksRule,
 )
 
 /** Runs all rules and keeps the `max` most important insights that were not dismissed. */

@@ -1,6 +1,6 @@
 import Dexie, { type EntityTable } from 'dexie'
 import { buildBackup, parseBackup, type BackupFile } from '@/lib/backup'
-import { checkLedgerInvariants } from '@/lib/ledger'
+import { checkLedgerInvariants, type Violation } from '@/lib/ledger'
 import { SETTINGS_ID, type AppData } from '@/lib/types'
 import { DomainError } from '../errors'
 import { loadAppData } from '../queries'
@@ -91,11 +91,22 @@ export function createBackupRepo(ctx: RepoContext) {
         return snapshot ? { createdAt: snapshot.createdAt } : null
       }),
 
-    /** "Import rückgängig": puts back the state from before the last import. */
+    /**
+     * "Import rückgängig": puts back the state from before the last import. The slot is emptied
+     * afterwards – undoing twice would only restore the same state again.
+     */
     restoreSafetyCopy: async (): Promise<void> => {
       const snapshot = await withSafety((safety) => safety.snapshots.get('last'))
       if (!snapshot) throw new DomainError('no-safety-copy')
       await replaceAll(snapshot.backup.data)
+      await withSafety((safety) => safety.snapshots.delete('last'))
+    },
+
+    /** "Daten prüfen": the ledger check over everything that is stored. */
+    check: async (): Promise<{ violations: Violation[]; rows: number }> => {
+      const data = await loadAppData(db)
+      const rows = TABLE_NAMES.reduce((sum, name) => sum + data[name].length, 0)
+      return { violations: checkLedgerInvariants(data), rows }
     },
 
     /**

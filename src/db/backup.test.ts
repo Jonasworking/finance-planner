@@ -116,6 +116,23 @@ describe('import safety', () => {
 
     await repos.backup.restoreSafetyCopy()
     expect(sorted(await loadAppData(db))).toEqual(original)
+    // one undo per import – the slot is empty afterwards
+    expect(await repos.backup.safetyCopyInfo()).toBeNull()
+    await expectCode(repos.backup.restoreSafetyCopy(), 'no-safety-copy')
+  })
+
+  it('"Daten prüfen" checks every stored row and reports what does not add up', async () => {
+    const data = await loadAppData(db)
+    const total = TABLE_NAMES.reduce((sum, name) => sum + data[name].length, 0)
+    expect(await repos.backup.check()).toEqual({ violations: [], rows: total })
+
+    const auto = data.potTransactions.find((tx) => tx.type === 'auto-weekly')!
+    await db.potTransactions.update(auto.id, { amountCents: auto.amountCents + 1 })
+    const { violations } = await repos.backup.check()
+    expect(violations).toEqual([
+      expect.objectContaining({ code: 'auto-mismatch', ref: auto.id.replace('auto:', '') }),
+    ])
+    await db.potTransactions.update(auto.id, { amountCents: auto.amountCents }) // afterEach checks
   })
 
   it('wiping also removes the safety copy', async () => {

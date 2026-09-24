@@ -2,6 +2,7 @@ import { Ellipsis } from 'lucide-react'
 import type { ReactNode } from 'react'
 import { Link } from 'react-router'
 import { cn } from '@/shared/lib/utils'
+import { AddressBanner } from './AddressBanner'
 
 export interface PageProps {
   title: string
@@ -37,6 +38,7 @@ export function Page({ title, subtitle, actions, hideMoreLink, children, classNa
         </div>
       </header>
       <div className={cn('mx-auto w-full max-w-[1120px] px-4 py-6 lg:px-8', className)}>
+        <AddressBanner className="mb-4" />
         {children}
       </div>
     </>

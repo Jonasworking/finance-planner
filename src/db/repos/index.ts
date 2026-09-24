@@ -29,6 +29,7 @@ function lazyBackupRepo(ctx: RepoContext): BackupRepo {
     import: async (input) => (await load()).import(input),
     safetyCopyInfo: async () => (await load()).safetyCopyInfo(),
     restoreSafetyCopy: async () => (await load()).restoreSafetyCopy(),
+    check: async () => (await load()).check(),
     wipeAll: async () => (await load()).wipeAll(),
   }
 }
