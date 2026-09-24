@@ -20,7 +20,7 @@
   /* Text */
   --fg: #f5f6f8;
   --fg-muted: #9aa1ae;
-  --fg-subtle: #6a7180;
+  --fg-subtle: #828998; /* ≥ 4.5:1 on bg, surface-1 and surface-2 */
 
   /* Semantic money colors */
   --saved: #3ee0a8; /* mint = saved + primary CTA */
@@ -91,18 +91,19 @@
 
   --fg: #0e1014;
   --fg-muted: #5b6270;
-  --fg-subtle: #8a909c;
+  --fg-subtle: #666c7a; /* ≥ 4.5:1 on bg and surface-1 */
 
-  --saved: #0fa877;
+  /* Text-grade steps (≥ 4.5:1 on bg and white incl. white-on-mint buttons); charts keep their fills below. */
+  --saved: #0b7c58;
   --saved-soft: rgb(15 168 119 / 0.12);
   --on-saved: #ffffff;
-  --spent: #e5483b;
+  --spent: #c43d32;
   --spent-soft: rgb(229 72 59 / 0.1);
   --income: #4463e6;
   --income-soft: rgb(68 99 230 / 0.1);
-  --warning: #c77a00;
+  --warning: #9b5f00;
   --warning-soft: rgb(199 122 0 / 0.12);
-  --danger: #d92d20;
+  --danger: #b82318; /* also ≥ 4.5:1 on its own 15 % tint (destructive buttons) */
 
   /* Same hues, stepped for white: every category color reaches 3:1 (the pastels sat near 1.5:1). */
   --cat-1: #738ce5;
@@ -117,8 +118,8 @@
   --cat-10: #7f8693;
 
   --chart-income: var(--income);
-  --chart-spent: #dd4034; /* a touch darker than --spent: clears ΔE 8 against --saved */
-  --chart-saved: var(--saved);
+  --chart-spent: #dd4034; /* the validated fill: clears ΔE 8 against --chart-saved */
+  --chart-saved: #0fa877; /* the validated fill (ΔE vs --chart-spent), lighter than text-grade --saved */
   --chart-cat-1: var(--cat-1);
   --chart-cat-2: var(--cat-2);
   --chart-cat-3: var(--cat-3);
