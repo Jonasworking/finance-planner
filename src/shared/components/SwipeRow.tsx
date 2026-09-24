@@ -1,5 +1,5 @@
 import { Trash2 } from 'lucide-react'
-import { animate, motion, useMotionValue, useTransform, type PanInfo } from 'motion/react'
+import { animate, m, useMotionValue, useTransform, type PanInfo } from 'motion/react'
 import { useRef, type MouseEvent, type ReactNode } from 'react'
 import { cn } from '@/shared/lib/utils'
 import { spring } from '@/shared/motion'
@@ -62,7 +62,7 @@ export function SwipeRow({
 
   return (
     <div className={cn('relative overflow-hidden', className)}>
-      <motion.div
+      <m.div
         style={{ opacity: actionOpacity }}
         className="absolute inset-y-0 right-0 flex bg-spent"
       >
@@ -73,13 +73,13 @@ export function SwipeRow({
           className="grid h-full place-items-center text-on-saved outline-none focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:ring-inset"
           style={{ width: REVEAL }}
         >
-          <motion.span style={{ scale: iconScale }}>
+          <m.span style={{ scale: iconScale }}>
             <Trash2 className="size-5" aria-hidden />
-          </motion.span>
+          </m.span>
         </button>
-      </motion.div>
+      </m.div>
 
-      <motion.div
+      <m.div
         drag="x"
         dragDirectionLock
         dragConstraints={{ left: -DELETE_DISTANCE * 1.5, right: 0 }}
@@ -93,7 +93,7 @@ export function SwipeRow({
         className="relative bg-surface-1"
       >
         {children}
-      </motion.div>
+      </m.div>
     </div>
   )
 }

@@ -1,4 +1,4 @@
-import { motion } from 'motion/react'
+import { m } from 'motion/react'
 import { useEffect, useRef, useState } from 'react'
 import { cn } from '@/shared/lib/utils'
 import { spring, tap } from '@/shared/motion'
@@ -53,7 +53,7 @@ export function TaskCheck({ checked, label, onChange, className }: TaskCheckProp
   }
 
   return (
-    <motion.button
+    <m.button
       type="button"
       role="checkbox"
       aria-checked={shown}
@@ -72,7 +72,7 @@ export function TaskCheck({ checked, label, onChange, className }: TaskCheckProp
         )}
       >
         {/* The bouncy spring overshoots on its way to 1 – that overshoot is the "pop". */}
-        <motion.svg
+        <m.svg
           viewBox="0 0 24 24"
           className="size-4"
           fill="none"
@@ -81,7 +81,7 @@ export function TaskCheck({ checked, label, onChange, className }: TaskCheckProp
           animate={{ scale: shown ? 1 : 0.4, opacity: shown ? 1 : 0 }}
           transition={spring.bouncy}
         >
-          <motion.path
+          <m.path
             d="M5 12.5l4.5 4.5L19 7.5"
             stroke="currentColor"
             strokeWidth={3}
@@ -91,8 +91,8 @@ export function TaskCheck({ checked, label, onChange, className }: TaskCheckProp
             animate={{ pathLength: shown ? 1 : 0 }}
             transition={{ duration: 0.25, ease: 'easeOut' }}
           />
-        </motion.svg>
+        </m.svg>
       </span>
-    </motion.button>
+    </m.button>
   )
 }

@@ -1,2 +1,1 @@
-export { EurRateSheet } from './components/EurRateSheet'
-export { SettingsPage } from './SettingsPage'
+// The EUR-rate sheet is mounted by the app shell from ./sheets (loaded lazily).

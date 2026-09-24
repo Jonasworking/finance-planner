@@ -1,5 +1,5 @@
 import { useLiveQuery } from 'dexie-react-hooks'
-import { AnimatePresence, motion } from 'motion/react'
+import { AnimatePresence, m } from 'motion/react'
 import { ListChecks, Plus } from 'lucide-react'
 import { useState } from 'react'
 import { db, loadTasks, repos } from '@/db'
@@ -52,7 +52,7 @@ export function TasksPage() {
     <GlassCard padded={false} className="divide-y divide-border overflow-hidden">
       <AnimatePresence initial={false}>
         {tasks.map((task) => (
-          <motion.div
+          <m.div
             key={task.id}
             layout
             initial={{ opacity: 0, height: 0 }}
@@ -65,7 +65,7 @@ export function TasksPage() {
               pot={task.linkedPotId ? (potById.get(task.linkedPotId) ?? null) : null}
               {...rowProps}
             />
-          </motion.div>
+          </m.div>
         ))}
       </AnimatePresence>
     </GlassCard>

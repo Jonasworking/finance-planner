@@ -1,5 +1,6 @@
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
+import { MotionFeatures } from '@/test/ui'
 import { SwipeRow } from './SwipeRow'
 
 /*
@@ -35,11 +36,13 @@ function setup() {
   const onOpen = vi.fn()
   const onDelete = vi.fn()
   render(
-    <SwipeRow onDelete={onDelete} deleteLabel="Kaffee löschen">
-      <button type="button" onClick={onOpen}>
-        Kaffee
-      </button>
-    </SwipeRow>,
+    <MotionFeatures>
+      <SwipeRow onDelete={onDelete} deleteLabel="Kaffee löschen">
+        <button type="button" onClick={onOpen}>
+          Kaffee
+        </button>
+      </SwipeRow>
+    </MotionFeatures>,
   )
   const row = screen.getByRole('button', { name: 'Kaffee' })
   const offset = () => row.parentElement!.style.transform

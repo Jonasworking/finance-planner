@@ -57,10 +57,20 @@ const rechartsOutsideCharts = {
   message: 'Import Recharts only in src/features/<name>/charts (lazy chunk).',
 }
 
+/*
+ * `motion.*` bundles every animation feature into the start chunk. Components use `m.*`; the
+ * features come lazily through `LazyMotion` (app/providers).
+ */
+const fullMotion = {
+  name: 'motion/react',
+  importNames: ['motion'],
+  message: "Use `m` from 'motion/react' – the features load lazily via LazyMotion (app/providers).",
+}
+
 // Folder-specific configs replace (not merge) the rule, so each one carries the shared bans too.
 const restrictImports = (patterns = [], { allowRecharts = false } = {}) => [
   'error',
-  { paths: [bareCn], patterns: allowRecharts ? patterns : [...patterns, rechartsOutsideCharts] },
+  { paths: [bareCn, fullMotion], patterns: allowRecharts ? patterns : [...patterns, rechartsOutsideCharts] },
 ]
 
 const featureRules = [

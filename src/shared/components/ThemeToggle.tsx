@@ -1,5 +1,5 @@
 import { Monitor, Moon, Sun, type LucideIcon } from 'lucide-react'
-import { motion } from 'motion/react'
+import { m } from 'motion/react'
 import { useId } from 'react'
 import { cn } from '@/shared/lib/utils'
 import { spring } from '@/shared/motion'
@@ -38,7 +38,7 @@ export function ThemeToggle({ className }: { className?: string }) {
             )}
           >
             {active ? (
-              <motion.span
+              <m.span
                 layoutId={indicatorId}
                 transition={spring.snappy}
                 className="absolute inset-0 rounded-sm bg-surface-1 shadow-card"

@@ -1,5 +1,5 @@
 import { PiggyBank, Repeat } from 'lucide-react'
-import { AnimatePresence, motion } from 'motion/react'
+import { AnimatePresence, m } from 'motion/react'
 import { formatDayLabel } from '@/lib/dates'
 import { groupByDay, isPotFunded } from '@/lib/expenses'
 import type { Category, Expense, ISODate } from '@/lib/types'
@@ -79,7 +79,7 @@ export function ExpenseList({ expenses, categories, today }: ExpenseListProps) {
           <GlassCard padded={false} className="divide-y divide-border overflow-hidden">
             <AnimatePresence initial={false}>
               {day.expenses.map((expense) => (
-                <motion.div
+                <m.div
                   key={expense.id}
                   layout
                   initial={{ opacity: 0, height: 0 }}
@@ -88,7 +88,7 @@ export function ExpenseList({ expenses, categories, today }: ExpenseListProps) {
                   transition={spring.soft}
                 >
                   <ExpenseRow expense={expense} category={categoryById.get(expense.categoryId)} />
-                </motion.div>
+                </m.div>
               ))}
             </AnimatePresence>
           </GlassCard>

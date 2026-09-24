@@ -1,5 +1,5 @@
 import { Plus } from 'lucide-react'
-import { motion } from 'motion/react'
+import { m } from 'motion/react'
 import { NavLink } from 'react-router'
 import { cn } from '@/shared/lib/utils'
 import { spring, tap } from '@/shared/motion'
@@ -24,15 +24,15 @@ function TabLink({ item }: { item: NavItem }) {
       {({ isActive }) => (
         <>
           {isActive ? (
-            <motion.span
+            <m.span
               layoutId="tab-indicator"
               transition={spring.snappy}
               className="absolute top-0 h-0.5 w-8 rounded-full bg-saved"
             />
           ) : null}
-          <motion.span whileTap={tap} className="grid place-items-center">
+          <m.span whileTap={tap} className="grid place-items-center">
             <Icon className="size-6" strokeWidth={isActive ? 2.25 : 1.75} aria-hidden />
-          </motion.span>
+          </m.span>
           <span>{item.label}</span>
         </>
       )}
@@ -51,7 +51,7 @@ export function BottomTabs({ className }: { className?: string }) {
           <TabLink key={item.to} item={item} />
         ))}
         <div className="grid place-items-center">
-          <motion.button
+          <m.button
             type="button"
             whileTap={{ scale: 0.92 }}
             transition={spring.snappy}
@@ -60,7 +60,7 @@ export function BottomTabs({ className }: { className?: string }) {
             className="grid size-14 -translate-y-3 place-items-center rounded-full bg-saved text-on-saved shadow-glow-saved outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
           >
             <Plus className="size-7" strokeWidth={2.5} aria-hidden />
-          </motion.button>
+          </m.button>
         </div>
         {right.map((item) => (
           <TabLink key={item.to} item={item} />

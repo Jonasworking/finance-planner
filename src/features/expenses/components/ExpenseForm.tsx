@@ -1,5 +1,5 @@
 import { CalendarDays, ChevronDown, PiggyBank, Trash2, Wallet } from 'lucide-react'
-import { AnimatePresence, motion } from 'motion/react'
+import { AnimatePresence, m } from 'motion/react'
 import { useEffect, useEffectEvent, useState } from 'react'
 import {
   amountInputToCents,
@@ -165,7 +165,7 @@ export function ExpenseForm({
 
       <AnimatePresence initial={false}>
         {detailsOpen ? (
-          <motion.div
+          <m.div
             key="details"
             initial={{ height: 0, opacity: 0 }}
             animate={{ height: 'auto', opacity: 1 }}
@@ -244,7 +244,7 @@ export function ExpenseForm({
                 </fieldset>
               ) : null}
             </div>
-          </motion.div>
+          </m.div>
         ) : null}
       </AnimatePresence>
 

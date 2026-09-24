@@ -1,5 +1,5 @@
 import { ArrowLeft, PiggyBank, ReceiptText, Wallet } from 'lucide-react'
-import { AnimatePresence, motion } from 'motion/react'
+import { AnimatePresence, m } from 'motion/react'
 import { useState } from 'react'
 import { toast } from 'sonner'
 import { repos } from '@/db'
@@ -136,7 +136,7 @@ export function OnboardingFlow({ defaults }: { defaults: OnboardingDefaults }) {
 
       <main className="overflow-y-auto px-5">
         <AnimatePresence mode="wait" initial={false}>
-          <motion.div
+          <m.div
             key={step}
             initial={{ opacity: 0, x: 24 }}
             animate={{ opacity: 1, x: 0 }}
@@ -312,7 +312,7 @@ export function OnboardingFlow({ defaults }: { defaults: OnboardingDefaults }) {
                 </fieldset>
               </>
             ) : null}
-          </motion.div>
+          </m.div>
         </AnimatePresence>
       </main>
 

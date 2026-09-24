@@ -1,5 +1,5 @@
 import { ChevronRight, X } from 'lucide-react'
-import { animate, motion, useMotionValue, useTransform, type PanInfo } from 'motion/react'
+import { animate, m, useMotionValue, useTransform, type PanInfo } from 'motion/react'
 import { useRef, type MouseEvent } from 'react'
 import { Link } from 'react-router'
 import type { Insight, InsightSeverity } from '@/lib/insights'
@@ -65,7 +65,7 @@ export function InsightCard({ insight, copy, onDismiss }: InsightCardProps) {
   const { icon: Icon, chip, title, text, action } = copy
 
   return (
-    <motion.div
+    <m.div
       drag="x"
       dragDirectionLock
       dragConstraints={{ left: 0, right: 0 }}
@@ -125,6 +125,6 @@ export function InsightCard({ insight, copy, onDismiss }: InsightCardProps) {
           <X className="size-5" aria-hidden />
         </button>
       </GlassCard>
-    </motion.div>
+    </m.div>
   )
 }

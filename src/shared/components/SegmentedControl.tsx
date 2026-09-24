@@ -1,4 +1,4 @@
-import { motion } from 'motion/react'
+import { m } from 'motion/react'
 import { cn } from '@/shared/lib/utils'
 import { spring } from '@/shared/motion'
 
@@ -42,7 +42,7 @@ export function SegmentedControl<T extends string | number>({
        * layout check rightly reads as overflowing content.
        */}
       {activeIndex >= 0 ? (
-        <motion.span
+        <m.span
           aria-hidden
           initial={false}
           animate={{ x: `${activeIndex * 100}%` }}

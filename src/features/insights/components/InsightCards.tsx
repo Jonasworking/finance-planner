@@ -1,4 +1,4 @@
-import { AnimatePresence, motion } from 'motion/react'
+import { AnimatePresence, m } from 'motion/react'
 import { toast } from 'sonner'
 import type { Insight } from '@/lib/insights'
 import { spring } from '@/shared/motion'
@@ -33,7 +33,7 @@ export function InsightCards({ insights, refs }: InsightCardsProps) {
              * the swipe need room), so the content fades in only once the height has mostly
              * settled and fades out first – otherwise it overlaps the neighbouring card mid-way.
              */
-            <motion.div
+            <m.div
               key={insight.id}
               layout
               initial={{ opacity: 0, height: 0 }}
@@ -50,7 +50,7 @@ export function InsightCards({ insights, refs }: InsightCardsProps) {
                 copy={describeInsight(insight, refs)}
                 onDismiss={dismiss}
               />
-            </motion.div>
+            </m.div>
           ))}
         </AnimatePresence>
       </div>

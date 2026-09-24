@@ -1,2 +1,1 @@
-export { PotDetailPage } from './PotDetailPage'
-export { PotsPage } from './PotsPage'
+// Pots are reached through their routes only (see ./pages, loaded lazily by the router).

@@ -1,6 +1,6 @@
 import { useLiveQuery } from 'dexie-react-hooks'
 import { Check, LockOpen } from 'lucide-react'
-import { motion } from 'motion/react'
+import { m } from 'motion/react'
 import { useState } from 'react'
 import { toast } from 'sonner'
 import { db, loadCloseWeek, repos } from '@/db'
@@ -117,14 +117,14 @@ function CloseWeekForm({ weekStart, data, today }: CloseWeekFormProps) {
     const next = stillPending[0]
     return (
       <div className="flex flex-col items-center gap-5 py-4 text-center">
-        <motion.span
+        <m.span
           initial={{ scale: 0.4, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
           transition={spring.bouncy}
           className="grid size-20 place-items-center rounded-full bg-saved text-on-saved shadow-glow-saved"
         >
           <Check className="size-10" strokeWidth={3} aria-hidden />
-        </motion.span>
+        </m.span>
         <div>
           <p className="text-caption text-fg-subtle uppercase">
             {done.savedCents >= 0 ? 'Gespart' : 'Minus in dieser Woche'}

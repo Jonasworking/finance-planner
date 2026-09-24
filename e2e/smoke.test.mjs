@@ -469,6 +469,8 @@ journey('desktop layout keeps every card inside the window', DESKTOP, async (pag
   await onboard(page)
   await page.keyboard.press('n') // shortcut for "Neue Ausgabe"
   await waitForModals(page, 1)
+  // the sheet is a lazy chunk and the form follows its live query: type once the amount is there
+  await waitForAmount(page, 'A$0')
   await page.keyboard.type('8,5')
   await waitForAmount(page, 'A$8,5') // the hardware keyboard types the amount
   await clickText(page, '[role="radio"]', 'Lebensmittel')

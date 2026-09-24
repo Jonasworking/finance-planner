@@ -1,14 +1,10 @@
 import { useLiveQuery } from 'dexie-react-hooks'
-import { motion } from 'motion/react'
-import { useEffect } from 'react'
+import { m } from 'motion/react'
+import { lazy, Suspense, useEffect } from 'react'
 import { Outlet, useLocation } from 'react-router'
 import { db } from '@/db'
 import { useBudgetWarnings } from '@/features/budget'
-import { EditExpenseSheet, QuickAddSheet, useMaterializeRecurring } from '@/features/expenses'
-import { CloseWeekSheet } from '@/features/income'
-import { OnboardingFlow } from '@/features/onboarding'
-import { EurRateSheet } from '@/features/settings'
-import { TaskSheet } from '@/features/tasks'
+import { useMaterializeRecurring } from '@/features/expenses'
 import { resolveBudget } from '@/lib/budget'
 import { weekStartOf } from '@/lib/dates'
 import { SETTINGS_ID } from '@/lib/types'
@@ -17,6 +13,31 @@ import { spring } from '@/shared/motion'
 import { useUiStore } from '@/shared/stores/uiStore'
 import { BottomTabs } from './BottomTabs'
 import { Sidebar } from './Sidebar'
+
+/*
+ * The sheets and the onboarding are not needed for the first paint: they load in their own chunks
+ * right after it (the shell mounts them at once, so the chunk request starts immediately and the
+ * first tap on "+" finds them ready). This keeps vaul, the dialog and scroll lock out of the
+ * start chunk.
+ */
+const QuickAddSheet = lazy(() =>
+  import('@/features/expenses/sheets').then((module) => ({ default: module.QuickAddSheet })),
+)
+const EditExpenseSheet = lazy(() =>
+  import('@/features/expenses/sheets').then((module) => ({ default: module.EditExpenseSheet })),
+)
+const CloseWeekSheet = lazy(() =>
+  import('@/features/income/sheets').then((module) => ({ default: module.CloseWeekSheet })),
+)
+const EurRateSheet = lazy(() =>
+  import('@/features/settings/sheets').then((module) => ({ default: module.EurRateSheet })),
+)
+const TaskSheet = lazy(() =>
+  import('@/features/tasks/sheets').then((module) => ({ default: module.TaskSheet })),
+)
+const OnboardingFlow = lazy(() =>
+  import('@/features/onboarding').then((module) => ({ default: module.OnboardingFlow })),
+)
 
 function isTypingTarget(target: EventTarget | null): boolean {
   if (!(target instanceof HTMLElement)) return false
@@ -64,13 +85,15 @@ export function AppShell() {
 
   if (!onboarded) {
     return (
-      <OnboardingFlow
-        defaults={{
-          defaultWeeklyIncomeCents: boot.settings?.defaultWeeklyIncomeCents ?? 200_000,
-          totalLimitCents:
-            resolveBudget(boot.budgets, weekStartOf(today))?.totalLimitCents ?? 40_000,
-        }}
-      />
+      <Suspense fallback={<div className="h-dvh bg-bg" />}>
+        <OnboardingFlow
+          defaults={{
+            defaultWeeklyIncomeCents: boot.settings?.defaultWeeklyIncomeCents ?? 200_000,
+            totalLimitCents:
+              resolveBudget(boot.budgets, weekStartOf(today))?.totalLimitCents ?? 40_000,
+          }}
+        />
+      </Suspense>
     )
   }
 
@@ -80,23 +103,25 @@ export function AppShell() {
 
       <div className="grid min-h-0 min-w-0 [grid-template-areas:'stack']">
         <main className="min-h-0 overflow-x-hidden overflow-y-auto overscroll-contain pb-[calc(var(--tabbar-height)+env(safe-area-inset-bottom)+1.5rem)] [grid-area:stack] lg:pb-10">
-          <motion.div
+          <m.div
             key={pathname}
             initial={{ opacity: 0, y: 8 }}
             animate={{ opacity: 1, y: 0 }}
             transition={spring.soft}
           >
             <Outlet />
-          </motion.div>
+          </m.div>
         </main>
         <BottomTabs className="z-20 self-end [grid-area:stack] lg:hidden" />
       </div>
 
-      <QuickAddSheet />
-      <EditExpenseSheet />
-      <CloseWeekSheet />
-      <EurRateSheet />
-      <TaskSheet />
+      <Suspense fallback={null}>
+        <QuickAddSheet />
+        <EditExpenseSheet />
+        <CloseWeekSheet />
+        <EurRateSheet />
+        <TaskSheet />
+      </Suspense>
     </div>
   )
 }

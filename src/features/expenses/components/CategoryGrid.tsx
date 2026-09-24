@@ -1,4 +1,4 @@
-import { motion } from 'motion/react'
+import { m } from 'motion/react'
 import type { Category } from '@/lib/types'
 import { CategoryIcon } from '@/shared/components/CategoryIcon'
 import { cn } from '@/shared/lib/utils'
@@ -17,7 +17,7 @@ export function CategoryGrid({ categories, value, onChange }: CategoryGridProps)
       {categories.map((category) => {
         const selected = value === category.id
         return (
-          <motion.button
+          <m.button
             key={category.id}
             type="button"
             role="radio"
@@ -45,7 +45,7 @@ export function CategoryGrid({ categories, value, onChange }: CategoryGridProps)
             >
               {category.name}
             </span>
-          </motion.button>
+          </m.button>
         )
       })}
     </div>

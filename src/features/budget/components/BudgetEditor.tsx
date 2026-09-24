@@ -1,4 +1,4 @@
-import { AnimatePresence, motion } from 'motion/react'
+import { AnimatePresence, m } from 'motion/react'
 import { useState } from 'react'
 import { toast } from 'sonner'
 import { repos } from '@/db'
@@ -157,7 +157,7 @@ export function BudgetEditor({
 
       <AnimatePresence>
         {changed ? (
-          <motion.div
+          <m.div
             key="save-bar"
             initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
@@ -184,7 +184,7 @@ export function BudgetEditor({
                 </Button>
               </div>
             </div>
-          </motion.div>
+          </m.div>
         ) : null}
       </AnimatePresence>
     </>

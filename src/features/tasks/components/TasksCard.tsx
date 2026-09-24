@@ -1,5 +1,5 @@
 import { ChevronRight } from 'lucide-react'
-import { AnimatePresence, motion } from 'motion/react'
+import { AnimatePresence, m } from 'motion/react'
 import { Link } from 'react-router'
 import { toast } from 'sonner'
 import { repos } from '@/db'
@@ -58,7 +58,7 @@ export function TasksCard({ widget, pots, potTransactions, today }: TasksCardPro
           {widget.tasks.map((task) => {
             const pot = task.linkedPotId ? potById.get(task.linkedPotId) : undefined
             return (
-              <motion.div
+              <m.div
                 key={task.id}
                 layout
                 initial={{ opacity: 0, height: 0 }}
@@ -74,7 +74,7 @@ export function TasksCard({ widget, pots, potTransactions, today }: TasksCardPro
                   onOpen={(row) => openTask(row.id)}
                   compact
                 />
-              </motion.div>
+              </m.div>
             )
           })}
         </AnimatePresence>

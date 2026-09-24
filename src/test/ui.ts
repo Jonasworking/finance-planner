@@ -1,3 +1,5 @@
+import { domMax, LazyMotion } from 'motion/react'
+import { createElement, type ReactNode } from 'react'
 /** Helpers for component tests that render sheets and pages. */
 
 /**
@@ -25,4 +27,12 @@ export function stubResizeObserver(): void {
     unobserve() {}
     disconnect() {}
   }
+}
+
+/**
+ * The app loads motion's features lazily (`LazyMotion` in app/providers); `m.*` components
+ * rendered without them neither animate nor drag. Wrap gesture tests in this to get them at once.
+ */
+export function MotionFeatures({ children }: { children: ReactNode }) {
+  return createElement(LazyMotion, { features: domMax }, children)
 }

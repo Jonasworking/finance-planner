@@ -1,4 +1,4 @@
-import { AnimatePresence, motion } from 'motion/react'
+import { AnimatePresence, m } from 'motion/react'
 import { toast } from 'sonner'
 import { repos } from '@/db'
 import { formatDayLabel } from '@/lib/dates'
@@ -71,7 +71,7 @@ export function PotHistoryList({ entries, copyFor, today }: PotHistoryListProps)
           const rowClass = 'flex min-h-16 w-full items-center gap-3 px-4 py-2.5 text-left'
 
           return (
-            <motion.div
+            <m.div
               key={tx.id}
               layout
               initial={{ opacity: 0, height: 0 }}
@@ -102,7 +102,7 @@ export function PotHistoryList({ entries, copyFor, today }: PotHistoryListProps)
                   <div className={rowClass}>{content}</div>
                 </SwipeRow>
               )}
-            </motion.div>
+            </m.div>
           )
         })}
       </AnimatePresence>

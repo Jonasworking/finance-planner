@@ -1,5 +1,5 @@
 import { Delete } from 'lucide-react'
-import { motion } from 'motion/react'
+import { m } from 'motion/react'
 import type { NumpadKey } from '@/lib/amountInput'
 import { cn } from '@/shared/lib/utils'
 import { spring } from '@/shared/motion'
@@ -20,7 +20,7 @@ export function Numpad({ onKey, className }: NumpadProps) {
   return (
     <div role="group" aria-label="Ziffernblock" className={cn('grid grid-cols-3 gap-2', className)}>
       {KEYS.map((key) => (
-        <motion.button
+        <m.button
           key={key}
           type="button"
           whileTap={{ scale: 0.94 }}
@@ -38,7 +38,7 @@ export function Numpad({ onKey, className }: NumpadProps) {
           className="grid h-14 touch-manipulation place-items-center rounded-md bg-surface-3 text-h1 font-medium tabular-nums outline-none select-none focus-visible:ring-3 focus-visible:ring-ring/50"
         >
           {key === 'backspace' ? <Delete className="size-6" aria-hidden /> : key}
-        </motion.button>
+        </m.button>
       ))}
     </div>
   )

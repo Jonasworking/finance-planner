@@ -1,4 +1,4 @@
-import { motion, useReducedMotion } from 'motion/react'
+import { m, useReducedMotion } from 'motion/react'
 import type { ReactNode } from 'react'
 import { cn } from '@/shared/lib/utils'
 import { spring } from '@/shared/motion'
@@ -49,7 +49,7 @@ export function ProgressRing({
 
   // Arcs sweep in on mount and follow every change; with reduced motion they just appear.
   const arc = (share: number, extraClass?: string) => (
-    <motion.circle
+    <m.circle
       cx={size / 2}
       cy={size / 2}
       r={radius}

@@ -3,6 +3,7 @@ import { MemoryRouter } from 'react-router'
 import { describe, expect, it, vi } from 'vitest'
 import type { Insight } from '@/lib/insights'
 import { useUiStore } from '@/shared/stores/uiStore'
+import { MotionFeatures } from '@/test/ui'
 import { describeInsight } from '../insightCopy'
 import { InsightCard } from './InsightCard'
 
@@ -39,9 +40,15 @@ const refs = { categories: [], pots: [], today: '2026-09-23' }
 function setup(insight: Insight = budgetOver) {
   const onDismiss = vi.fn()
   render(
-    <MemoryRouter>
-      <InsightCard insight={insight} copy={describeInsight(insight, refs)} onDismiss={onDismiss} />
-    </MemoryRouter>,
+    <MotionFeatures>
+      <MemoryRouter>
+        <InsightCard
+          insight={insight}
+          copy={describeInsight(insight, refs)}
+          onDismiss={onDismiss}
+        />
+      </MemoryRouter>
+    </MotionFeatures>,
   )
   return { onDismiss, card: screen.getByRole('article') }
 }
