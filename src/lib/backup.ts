@@ -122,6 +122,28 @@ const settings = z.object({
   updatedAt: timestamp,
 })
 
+const bankTransaction = z.object({
+  ...base,
+  source: z.enum(['commbank']),
+  date: isoDate,
+  valueDate: isoDate.nullable(),
+  amountCents: cents.refine((value) => value !== 0, 'must not be 0'),
+  description: z.string(),
+  balanceCents: cents.nullable(),
+  status: z.enum(['open', 'assigned', 'matched', 'ignored']),
+  expenseId: z.string().min(1).nullable(),
+  batchId: z.string().min(1),
+})
+
+const merchantRule = z.object({
+  ...base,
+  pattern: z.string().min(1),
+  action: z.enum(['categorize', 'ignore', 'income']),
+  categoryId: z.string().min(1).nullable(),
+  confirmations: z.number().int().min(1),
+  lastUsedAt: timestamp,
+})
+
 const appData = z.object({
   weeks: z.array(week),
   expenses: z.array(expense),
@@ -133,6 +155,8 @@ const appData = z.object({
   tasks: z.array(task),
   // Exactly one: importing a backup without settings would leave the app unusable.
   settings: z.array(settings).length(1),
+  bankTransactions: z.array(bankTransaction),
+  merchantRules: z.array(merchantRule),
 })
 
 const backupFile = z.object({
@@ -164,7 +188,14 @@ type RawBackup = { schemaVersion: number; [key: string]: unknown }
  * One entry per released schema version: `migrations[n]` lifts a backup from version n to n+1.
  * Add a step here whenever a Dexie `version(n+1)` changes the shape of stored rows.
  */
-const migrations: Record<number, (backup: RawBackup) => RawBackup> = {}
+const migrations: Record<number, (backup: RawBackup) => RawBackup> = {
+  // 1 → 2 (bank import): two new, empty tables. A backup without `data` stays broken and is
+  // reported by the schema check afterwards.
+  1: (backup) =>
+    typeof backup.data === 'object' && backup.data !== null
+      ? { ...backup, data: { ...backup.data, bankTransactions: [], merchantRules: [] } }
+      : backup,
+}
 
 /** Lifts an older backup step by step to the current schema version. */
 export function migrateBackup(

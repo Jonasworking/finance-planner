@@ -98,7 +98,10 @@ export function createBackupRepo(ctx: RepoContext) {
     restoreSafetyCopy: async (): Promise<void> => {
       const snapshot = await withSafety((safety) => safety.snapshots.get('last'))
       if (!snapshot) throw new DomainError('no-safety-copy')
-      await replaceAll(snapshot.backup.data)
+      // The slot may have been filled by an older app version: lift it like any other backup.
+      const parsed = parseBackup(snapshot.backup)
+      if (!parsed.ok) throw new DomainError('invalid-backup', parsed.errors[0], parsed.errors)
+      await replaceAll(parsed.backup.data)
       await withSafety((safety) => safety.snapshots.delete('last'))
     },
 

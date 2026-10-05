@@ -1,16 +1,19 @@
 import { describe, expect, it } from 'vitest'
 import {
+  makeBankTx,
   makeBudget,
   makeCategory,
   makeExpense,
   makePot,
   makeRecurring,
+  makeRule,
   makeSettings,
   makeTask,
   makeTx,
   makeWeek,
   NOW,
 } from '@/test/fixtures'
+import v1File from './__fixtures__/backup-v1.json?raw'
 import { BACKUP_APP, buildBackup, migrateBackup, parseBackup } from './backup'
 import { PRIMARY_POT_ID, SCHEMA_VERSION, type AppData } from './types'
 
@@ -36,6 +39,11 @@ const data = (): AppData => ({
       sourceWeekStart: '2026-09-14',
     }),
   ],
+  bankTransactions: [
+    makeBankTx('2026-09-17', -4_308, { valueDate: '2026-09-15', balanceCents: 52_758 }),
+    makeBankTx('2026-09-18', 159_075, { description: 'Fast Transfer From ACME PTY LTD' }),
+  ],
+  merchantRules: [makeRule('woolworths'), makeRule('acme', { action: 'income', categoryId: null })],
 })
 
 describe('buildBackup / parseBackup', () => {
@@ -123,5 +131,29 @@ describe('migrateBackup', () => {
     expect(() => migrateBackup({ schemaVersion: 1 }, {}, 2)).toThrow(
       /No migration from backup version 1/,
     )
+  })
+
+  it('lifts a backup written by the released version 1 (no bank tables yet)', () => {
+    const v1 = JSON.parse(v1File)
+    expect(v1.schemaVersion).toBe(1)
+    expect(v1.data).not.toHaveProperty('bankTransactions')
+
+    const parsed = parseBackup(v1)
+    expect(parsed).toEqual({
+      ok: true,
+      backup: {
+        ...v1,
+        schemaVersion: 2,
+        data: { ...v1.data, bankTransactions: [], merchantRules: [] },
+      },
+    })
+    // the file the user picked is not modified
+    expect(v1.schemaVersion).toBe(1)
+  })
+
+  it('still reports a version-1 file without data as broken', () => {
+    const result = parseBackup({ app: BACKUP_APP, schemaVersion: 1, exportedAt: NOW })
+    expect(result.ok).toBe(false)
+    expect(!result.ok && result.errors[0]).toMatch(/^data:/)
   })
 })

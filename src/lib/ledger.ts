@@ -19,6 +19,10 @@ export type ViolationCode =
   | 'funding-missing'
   | 'funding-mismatch'
   | 'funding-orphan'
+  | 'bank-link-missing'
+  | 'bank-link-unexpected'
+  | 'bank-link-duplicate'
+  | 'rule-target'
 
 export interface Violation {
   code: ViolationCode
@@ -185,6 +189,43 @@ export function checkLedgerInvariants(data: AppData): Violation[] {
   for (const task of data.tasks.filter(isActive)) {
     if (task.linkedPotId && !pots.has(task.linkedPotId)) {
       report('unknown-pot', task.id, `Task linked to unknown pot ${task.linkedPotId}.`)
+    }
+  }
+
+  // --- Bank import: a dealt-with line points at its expense, an expense has at most one line ---
+  // The expense may be a tombstone: deleting it must not bring the bank line back to the inbox.
+  const allExpenseIds = new Set(data.expenses.map((row) => row.id))
+  const linkedExpenses = new Set<string>()
+  for (const tx of data.bankTransactions.filter(isActive)) {
+    if (!Number.isInteger(tx.amountCents) || tx.amountCents === 0) {
+      report('amount-invalid', tx.id, 'Bank transaction amount must be a non-zero integer.')
+    }
+    const linked = tx.status === 'assigned' || tx.status === 'matched'
+    if (!linked) {
+      if (tx.expenseId !== null) {
+        report('bank-link-unexpected', tx.id, `A bank line that is ${tx.status} has an expense.`)
+      }
+      continue
+    }
+    if (tx.amountCents > 0) {
+      report('bank-link-unexpected', tx.id, 'A credit must never become an expense.')
+    }
+    if (tx.expenseId === null || !allExpenseIds.has(tx.expenseId)) {
+      report('bank-link-missing', tx.id, `Expense ${tx.expenseId ?? '(none)'} does not exist.`)
+    } else if (linkedExpenses.has(tx.expenseId)) {
+      report('bank-link-duplicate', tx.id, `Expense ${tx.expenseId} has two bank lines.`)
+    } else {
+      linkedExpenses.add(tx.expenseId)
+    }
+  }
+
+  for (const rule of data.merchantRules.filter(isActive)) {
+    const valid =
+      rule.action === 'categorize'
+        ? rule.categoryId !== null && categories.has(rule.categoryId)
+        : rule.categoryId === null
+    if (!valid) {
+      report('rule-target', rule.id, `Rule "${rule.pattern}" has no valid target.`)
     }
   }
 

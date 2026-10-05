@@ -6,7 +6,7 @@ export type { Cents }
 export type ISODate = string
 
 /** Bump together with a Dexie `version(n+1)` and a `migrateBackup` step. */
-export const SCHEMA_VERSION = 1
+export const SCHEMA_VERSION = 2
 
 /** The "Nur gespart" pot has a fixed id, so there can never be zero or two primary pots. */
 export const PRIMARY_POT_ID = 'pot:primary'
@@ -144,6 +144,55 @@ export interface Settings {
   updatedAt: number
 }
 
+/** Banks whose export `lib/bankImport` can read. */
+export type BankSource = 'commbank'
+
+/**
+ * `open` = waiting in the inbox · `assigned` = became a new expense · `matched` = belongs to an
+ * expense that was already entered by hand · `ignored` = not an expense (own transfer, …).
+ */
+export type BankTxStatus = 'open' | 'assigned' | 'matched' | 'ignored'
+
+/**
+ * One line of a bank export. Rows are kept after they were dealt with: they are the memory that
+ * makes a second import of the same (or an overlapping) file a no-op.
+ */
+export interface BankTransaction extends Base {
+  /** `bank:<hash>:<n>` – see `lib/bankImport.bankTxId`. */
+  id: string
+  source: BankSource
+  /** Booking date as the bank states it. */
+  date: ISODate
+  /** Day of the purchase, when the description carries one ("Value Date: …"). */
+  valueDate: ISODate | null
+  /** Signed and never 0: negative = debit, positive = credit. Credits never become expenses. */
+  amountCents: Cents
+  /** The bank's text, untouched. */
+  description: string
+  balanceCents: Cents | null
+  status: BankTxStatus
+  /** The expense of an `assigned` / `matched` row, otherwise `null`. */
+  expenseId: string | null
+  /** One id per import run. */
+  batchId: string
+}
+
+export type MerchantRuleAction = 'categorize' | 'ignore' | 'income'
+
+/** Learned from every assignment: normalized merchant pattern → what to do with it. */
+export interface MerchantRule extends Base {
+  /** `rule:<pattern>` */
+  id: string
+  /** Normalized merchant, e.g. "woolworths". */
+  pattern: string
+  action: MerchantRuleAction
+  /** Set for `categorize` only. */
+  categoryId: string | null
+  /** How often in a row this target was confirmed; a different target starts again at 1. */
+  confirmations: number
+  lastUsedAt: number
+}
+
 /** All persisted tables – the shape of backups and of the ledger check input. */
 export interface AppData {
   weeks: Week[]
@@ -155,6 +204,8 @@ export interface AppData {
   potTransactions: PotTransaction[]
   tasks: Task[]
   settings: Settings[]
+  bankTransactions: BankTransaction[]
+  merchantRules: MerchantRule[]
 }
 
 export const isActive = <T extends { deletedAt: number | null }>(row: T): boolean =>

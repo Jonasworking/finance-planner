@@ -1,9 +1,11 @@
 import {
   PRIMARY_POT_ID,
   SETTINGS_ID,
+  type BankTransaction,
   type Budget,
   type Category,
   type Expense,
+  type MerchantRule,
   type Pot,
   type PotTransaction,
   type RecurringExpense,
@@ -125,5 +127,34 @@ export const makeSettings = (overrides: Partial<Settings> = {}): Settings => ({
   installHintDismissedAt: null,
   onboardingDone: true,
   updatedAt: NOW,
+  ...overrides,
+})
+
+/** A debit by default; pass a positive amount for a credit. */
+export const makeBankTx = (
+  date: string,
+  amountCents: number,
+  overrides: Partial<BankTransaction> = {},
+): BankTransaction => ({
+  ...base(overrides.id ?? nextId('bank')),
+  source: 'commbank',
+  date,
+  valueDate: null,
+  amountCents,
+  description: 'WOOLWORTHS 1234 PERTH WA AUS',
+  balanceCents: null,
+  status: 'open',
+  expenseId: null,
+  batchId: 'batch-1',
+  ...overrides,
+})
+
+export const makeRule = (pattern: string, overrides: Partial<MerchantRule> = {}): MerchantRule => ({
+  ...base(`rule:${pattern}`),
+  pattern,
+  action: 'categorize',
+  categoryId: 'cat:groceries',
+  confirmations: 1,
+  lastUsedAt: NOW,
   ...overrides,
 })

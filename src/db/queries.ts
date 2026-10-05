@@ -25,6 +25,8 @@ export async function loadAppData(db: FinanceDB): Promise<AppData> {
       potTransactions,
       tasks,
       settings,
+      bankTransactions,
+      merchantRules,
     ] = await Promise.all([
       db.weeks.toArray(),
       db.expenses.toArray(),
@@ -35,6 +37,8 @@ export async function loadAppData(db: FinanceDB): Promise<AppData> {
       db.potTransactions.toArray(),
       db.tasks.toArray(),
       db.settings.toArray(),
+      db.bankTransactions.toArray(),
+      db.merchantRules.toArray(),
     ])
     return {
       weeks,
@@ -46,6 +50,8 @@ export async function loadAppData(db: FinanceDB): Promise<AppData> {
       potTransactions,
       tasks,
       settings,
+      bankTransactions,
+      merchantRules,
     }
   })
 }

@@ -1,10 +1,12 @@
 import { describe, expect, it } from 'vitest'
 import {
+  makeBankTx,
   makeBudget,
   makeCategory,
   makeExpense,
   makePot,
   makeRecurring,
+  makeRule,
   makeSettings,
   makeTask,
   makeTx,
@@ -34,7 +36,7 @@ function consistentBooks(): AppData {
     tasks: [makeTask({ linkedPotId: 'pot:trip' })],
     weeks: [makeWeek('2026-09-14', { closedAt: NOW }), makeWeek('2026-09-21')],
     expenses: [
-      makeExpense('2026-09-15', 6_000),
+      makeExpense('2026-09-15', 6_000, { id: 'shop' }),
       makeExpense('2026-09-18', 25_000, {
         id: 'rec:rent:2026-09-18',
         categoryId: 'cat:rent',
@@ -42,6 +44,16 @@ function consistentBooks(): AppData {
       }),
       flight,
       makeExpense('2026-09-22', 4_000),
+    ],
+    bankTransactions: [
+      makeBankTx('2026-09-15', -6_000, { id: 'bank:a:0', status: 'matched', expenseId: 'shop' }),
+      makeBankTx('2026-09-16', -1_250, { id: 'bank:b:0' }),
+      makeBankTx('2026-09-17', 200_000, { id: 'bank:c:0', description: 'Salary ACME' }),
+      makeBankTx('2026-09-18', -50_000, { id: 'bank:d:0', status: 'ignored' }),
+    ],
+    merchantRules: [
+      makeRule('woolworths'),
+      makeRule('acme', { action: 'income', categoryId: null }),
     ],
     potTransactions: [
       makeTx(PRIMARY_POT_ID, 300_000, '2026-09-10'),
@@ -172,5 +184,62 @@ describe('checkLedgerInvariants', () => {
     const deleted = consistentBooks()
     deleted.pots[0]!.deletedAt = NOW
     expect(codes(deleted)).toEqual(expect.arrayContaining(['missing-primary-pot', 'unknown-pot']))
+  })
+
+  it('detects bank lines whose link to an expense is broken', () => {
+    const tombstone = consistentBooks()
+    tombstone.expenses.find((expense) => expense.id === 'shop')!.deletedAt = NOW
+    tombstone.potTransactions.find((tx) => tx.id === 'auto:2026-09-14')!.amountCents = 175_000
+    // A deleted expense keeps its bank line – it must not come back to the inbox.
+    expect(codes(tombstone)).toEqual([])
+
+    const gone = consistentBooks()
+    gone.bankTransactions[0]!.expenseId = 'nowhere'
+    expect(codes(gone)).toEqual(['bank-link-missing'])
+
+    const unlinked = consistentBooks()
+    unlinked.bankTransactions[0]!.expenseId = null
+    expect(codes(unlinked)).toEqual(['bank-link-missing'])
+
+    const twice = consistentBooks()
+    twice.bankTransactions.push(
+      makeBankTx('2026-09-15', -6_000, { status: 'assigned', expenseId: 'shop' }),
+    )
+    expect(codes(twice)).toEqual(['bank-link-duplicate'])
+
+    const openWithExpense = consistentBooks()
+    openWithExpense.bankTransactions[1]!.expenseId = 'shop'
+    expect(codes(openWithExpense)).toEqual(['bank-link-unexpected'])
+
+    const credit = consistentBooks()
+    Object.assign(credit.bankTransactions[2]!, { status: 'assigned', expenseId: 'flight' })
+    expect(codes(credit)).toEqual(['bank-link-unexpected'])
+
+    const zero = consistentBooks()
+    zero.bankTransactions[1]!.amountCents = 0
+    zero.bankTransactions[3]!.amountCents = -12.5
+    expect(codes(zero)).toEqual(['amount-invalid', 'amount-invalid'])
+
+    const deleted = consistentBooks()
+    Object.assign(deleted.bankTransactions[0]!, { expenseId: 'nowhere', deletedAt: NOW })
+    expect(codes(deleted)).toEqual([])
+  })
+
+  it('detects merchant rules without a valid target', () => {
+    const unknown = consistentBooks()
+    unknown.merchantRules[0]!.categoryId = 'cat:gone'
+    expect(codes(unknown)).toEqual(['rule-target'])
+
+    const missing = consistentBooks()
+    missing.merchantRules[0]!.categoryId = null
+    expect(codes(missing)).toEqual(['rule-target'])
+
+    const incomeWithCategory = consistentBooks()
+    incomeWithCategory.merchantRules[1]!.categoryId = 'cat:groceries'
+    expect(codes(incomeWithCategory)).toEqual(['rule-target'])
+
+    const deleted = consistentBooks()
+    Object.assign(deleted.merchantRules[0]!, { categoryId: 'cat:gone', deletedAt: NOW })
+    expect(codes(deleted)).toEqual([])
   })
 })

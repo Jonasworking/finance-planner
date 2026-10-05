@@ -42,6 +42,10 @@ export function ImportSheet({ backup, open, onOpenChange }: ImportSheetProps) {
         ['Töpfe', count(backup.data.pots)],
         ['Daueraufträge', count(backup.data.recurringExpenses)],
         ['Tasks', count(backup.data.tasks)],
+        // Only worth a line once the bank import was used.
+        ...(count(backup.data.bankTransactions) > 0
+          ? [['Bank-Buchungen', count(backup.data.bankTransactions)] as const]
+          : []),
       ]
     : []
 

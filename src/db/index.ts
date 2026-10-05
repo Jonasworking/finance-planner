@@ -5,6 +5,13 @@ import { FinanceDB } from './schema'
 export const db = new FinanceDB()
 export const repos = createRepos(db)
 
+// A newer version of the app (another tab, an updated installation) is upgrading the schema:
+// Dexie closes this connection so the upgrade can run, and this page could only fail on its next
+// query. Reload instead – that also picks up the code that knows the new schema.
+db.on('versionchange', (event) => {
+  if (event.newVersion !== null && event.newVersion > 0) window.location.reload()
+})
+
 export { DomainError, type DomainErrorCode } from './errors'
 export {
   loadAnalytics,

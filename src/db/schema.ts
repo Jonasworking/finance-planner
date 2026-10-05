@@ -2,9 +2,11 @@ import Dexie, { type EntityTable, type Table } from 'dexie'
 import { toISODate } from '@/lib/dates'
 import type {
   AppData,
+  BankTransaction,
   Budget,
   Category,
   Expense,
+  MerchantRule,
   Pot,
   PotTransaction,
   RecurringExpense,
@@ -27,6 +29,8 @@ export const TABLE_NAMES = [
   'potTransactions',
   'tasks',
   'settings',
+  'bankTransactions',
+  'merchantRules',
 ] as const satisfies readonly (keyof AppData)[]
 
 export class FinanceDB extends Dexie {
@@ -39,6 +43,8 @@ export class FinanceDB extends Dexie {
   potTransactions!: EntityTable<PotTransaction, 'id'>
   tasks!: EntityTable<Task, 'id'>
   settings!: EntityTable<Settings, 'id'>
+  bankTransactions!: EntityTable<BankTransaction, 'id'>
+  merchantRules!: EntityTable<MerchantRule, 'id'>
 
   constructor(name: string = DB_NAME) {
     super(name)
@@ -60,6 +66,12 @@ export class FinanceDB extends Dexie {
       potTransactions: 'id, [potId+date]', // pot history, sorted
       tasks: 'id',
       settings: 'id',
+    })
+
+    // Version 2 (bank import): two new tables, existing rows untouched – no `upgrade` needed.
+    this.version(2).stores({
+      bankTransactions: 'id, status, date', // inbox = status 'open'; week lookups by date
+      merchantRules: 'id', // id = rule:<pattern>
     })
 
     // Runs once per freshly created database – also after a wipe (`db.delete()` + reopen).
