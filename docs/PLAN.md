@@ -20,30 +20,32 @@
 - [x] **Phase 6** – PWA, Export, Polish — **Backup-Erinnerung ist Pflichtfeature:** Insight-Karte („Backup älter als 14 Tage" bzw. noch nie) plus Hinweis in den Einstellungen (siehe §5) — freigegeben 2026-09-24, fertig 2026-09-24 (Branch `phase-6-pwa`), **abgenommen 2026-09-24, in `main`**, Notizen unten. **Endgültige Adresse: https://jonas-finanzen.vercel.app** (fest am Projekt eingetragen am 2026-09-24, Entscheidung des Nutzers). Zusätzlich gewünscht: ein deutlich sichtbarer Hinweis, ab wann echte Daten gefahrlos erfasst werden können.
 - [x] **v1 fertig (2026-09-24)** – Phasen 0–6 abgenommen und in `main`; Production: https://jonas-finanzen.vercel.app
 - [ ] Phase 7 (optional) – Sync
+- [ ] **Phase 8 (v2)** – Bank-Import für CommBank: CSV → Inbox → Wisch-Stapel → Händler-Regeln — Plan freigegeben 2026-10-05 (Abschnitt „Plan v2" ganz unten), vier Teilphasen:
+  - [ ] **8a** – Format prüfen, Schema v2, Dexie-Migration, Backup-Format (keine sichtbare Funktion) — freigegeben 2026-10-05, fertig 2026-10-05 (Branch `phase-8a-bank-schema`), **wartet auf Abnahme**, Notizen unten
+  - [ ] **8b** – Import & Inbox (Dateiauswahl, Vorschau, Dedupe gegen manuell Erfasstes, Listen-Ansicht)
+  - [ ] **8c** – Wisch-Stapel & Händler-Regeln (Lernen, Auto-Zuordnung mit Vorschau, Regel-Seite)
+  - [ ] **8d** – Lohn-Vorschlag beim Wochenabschluss & Feinschliff
 
-## Session-Notiz – Stand 2026-09-24
+## Session-Notiz – Stand 2026-10-05
 
 > Einstieg für die nächste Session. Wird bei jedem Sessionende überschrieben, nicht fortgeschrieben – die dauerhaften Ergebnisse stehen in den Phasen-Notizen unten.
 
 **Wo wir stehen**
 
-- **v1 ist fertig** (2026-09-24): Phase 6 abgenommen, `main` per Fast-Forward auf `phase-6-pwa` gezogen und gepusht → Production: **https://jonas-finanzen.vercel.app** (Smoke-Suite dort grün).
-- **Ab wann echte Daten:** jetzt – in der **installierten** App unter `jonas-finanzen.vercel.app`, sobald die Karte „Bereit für echte Daten" alle vier Haken zeigt (Adresse · installiert · Speicher dauerhaft · ein Backup gespeichert).
-- Alte Adressen (`finance-planner-jonasworkings-projects.vercel.app`, `finance-planner-gilt-eight.vercel.app`) und Previews laufen weiter, zeigen aber den Warnhinweis – dort nie echte Daten erfassen.
+- v1 läuft mit echten Daten in Production (**https://jonas-finanzen.vercel.app**, `main`).
+- **v2 (Bank-Import) ist geplant und freigegeben** – Plan ganz unten („Plan v2"), Phasen 8a–8d.
+- **8a ist fertig und wartet auf Abnahme** (Branch `phase-8a-bank-schema`; Push nach `origin` und Preview-Check stehen noch aus – die Git-Anmeldung war am 2026-10-05 abgelaufen): Schema v2 mit `bankTransactions` + `merchantRules`, erste Dexie-Migration, Backup-Format 2 mit `migrateBackup`-Schritt, CommBank-Parser `lib/bankImport`. Keine sichtbare Funktion.
 
 **Offen** (nicht blockierend)
 
-- Ausgaben-Sheet mit offenen Details ist höher als der Bildschirm („Speichern" erst nach Scrollen im Sheet).
-- `AnimatedNumber` (Spring-Ticker für Beträge) ist nicht gebaut.
-- Ausgabe aus einem inzwischen archivierten Topf lässt sich erst nach „Wiederherstellen" des Topfs ändern.
-- `forced-colors`-Textur für Charts (Tabellen-Zwilling deckt den Inhalt ab).
-- Am Gerät zu prüfen: Statusleiste im Light-Theme (dunkler Streifen), Startbild, Teilen-Menü beim Backup, `storage.persist()` in der installierten App.
+- Ändert CommBank den Text einer Buchung nachträglich (vorgemerkt → gebucht)? Aus EINER Datei nicht zu sehen – in 8b mit einem zweiten, überlappenden Export prüfen; dann würde die Dedupe-ID nicht mehr passen.
+- Aus v1 unverändert: Ausgaben-Sheet mit offenen Details höher als der Bildschirm · `AnimatedNumber` nicht gebaut · Ausgabe aus archiviertem Topf erst nach „Wiederherstellen" änderbar · `forced-colors`-Textur für Charts.
 
 **Als Nächstes**
 
-1. Du: `jonas-finanzen.vercel.app` in Safari → „Zum Home-Bildschirm" → App öffnen → Onboarding → einmal Backup speichern → Karte „Bereit für echte Daten". Dabei die Gerätepunkte aus „Offen" ansehen (Statusleiste hell, Startbild, Teilen-Menü, Flugmodus-Start).
-2. Ein paar Wochen nutzen; was fehlt, bauen wir gezielt als neue Phase. Phase 7 (Sync) bleibt optional.
-3. **Ab jetzt gilt für jede Änderung:** echte Daten liegen in Production – Schema-Änderungen nur mit Dexie-`version(n+1)` + Migration + `migrateBackup`, und vor riskanten Releases an ein Backup erinnern.
+1. Du: **vor** dem Merge von 8a ein frisches Backup speichern (erste Schema-Migration auf echten Daten). Dann 8a abnehmen → `main` per Fast-Forward → Production; ein paar Tage laufen lassen.
+2. Danach 8b freigeben (Import & Inbox). Dafür hilfreich: ein zweiter NetBank-Export, der sich mit dem ersten überschneidet.
+3. Die echte Beispieldatei (`~/Downloads/CSVData.csv`) wird nie committet; Tests nutzen `src/lib/__fixtures__/commbank-sample.csv` (erfundene Händler und Beträge, gleiche Struktur).
 
 ## Phase 0 – Ergebnis & Abweichungen vom Plan
 
@@ -203,6 +205,22 @@
 - **A11y:** Kontrast `fg-subtle` und die hellen Signalfarben auf ≥ 4,5:1 gehoben (Chart-Flächen unverändert), Radio-Gruppen mit Pfeiltasten, Regler und Budget-Ring sprechen Beträge, Kategorien per Tastatur sortierbar (Griff ist ein Button, Live-Ansage der Position), Reduced Motion auch für CSS-Übergänge.
 - **Import-Undo** leert die Sicherheitskopie danach (einmal rückgängig pro Import).
 - **Gefunden beim Deployment:** ein Header-Muster mit verschachtelter Gruppe in `vercel.json` ließ Vercel das Branch-Deployment still verwerfen (kein Build, kein Fehler im Push) – erst ein API-Deploy zeigte `invalid_header`. Muster jetzt einzeln; Header auf der Preview geprüft (`sw.js`/Manifest/`index.html` `max-age=0`, `/assets` immutable), Smoke-Suite gegen die Preview 14/14 grün.
+
+## Phase 8a – Ergebnis & Abweichungen vom Plan
+
+**Geprüft:** typecheck · lint · build grün · **948 Testläufe** (474 Tests × 2 Zeitzonen; Coverage `src/lib` 99,9 % Zeilen / 100 % Funktionen / 96 % Branches) · `npm run test:e2e` **14 Journeys grün** (unverändert, inkl. Backup-Roundtrip und Offline-Start mit dem neuen Schema) · initiales JS unverändert 237 KB gzip · Mutationsproben: ohne den `migrateBackup`-Schritt fallen 3 Tests, ohne den Fix in `restoreSafetyCopy` genau der zuständige.
+**DoD:** Parser besteht die Fixture und liest die **echte Datei fehlerfrei** (40 Zeilen, 0 unlesbar, Kontostand-Kette über alle 39 Übergänge stimmig, 40 eindeutige IDs) · derselbe Text zweimal → identische IDs, zwei identische Zeilen → zwei IDs, überlappende Exporte → gleiche IDs für die gemeinsamen Tage · Migrationstest: DB im eingefrorenen v1-Schema → mit dem aktuellen Code geöffnet → jede Zeile unverändert, neue Tabellen leer und benutzbar (Indexe), `populate` läuft nicht erneut, Ledger grün · v1-Backup (von der ausgelieferten v1 erzeugt, `src/lib/__fixtures__/backup-v1.json`) wird beim Einlesen gehoben, Export ist Version 2, Roundtrip identisch · v1-Sicherheitskopie lässt sich nach dem Upgrade zurückspielen.
+
+- **CommBank-Format (an der echten Datei geprüft, 2026-10-05):** vier Spalten **ohne Kopfzeile**, neueste Buchung zuerst, CRLF, reines ASCII ohne BOM: `05/10/2026,"-7.50","TEXT","+1763.94"` – Datum `DD/MM/YYYY` ohne, die anderen Felder mit Anführungszeichen; Betrag **und** Kontostand immer mit Vorzeichen, Dezimalpunkt. Deine Annahme (Datum, Betrag, Beschreibung, Kontostand) stimmt.
+- **Zwei Textformen für Kartenzahlungen:** später verbuchte Käufe enden auf `… WA AUS Card xx1234 Value Date: DD/MM/YYYY` (Wertdatum = Tag des Kaufs, in der Datei bis zu 5 Tage vor dem Buchungsdatum), sofort verbuchte nur auf `… AU`. Der Parser liest das Wertdatum mit (`valueDate`); 8b nutzt es als Ausgabedatum und für den Abgleich mit manuell Erfasstem.
+- **Merker für die Händler-Normalisierung (8c), aus den echten Texten:** Filialnummer nach dem Namen (`WOOLWORTHS 4611 …`) **und** davor mit Bindestrich (`6943-…`), Zahlungsdienst-Präfix (`SMP*…`), Ort ohne Leerzeichen angeklebt (`… Karratha06 AU`, `… StAU`), abgekürzte Orte, `Direct Debit <nr> <NAME> <referenz>`, Namen ohne jede Ziffer mit führendem „The". „Ab dem ersten Token mit Ziffer abschneiden" reicht also nicht allein – führende Nummern müssen übersprungen werden.
+- **Gutschriften:** in der Datei zwei „Fast Transfer From …", eine davon eine eigene Umbuchung. Der Lohn ist am Text allein nicht sicher zu erkennen → bleibt bei „Das ist mein Lohn" von Hand (8d), wie geplant.
+- **Dedupe-ID** `bank:<hash>:<n>`: Hash (cyrb53, synchron) über Datum, Betrag und Text (Groß-/Kleinschreibung und Leerzeichen egal), `<n>` zählt identische Zeilen der Datei. Der Kontostand geht nicht ein.
+- **Korrektur zum Plan:** Dexie schließt bei einem Upgrade aus einem anderen Tab die alte Verbindung von sich aus – blockiert hätte also nichts. Der alte Tab wäre aber bei der nächsten Abfrage gescheitert; er lädt sich jetzt neu (`db/index.ts`). Für den Sprung 1 → 2 selbst hilft das nicht (der alte Code ist schon ausgeliefert): ein zweiter, noch offener Tab muss einmal von Hand neu geladen werden.
+- **Gefunden und behoben:** `restoreSafetyCopy` schrieb den Schnappschuss ungeprüft zurück; eine von v1 angelegte Sicherheitskopie hätte „Import rückgängig" nach dem Update scheitern lassen. Sie läuft jetzt wie jedes Backup durch `parseBackup`/`migrateBackup`.
+- **Neue Ledger-Regeln** (gelten auch für Backup-Import und „Daten prüfen"): zugeordnete/verknüpfte Bank-Zeile zeigt auf eine vorhandene Ausgabe (gelöscht erlaubt – sie soll nicht in die Inbox zurückkehren), höchstens eine Bank-Zeile je Ausgabe, offene/ignorierte Zeilen und Gutschriften haben keine Ausgabe, Betrag ≠ 0, Regel hat ein gültiges Ziel.
+- **Backup-Vorschau** nennt „Bank-Buchungen" nur, wenn die Datei welche enthält. Ein Backup der neuen Version lässt sich in der alten nicht einspielen („neuere App-Version") – gewollt.
+- **Nicht gebaut (gehört zu 8b–8d):** Repo `repos.bank`, Abgleich mit manuell Erfasstem, jede Oberfläche. Die neuen Tabellen bleiben bis 8b leer.
 
 ---
 
@@ -617,3 +635,143 @@ Liegt im Repo-Root (`/CLAUDE.md`) und ist dort maßgeblich.
 - **Von mir im Browser** (Chrome-Automation gegen `npm run dev` bzw. `npm run preview`): Kern-Loop durchspielen – Ausgabe erfassen → Woche abschließen → Stand von „Nur gespart" prüfen → Ausgabe nachträglich ändern → Stand zieht nach → „Daten prüfen" grün; Viewports 390×844 und 1440×900, Dark/Light, Konsole ohne Fehler, Screenshots an dich.
 - **PWA (Phase 6):** `npm run build && npm run preview` → DevTools offline → App lädt und ist bedienbar; Lighthouse; Backup-Roundtrip.
 - **Von dir auf dem iPhone:** Production-URL in Safari → „Zum Home-Bildschirm" → Flugmodus-Start, Safe-Areas, Numpad/Sheets, Swipe-Gesten, Export per Share-Sheet aufs MacBook → dort importieren.
+
+---
+
+# Plan v2: Bank-Import für CommBank (Phase 8a–8d)
+
+> Freigegeben am 2026-10-05. Ergebnisse und Abweichungen stehen oben unter der jeweiligen Phase.
+
+## Context
+
+v1 läuft seit 2026-09-24 mit echten Daten unter `jonas-finanzen.vercel.app`. Ausgaben werden bisher von Hand erfasst. v2 holt sie aus dem NetBank-CSV-Export: Datei einlesen → Buchungen landen in einer **Inbox** → per **Wisch-Stapel** kategorisieren → die App lernt Händler → Kategorie (`merchantRules`).
+Nur Planung; gebaut wird Teilphase für Teilphase nach Freigabe (Phase 7 bleibt „Sync, optional", daher **Phase 8**).
+
+**Befunde aus der Codebasis, die den Plan prägen**
+
+- Die DB steht noch auf Dexie `version(1)`, `SCHEMA_VERSION = 1`, `migrations = {}` in `lib/backup.ts`. v2 bringt die **erste** Migration, den **ersten** Migrationstest und den **ersten** `migrateBackup`-Schritt.
+- Es gibt keinen eigenen `versionchange`-Handler (in 8a korrigiert: Dexie schließt die alte Verbindung selbst, der alte Tab scheitert danach aber an seiner nächsten Abfrage).
+- `repos.backup.restoreSafetyCopy` reicht den Schnappschuss ohne `migrateBackup` an `replaceAll` → ein v1-Schnappschuss würde nach dem Upgrade an `bulkAdd(undefined)` scheitern. Muss in 8a mit behoben werden.
+- Kein CSV-Parser (`lib/csv.ts` exportiert nur), kein Hash, kein `DD/MM/YYYY`-Parser; `parseAmountInput` kann keine Vorzeichen und liest `1,234.56` falsch → eigener Bank-Parser.
+- `writeExpense` (`db/repos/context.ts`) rechnet bei Ausgaben in abgeschlossenen Wochen die `auto:<weekStart>`-Buchung schon heute still nach.
+- **iOS-Einschränkung:** Das Manifest hat kein `share_target`, und iOS unterstützt es für installierte PWAs nicht – „Teilen → Finanzplaner" aus NetBank geht nicht. Weg auf dem iPhone: in NetBank exportieren → „In Dateien sichern" → in der App „CSV importieren" (`<input type="file">` öffnet die Dateien-App). In 8b am Gerät verifizieren; `share_target` zusätzlich nur, falls es sich dort doch als nutzbar erweist.
+
+**Entscheidungen (2026-10-05)**
+
+1. Format wird als **Schritt 0 von 8a** an der echten Datei geprüft; vorher wird kein Parser festgelegt.
+2. Buchung in abgeschlossener Woche: **nachbuchen, sichtbar** (normales Nadelöhr, Hinweis auf der Karte, Rückgängig).
+3. Manuell schon Erfasstes: **eindeutige Treffer automatisch verknüpfen**, in der Vorschau gelistet und lösbar; mehrdeutige als Karte.
+4. Lohn: Gutschrift **derselben Woche** belegt das Einkommensfeld nur vor; geschrieben wird ausschließlich mit dem bestätigten Wochenabschluss.
+
+## Datenmodell (Dexie `version(2)`, `SCHEMA_VERSION = 2`)
+
+```ts
+// lib/types.ts
+type BankTxStatus = 'open' | 'assigned' | 'matched' | 'ignored'
+interface BankTransaction extends Base {
+  id: string // bank:<hash>:<n>
+  source: 'commbank'
+  date: ISODate // Buchungsdatum laut Bank
+  valueDate: ISODate | null // „Value Date" aus der Beschreibung, falls vorhanden (Schritt 0)
+  amountCents: Cents // vorzeichenbehaftet: < 0 Abbuchung, > 0 Gutschrift
+  description: string // Rohtext
+  balanceCents: Cents | null
+  status: BankTxStatus
+  expenseId: string | null // gesetzt bei assigned (neue Ausgabe) / matched (vorhandene)
+  batchId: string // ein Import-Vorgang
+}
+interface MerchantRule extends Base {
+  id: string // rule:<pattern>
+  pattern: string // normalisiert, z. B. "woolworths"
+  action: 'categorize' | 'ignore' | 'income'
+  categoryId: string | null // nur bei 'categorize'
+  confirmations: number // gleiche Zuordnung in Folge; Wechsel der Kategorie → 1
+  lastUsedAt: number
+}
+```
+
+- Stores: `bankTransactions: 'id, status, date'`, `merchantRules: 'id'`. Kein `.upgrade()` nötig (nur neue Tabellen, keine Default-Regeln). `Expense` bleibt **unverändert** – die Verknüpfung liegt nur auf der Bank-Zeile.
+- **Inbox** = `status === 'open' && amountCents < 0`. Gutschriften werden gespeichert (Dedupe, Lohn-Vorschlag), erscheinen aber nie im Stapel und werden nie zu Ausgaben.
+- Verarbeitete Zeilen bleiben dauerhaft liegen – sie sind das Dedupe-Gedächtnis. Wird die erzeugte Ausgabe später gelöscht, bleibt die Zeile `assigned` (kommt nicht zurück, wie bei Daueraufträgen); „Zurück in die Inbox" als bewusste Aktion.
+- `action: 'ignore'` für Abbuchungen, die keine Ausgaben sind (Umbuchung aufs eigene Sparkonto, Kreditkartenausgleich); `'income'` markiert den Lohn-Absender.
+
+**Dedupe-ID (`lib/bankImport.ts`)**: `bank:<hash(date|amountCents|normalisierte Beschreibung)>:<n>`, Hash = synchroner 53-Bit-String-Hash (cyrb53, handgeschrieben – `lib` bleibt rein, `crypto.subtle` ist async). `<n>` = laufende Nummer **identischer** Zeilen innerhalb der Datei (zwei gleiche Kaffees am selben Tag sind zwei Buchungen, kein Duplikat). Da NetBank ganze Tage exportiert, ist `<n>` über überlappende Exporte stabil. Repo: `bulkGet`-Filter, vorhandene IDs (auch Tombstones) überspringen – Muster aus `repos.recurring.materialize`. Der Kontostand geht bewusst nicht in den Hash (Vorgabe: Datum, Betrag, Beschreibung); ob „PENDING"-Zeilen im Export vorkommen und später ihren Text ändern, klärt Schritt 0.
+
+**Berührte Stellen (alle hängen an `AppData`/`TABLE_NAMES`)**: `lib/types.ts` (`AppData`, `SCHEMA_VERSION`) · `db/schema.ts` (`TABLE_NAMES`, Klassenfelder, `version(2)`) · `db/queries.ts` (`loadAppData`) · `lib/backup.ts` (zod-Zeilen, `appData`, `migrations[1]` = `{ ...data, bankTransactions: [], merchantRules: [] }`) · `db/repos/backup.ts` (`restoreSafetyCopy` über `migrateBackup`) · `features/settings/components/ImportSheet.tsx` (Vorschau-Zähler) · `lib/ledger.ts` (neue Invarianten) · Test-Literale in `lib/backup.test.ts`, `lib/ledger.test.ts`, `test/fixtures.ts` (`makeBankTx`, `makeRule`).
+
+**Neue Ledger-Invarianten** (`checkLedgerInvariants`, gilt damit auch für Backup-Import und „Daten prüfen"): `assigned`/`matched` ⇒ `expenseId` zeigt auf eine vorhandene Ausgabe (Tombstone erlaubt) · höchstens eine Bank-Zeile je Ausgabe · `open`/`ignored` ⇒ `expenseId === null` · Gutschrift nie `assigned`/`matched` · Betrag ganzzahlig ≠ 0 · Regel `categorize` ⇒ Kategorie existiert, sonst `categoryId === null`.
+
+## Fachlogik in `src/lib` (rein, jeweils mit Tests)
+
+- **`bankImport.ts`**
+  - `parseCsv(text)` – kleiner quote-fähiger Splitter (BOM, CRLF, `""`, Kommas in Feldern).
+  - `BankFormat { id, label, hasHeader, columns: { date, amount, description, balance? }, dateFormat, detect(rows) }` + Registry `BANK_FORMATS` (zuerst nur `commbank`); weitere Banken = weiterer Eintrag. `parseBankFile(text, format?)` → `{ rows: ParsedBankRow[], errors: { line, reason }[] }` (fehlerhafte Zeilen werden gemeldet, nicht still verworfen; falsches Format → klarer Fehler statt halbem Import).
+  - `parseBankDate`, `parseBankAmount` (Vorzeichen, `+`, Tausender-Komma, Dezimalpunkt), `bankTxId`, `withOccurrence`.
+  - `planImport(rows, existingIds, expenses, linkedExpenseIds, rules, trackingSince)` → `{ fresh, alreadyImported, matched: [row, expense][], ambiguous, credits, beforeTracking }` – das ist die Import-Vorschau; das Repo schreibt genau diesen Plan.
+  - `matchManualExpenses` – **Erkennung manuell Erfasster**: aktive Ausgabe (auch `rec:`-Instanzen und topf-finanzierte), noch mit keiner Bank-Zeile verknüpft, **gleicher Betrag**, `expense.date` in `[Wertdatum − 3 Tage, Buchungsdatum]`; Zuordnung 1:1, nächstes Datum zuerst, Tiebreaker `id`. Genau ein Kandidat → `matched`; mehrere gleich gute → `ambiguous` (Karte „Ist das dieselbe?"). Zeilen vor `trackingSince` → `ignored` (würden Wochen vor Tracking-Beginn erzeugen), in der Vorschau als Zahl genannt.
+  - `incomeSuggestion(bankTxs, rules, weekStart)` → Gutschriften mit `income`-Regel und Datum in der Woche (Summe + Einzelposten) oder `null`.
+- **`merchantRules.ts`**
+  - `normalizeMerchant(description)`: klein schreiben; Zusätze entfernen („Value Date: …", „Card xx1234", Präfixe wie `SQ *`, `PAYPAL *`, `EFTPOS`, `DIRECT DEBIT <nr>`), Staat/Land am Ende (`WA`, `NSW`, `AU`, `AUS` …), ab dem ersten Token mit Ziffer abschneiden, sonst die ersten zwei Namens-Tokens. `"WOOLWORTHS 1234 PERTH"` → `woolworths`. Tabellen-Test mit den (anonymisierten) echten Beschreibungen aus Schritt 0; die genaue Regelreihenfolge wird dort festgelegt.
+  - `displayMerchant(description)` – lesbarer Händlername für Karte und `Expense.note`.
+  - `matchRule(description, rules)` – exakt auf dem Muster, sonst längstes Token-Präfix.
+  - `suggestCategories(tx, rules, usage)` → Rangfolge: Regeltreffer → meistgenutzte Kategorien (aus bisherigen Ausgaben); die ersten zwei sind links/rechts.
+  - `learnRule(previous, pattern, target, now)` (Upsert, `confirmations`) · `autoAssignable(inbox, rules)` = Regeltreffer mit `confirmations ≥ 2`.
+
+## Repo `repos.bank` (`db/repos/bank.ts`)
+
+Alle Schreibzugriffe in `db.transaction('rw', [...ledgerTables(ctx), db.bankTransactions, db.merchantRules], …)`; Ausgaben **nur** über `writeExpense` → `fund:`-Spiegel und `syncWeekDerived` bleiben automatisch korrekt, auch für abgeschlossene Wochen (Entscheidung 2 braucht keine Sonderlogik, nur Anzeige).
+
+`import(rows, plan)` (idempotent; verknüpft `matched` und lernt daraus Regeln aus der vorhandenen Kategorie) · `assign(txId, categoryId)` (Ausgabe mit `date = valueDate ?? date`, `note = displayMerchant`, Regel lernen; liefert den vorherigen Regelstand fürs Undo) · `undoAssign` · `assignMany(pairs)` + `undoBatch` (Auto-Zuordnung) · `linkExisting(txId, expenseId)` / `unlink` · `ignore(txId, { always })` / `reopen` · `markIncomeSource(txId)` · `rules.remove/restore`. Neue `DomainError`-Codes (`not-open`, `already-linked`, `invalid-bank-file`) in `shared/lib/errorMessages.ts`.
+Lesen: `loadInbox(db)`, `loadMerchantRules(db)` in `db/queries.ts`; `loadDashboard` + Shell-Boot-Query bekommen nur die Inbox-Anzahl (Index `status`), `loadCloseWeek` die Lohn-Gutschriften der Woche.
+
+## UI (`src/features/bank`, alles lazy – Parser und Stapel bleiben aus dem Start-Chunk)
+
+- **Route `/inbox`** (`features/bank/pages.ts`, `lazyPage('Inbox', …)`), Eintrag in `secondaryNav` mit Zähler-Badge (`NavItem.badge` neu; MorePage, Sidebar). Home: `InboxCard` nur bei offenen Buchungen (Muster `TasksCard`); `nextStep` bleibt unverändert (übersprungene Karten würden ihn sonst blockieren).
+- **Import** (Muster `BackupCard`/`ImportSheet`): verstecktes `<input type="file" accept=".csv,text/csv,text/plain">` → `file.text()` → `parseBankFile` → `planImport` → Vorschau-Sheet „18 neu · 6 schon erfasst · 40 bereits importiert · 3 Gutschriften · 2 Zeilen unlesbar", Liste der automatisch Verknüpften mit „Lösen", dann „Importieren". Kein Reload nötig (Live-Queries).
+- **Wisch-Stapel** (`SwipeStack`/`ReceiptCard`, Basis = Drag-Mechanik aus `features/insights/components/InsightCard.tsx`: `m.div drag="x"`, `far || fast`, Klick nach Drag schlucken): Kassenzettel-Karte – Betrag `text-display tabular-nums`, darunter Händler und Datum, Rohtext klein; nächste Karte liegt dahinter. Links/rechts am Rand die zwei wahrscheinlichsten Kategorien (`CategoryIcon` + **Name**, nie nur Farbe), werden beim Ziehen kräftiger. Darunter `CategoryGrid` für alle anderen (zieht von `features/expenses/components` nach `shared/components`), Aktionen „Überspringen" · „Keine Ausgabe" · „Rückgängig" (Icon über Label, 44 px), `ProgressBar` „7 von 23". Hinweiszeile bei abgeschlossener Woche („Woche 7.–13. Sep. ist abgeschlossen – Gespartes sinkt um A$X") und bei `ambiguous` („Sieht aus wie Lebensmittel A$23,40 vom Do. – dieselbe / neu"). Tastatur: ←/→ = Vorschläge, Buttons für alles; Listen-Ansicht als Zwilling (Tipp öffnet Kategorie-Sheet) – zugleich die Desktop-Ansicht. Übersprungen = nur für die Sitzung nach hinten sortiert. Keine Keyframe-Listen mit Spring; Reduced Motion = Karte blendet statt zu fliegen.
+- **Auto-Zuordnung**: Banner „14 Buchungen von bekannten Händlern" → Vorschau-Sheet (Buchung → Kategorie, einzeln abwählbar) → „Übernehmen" → Toast mit Rückgängig (`undoBatch`).
+- **Händler-Regeln**: Karte „Bank-Import" in den Einstellungen → Route `/settings/merchant-rules` (Muster `RecurringPage`): Muster, Ziel, „n× bestätigt"; `SwipeRow` löschen mit Undo-Toast.
+- **Wochenabschluss** (`CloseWeekSheet`): Vorbelegung `week.incomeCents ?? Bank-Vorschlag ?? defaultWeeklyIncomeCents`, darunter Herkunftszeile „Aus dem Bank-Import: A$1.987,40 am Do., 17. Sep." Geschrieben wird wie bisher erst mit `repos.weeks.close`. Zusätzlich Hinweis „3 Buchungen dieser Woche warten noch in der Inbox". Lohn-Absender wird einmal markiert: Gutschriften-Liste in `/inbox` → „Das ist mein Lohn" (`markIncomeSource`).
+
+## Teilphasen
+
+**Gate jeder Teilphase:** `npm run typecheck && npm run lint && npm run test && npm run build && npm run check:bundle` grün · `npm run test:e2e` (auch `E2E_REDUCED_MOTION=1`) · Sichtprüfung 390×844 + 1440×900, Dark + Light · `docs/PLAN.md` + `CLAUDE.md` gepflegt · vor dem Merge nach `main`: Erinnerung an ein frisches Backup.
+
+### 8a – Format prüfen, Schema v2, Migration, Backup (`phase-8a-bank-schema`, keine sichtbare Funktion)
+
+0. **Echte Beispieldatei** lesen (wird nie committet): Spalten, Kopfzeile, Datumsformat, Vorzeichen/Anführungszeichen, Encoding, „Value Date"/Kartenzusätze, Pending-Zeilen, Gutschriften-Texte. Ergebnis als Abschnitt in `docs/PLAN.md`; anonymisierte Fixture `src/lib/__fixtures__/commbank-sample.csv`. Weicht das Format von der Annahme ab → Rückfrage vor dem Parser.
+1. `lib/bankImport.ts` (Parser, Format-Registry, IDs) + Tests.
+2. Typen, `version(2)`, `SCHEMA_VERSION = 2`, zod, `migrations[1]`, `loadAppData`, Ledger-Invarianten, `restoreSafetyCopy`-Fix, `ImportSheet`-Zähler, `versionchange`-Handler (DB schließen, Hinweis „App neu laden").
+
+**DoD:** Parser besteht die Fixture, derselbe Text zweimal → identische IDs, zwei identische Zeilen → zwei IDs · **Migrationstest**: DB mit nachgebautem v1-Schema füllen → mit `FinanceDB` öffnen → alle Zeilen unverändert, neue Tabellen leer, `checkLedgerInvariants` grün · **Backup-Test** mit eingecheckter v1-Datei (`backup-v1.json`): `parseBackup` migriert, Import + Roundtrip v2 identisch · v1-Sicherheitskopie lässt sich nach dem Upgrade zurückspielen (Mutation: Fix raus → Test rot) · Smoke-Suite unverändert grün · geht allein nach Production und läuft dort ein paar Tage.
+
+### 8b – Import & Inbox (`phase-8b-bank-import`)
+
+`planImport`/`matchManualExpenses` + Tests · `repos.bank.import/assign/undoAssign/linkExisting/unlink/ignore/reopen` · `/inbox` mit Import, Vorschau-Sheet und Listen-Ansicht (Tipp → Kategorie wählen) · Nav-Badge, `InboxCard`.
+
+**DoD:** derselbe Export zweimal → 0 neue Zeilen; überlappende Exporte → nur die neuen (Repo-Test, auch paralleler Doppelaufruf) · Gutschriften erzeugen nie eine Ausgabe · eindeutig passende manuelle Ausgabe wird verknüpft, nicht verdoppelt; zwei gleiche Beträge → 1:1 bzw. `ambiguous` · Zuordnung in abgeschlossener Woche: `auto:`-Buchung = `summarizeWeek`, Undo stellt den alten Stand her · `afterEach`-Ledger-Check in allen Repo-Tests · am iPhone: Datei aus „Dateien" wählbar.
+**Smoke-Journey „Bank-Import"** (feste Uhr So 2026-09-20; Fixture mit Daten aus KW 14.–20. Sep. wird ins Temp-Verzeichnis geschrieben, Upload per `input.uploadFile` wie in der Backup-Journey): Onboarding → A$12,50 von Hand erfassen → CSV wählen → Vorschau „4 neu · 1 schon erfasst · 1 Gutschrift" → Importieren → Inbox zeigt 4, Ausgabenliste weiter 1 Zeile → dieselbe Datei erneut → „0 neu" → zweite, überlappende Datei → nur die 2 neuen → eine Buchung per Liste zuordnen → Ausgabe erscheint, Rückgängig → `assertFitsViewport`.
+
+### 8c – Wisch-Stapel & Händler-Regeln (`phase-8c-swipe-stack`)
+
+`lib/merchantRules.ts` + Tests · Regel-Lernen in `assign`, `assignMany/undoBatch`, `rules.remove/restore` · `SwipeStack`, Auto-Zuordnung mit Vorschau, Regel-Seite, `CategoryGrid` nach `shared`.
+
+**DoD:** Normalisierungs-Tabelle (Filialnummern, Orte, Kartenzusätze) grün · jede Zuordnung legt/aktualisiert genau eine Regel, Kategoriewechsel setzt `confirmations` auf 1 · Vorschläge am Rand = `suggestCategories` · Stapel komplett per Touch **und** Tastatur · Rückgängig stellt Ausgabe, Bank-Zeile und Regel wieder her · RTL-Test mit echtem Pointer-Drag in `<MotionFeatures>` (Muster `SwipeRow.test.tsx`), Mutationsprobe fürs Klick-Schlucken.
+**Smoke-Journey „Wisch-Stapel"**: Import (Fixture mit 2× Woolworths, verschiedene Filialen) → Karte nach rechts wischen (`swipe`) → Fortschritt „1 von 4", Ausgabe angelegt → „Rückgängig" → erneut wischen → andere Kategorie per Tipp → „Überspringen" → zweite Woolworths-Karte zeigt die gelernte Kategorie am Rand → nach zwei Bestätigungen neue Datei: Banner „bekannte Händler" → Vorschau → Übernehmen → Rückgängig → Regel-Seite zeigt `woolworths`, wegwischen + Undo → `watchForModals` (kein Sheet durch den Wisch) → `assertFitsViewport` 390 px + Desktop.
+
+### 8d – Lohn-Vorschlag & Feinschliff (`phase-8d-bank-income`)
+
+`incomeSuggestion` + Test · „Das ist mein Lohn" · Vorbelegung + Herkunftszeile + Inbox-Hinweis im `CloseWeekSheet` · „Zurück in die Inbox" an importierten Ausgaben · Texte, leere Zustände.
+
+**DoD:** Vorschlag nur mit `income`-Regel und Gutschrift in der Woche; gespeichertes Wochen-Einkommen hat Vorrang; ohne Bestätigung des Abschlusses wird nichts geschrieben (RTL gegen die echte DB-Schicht) · Smoke: Journey „Bank-Import" um Lohn markieren → „Diese Woche abschließen" zeigt den Bank-Betrag vorbelegt, überschreibbar, erweitert.
+
+## Verifikation
+
+- Pro Teilphase das Gate oben; neue Absicherungen per Mutation gegenprüfen.
+- Migration zusätzlich von Hand: Production-Backup (v1) in einen lokalen Build mit v2 einspielen → „Daten prüfen" grün, Zahlen auf Home/Analyse unverändert.
+- Nach 8a auf der Preview: installierte v1-DB (Preview-Adresse, Demo-Daten) → Update-Hinweis → nach „Aktualisieren" Daten vollständig.
+- 8b/8c am iPhone: Datei-Auswahl aus „Dateien", Wisch-Gefühl, Safe-Areas der Aktionsleiste.
+
+## Offen / bewusst nicht in v2
+
+Andere Banken (nur Registry vorbereitet) · `share_target` (iOS kann es nicht) · Topf-Finanzierung direkt aus dem Stapel (nachträglich über das Bearbeiten-Sheet) · Tags im Stapel · Kontostand-Abgleich.
