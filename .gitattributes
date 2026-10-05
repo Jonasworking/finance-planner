@@ -1,0 +1,2 @@
+# Bank export fixtures keep the CRLF line endings of the real files.
+src/lib/__fixtures__/*.csv -text
