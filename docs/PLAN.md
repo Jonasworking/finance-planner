@@ -21,7 +21,7 @@
 - [x] **v1 fertig (2026-09-24)** – Phasen 0–6 abgenommen und in `main`; Production: https://jonas-finanzen.vercel.app
 - [ ] Phase 7 (optional) – Sync
 - [ ] **Phase 8 (v2)** – Bank-Import für CommBank: CSV → Inbox → Wisch-Stapel → Händler-Regeln — Plan freigegeben 2026-10-05 (Abschnitt „Plan v2" ganz unten), vier Teilphasen:
-  - [ ] **8a** – Format prüfen, Schema v2, Dexie-Migration, Backup-Format (keine sichtbare Funktion) — freigegeben 2026-10-05, fertig 2026-10-05 (Branch `phase-8a-bank-schema`), **wartet auf Abnahme**, Notizen unten
+  - [x] **8a** – Format prüfen, Schema v2, Dexie-Migration, Backup-Format (keine sichtbare Funktion) — freigegeben 2026-10-05, fertig 2026-10-05 (Branch `phase-8a-bank-schema`), **abgenommen 2026-10-06 (Backup vorher gespeichert), in `main`**, Notizen unten
   - [ ] **8b** – Import & Inbox (Dateiauswahl, Vorschau, Dedupe gegen manuell Erfasstes, Listen-Ansicht)
   - [ ] **8c** – Wisch-Stapel & Händler-Regeln (Lernen, Auto-Zuordnung mit Vorschau, Regel-Seite)
   - [ ] **8d** – Lohn-Vorschlag beim Wochenabschluss & Feinschliff
@@ -34,7 +34,7 @@
 
 - v1 läuft mit echten Daten in Production (**https://jonas-finanzen.vercel.app**, `main`).
 - **v2 (Bank-Import) ist geplant und freigegeben** – Plan ganz unten („Plan v2"), Phasen 8a–8d.
-- **8a ist fertig und wartet auf Abnahme** (Branch `phase-8a-bank-schema`; Push nach `origin` und Preview-Check stehen noch aus – die Git-Anmeldung war am 2026-10-05 abgelaufen): Schema v2 mit `bankTransactions` + `merchantRules`, erste Dexie-Migration, Backup-Format 2 mit `migrateBackup`-Schritt, CommBank-Parser `lib/bankImport`. Keine sichtbare Funktion.
+- **8a ist abgenommen (2026-10-06) und in `main`** → Production läuft auf Schema v2: `bankTransactions` + `merchantRules`, erste Dexie-Migration, Backup-Format 2 mit `migrateBackup`-Schritt, CommBank-Parser `lib/bankImport`. Keine sichtbare Funktion.
 
 **Offen** (nicht blockierend)
 
@@ -43,7 +43,7 @@
 
 **Als Nächstes**
 
-1. Du: **vor** dem Merge von 8a ein frisches Backup speichern (erste Schema-Migration auf echten Daten). Dann 8a abnehmen → `main` per Fast-Forward → Production; ein paar Tage laufen lassen.
+1. Production ein paar Tage auf Schema v2 laufen lassen. Ein zweiter, noch offener Tab mit der alten Version muss einmal von Hand neu geladen werden.
 2. Danach 8b freigeben (Import & Inbox). Dafür hilfreich: ein zweiter NetBank-Export, der sich mit dem ersten überschneidet.
 3. Die echte Beispieldatei (`~/Downloads/CSVData.csv`) wird nie committet; Tests nutzen `src/lib/__fixtures__/commbank-sample.csv` (erfundene Händler und Beträge, gleiche Struktur).
 
