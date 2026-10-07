@@ -56,6 +56,8 @@ function journey(name, viewport, run, options = {}) {
       assert.deepEqual(session.problems, [], 'the browser console must stay clean')
     } catch (error) {
       console.log(`screenshot: ${await saveScreenshot(session.page, name)}`)
+      // What the browser complained about tells a lost request from a real bug.
+      for (const line of [...session.problems, ...session.failedRequests]) console.log(`  ${line}`)
       throw error
     } finally {
       await session.close()

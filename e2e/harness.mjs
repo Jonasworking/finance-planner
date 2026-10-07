@@ -134,8 +134,14 @@ export async function openSession(viewport, { downloadPath } = {}) {
     }
   })
   page.on('pageerror', (error) => problems.push(`pageerror: ${error.message}`))
+  // Not a problem by itself (the offline journey fails requests on purpose), but the first
+  // thing to look at when a journey fails: a start chunk that did not arrive leaves a blank page.
+  const failedRequests = []
+  page.on('requestfailed', (request) =>
+    failedRequests.push(`${request.url()} – ${request.failure()?.errorText ?? 'failed'}`),
+  )
 
-  return { page, problems, close: () => context.close() }
+  return { page, problems, failedRequests, close: () => context.close() }
 }
 
 export async function saveScreenshot(page, name) {
@@ -145,7 +151,19 @@ export async function saveScreenshot(page, name) {
   return file
 }
 
-export const goto = (page, path) => page.goto(baseUrl + path, { waitUntil: 'networkidle0' })
+/**
+ * Opens a path and waits for the network to settle. Against a remote target one lost request for
+ * a start chunk leaves the page blank for good (the entry module never runs) – that is the
+ * network, not the app, so the page is loaded once more before the journey goes on.
+ */
+export async function goto(page, path) {
+  await page.goto(baseUrl + path, { waitUntil: 'networkidle0' })
+  if (!process.env.E2E_BASE_URL) return
+  const booted = await page.evaluate(() => document.getElementById('root')?.childElementCount > 0)
+  if (booted) return
+  console.log(`the app did not start at ${path} (a start chunk failed to load?) – loading again`)
+  await page.reload({ waitUntil: 'networkidle0' })
+}
 
 // ---------- reading the screen ----------
 
@@ -207,6 +225,8 @@ async function waitUntilActionable(page, element) {
   await page
     .waitForFunction(
       (el) => {
+        // Gone (a toast that timed out, a row that was removed): waiting longer cannot help.
+        if (!el.isConnected) throw new Error('detached')
         const rect = el.getBoundingClientRect()
         const key = [rect.x, rect.y, rect.width, rect.height].join()
         el.__e2eStillFrames = el.__e2eRect === key ? (el.__e2eStillFrames ?? 0) + 1 : 0
@@ -222,7 +242,10 @@ async function waitUntilActionable(page, element) {
       { polling: 'raf' },
       element,
     )
-    .catch(async () => {
+    .catch(async (error) => {
+      if (String(error?.message).includes('detached')) {
+        throw new Error('the element disappeared before it could be clicked', { cause: error })
+      }
       // Say what is in the way – "covered by a toast" and "scrolled out of view" need different fixes.
       const report = await element.evaluate((el) => {
         const rect = el.getBoundingClientRect()
