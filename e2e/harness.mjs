@@ -74,6 +74,11 @@ async function startPreview() {
   throw new Error(`vite preview did not come up on port ${PREVIEW_PORT}:\n${output}`)
 }
 
+/** Page loads against `E2E_BASE_URL`; locally the default of 10 s applies. */
+const REMOTE_NAVIGATION_TIMEOUT_MS = 45_000
+/** Waiting for text, sheets and charts against `E2E_BASE_URL` (lazy chunks come over the network). */
+const REMOTE_WAIT_TIMEOUT_MS = 30_000
+
 export async function startSuite() {
   const executablePath = process.env.CHROME_PATH ?? DEFAULT_CHROME
   if (!existsSync(executablePath)) {
@@ -98,7 +103,11 @@ export async function openSession(viewport, { downloadPath } = {}) {
     downloadPath ? { downloadBehavior: { policy: 'allow', downloadPath } } : undefined,
   )
   const page = await context.newPage()
-  page.setDefaultTimeout(10_000)
+  // A remote target (preview, production) answers over the real network – page loads and the
+  // lazy chunks behind a wait get room there, so a slow connection is not a failed journey.
+  const remote = Boolean(process.env.E2E_BASE_URL)
+  page.setDefaultTimeout(remote ? REMOTE_WAIT_TIMEOUT_MS : 10_000)
+  if (remote) page.setDefaultNavigationTimeout(REMOTE_NAVIGATION_TIMEOUT_MS)
   await page.setViewport(viewport)
   await page.emulateTimezone(TIME_ZONE)
   if (process.env.E2E_REDUCED_MOTION === '1') {
