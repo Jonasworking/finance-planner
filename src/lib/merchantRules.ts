@@ -1,9 +1,11 @@
 import { isInInbox } from './bankInbox'
+import { weekEndOf } from './dates'
 import {
   isActive,
   type BankTransaction,
   type Category,
   type Expense,
+  type ISODate,
   type MerchantRule,
   type MerchantRuleAction,
 } from './types'
@@ -217,4 +219,32 @@ export function autoAssignable(
     result.push({ tx, rule })
   }
   return result
+}
+
+/** A credit whose sender was marked as the employer ("Das ist mein Lohn"). */
+export const isIncomeCredit = (tx: BankTransaction, rules: readonly MerchantRule[]): boolean =>
+  isActive(tx) && tx.amountCents > 0 && matchRule(tx.description, rules)?.action === 'income'
+
+export interface IncomeSuggestion {
+  /** Sum of the week's wage credits. */
+  totalCents: number
+  /** The credits themselves, newest first. */
+  credits: BankTransaction[]
+}
+
+/**
+ * What the bank says was earned in a week: the credits of marked employers booked from Monday
+ * to Sunday. Only a suggestion for the income field – closing the week stays the user's step.
+ */
+export function incomeSuggestion(
+  transactions: readonly BankTransaction[],
+  rules: readonly MerchantRule[],
+  weekStart: ISODate,
+): IncomeSuggestion | null {
+  const weekEnd = weekEndOf(weekStart)
+  const credits = transactions
+    .filter((tx) => tx.date >= weekStart && tx.date <= weekEnd && isIncomeCredit(tx, rules))
+    .sort((a, b) => b.date.localeCompare(a.date) || a.id.localeCompare(b.id))
+  if (credits.length === 0) return null
+  return { totalCents: credits.reduce((sum, tx) => sum + tx.amountCents, 0), credits }
 }

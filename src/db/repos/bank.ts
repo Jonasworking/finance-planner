@@ -268,6 +268,62 @@ export function createBankRepo(ctx: RepoContext) {
         await unlearn(tx.description, rule)
       }),
 
+    /**
+     * "Das ist mein Lohn": credits of this sender are suggested as the week's income from now
+     * on. Returns the rule as it was, for `unmarkIncomeSource`.
+     */
+    markIncomeSource: (txId: string): Promise<RuleUndo> =>
+      inLedger(async () => {
+        const tx = await mustGet(txId)
+        if (tx.amountCents <= 0) throw new DomainError('not-open')
+        return learn(tx.description, { action: 'income', categoryId: null })
+      }),
+
+    unmarkIncomeSource: (txId: string, rule: RuleUndo = null): Promise<void> =>
+      inLedger(async () => {
+        const tx = await mustGet(txId)
+        await unlearn(tx.description, rule)
+      }),
+
+    /**
+     * "Zurück in die Inbox" for a line that was dealt with, whatever was done with it: an
+     * assigned line loses its expense, a linked one only its link, an ignored one is open again.
+     * Rules stay as they are – taking one booking back is no statement about the merchant.
+     */
+    backToInbox: (txId: string): Promise<void> =>
+      inLedger(async () => {
+        const tx = await mustGet(txId)
+        if (tx.amountCents >= 0 || tx.status === 'open') throw new DomainError('not-open')
+        if (tx.status === 'assigned') await removeExpenseOf(tx)
+        else await setStatus(tx, 'open', null)
+      }),
+
+    /**
+     * Undo of `backToInbox`: the line is what it was – for an assigned one its own expense
+     * comes back, so nothing is created twice and no rule is touched.
+     */
+    restoreDone: (
+      txId: string,
+      was: { status: Exclude<BankTxStatus, 'open'>; expenseId: string | null },
+    ): Promise<void> =>
+      inLedger(async () => {
+        const tx = await mustGetOpenDebit(txId)
+        if (was.status === 'ignored') {
+          await setStatus(tx, 'ignored', null)
+          return
+        }
+        const expense = was.expenseId === null ? undefined : await db.expenses.get(was.expenseId)
+        if (!expense) throw new DomainError('not-found')
+        const taken = await db.bankTransactions
+          .filter((other) => isActive(other) && other.expenseId === expense.id)
+          .count()
+        if (taken > 0) throw new DomainError('already-linked')
+        if (was.status === 'assigned' && !isActive(expense)) {
+          await writeExpense(ctx, { ...expense, deletedAt: null, updatedAt: clock.now() }, expense)
+        }
+        await setStatus(tx, was.status, expense.id)
+      }),
+
     /** Rules are visible and deletable in the settings; deleting only stops the suggestions. */
     removeRule: (id: string): Promise<void> =>
       inLedger(async () => {

@@ -5,6 +5,8 @@ import {
   categoryUsage,
   displayMerchant,
   displayPattern,
+  incomeSuggestion,
+  isIncomeCredit,
   learnRule,
   matchRule,
   merchantRuleId,
@@ -237,5 +239,58 @@ describe('autoAssignable', () => {
     expect(autoAssignable([done, credit], [rule], categories)).toEqual([])
     expect(autoAssignable([woolworths], [rule], [])).toEqual([])
     expect(autoAssignable([woolworths], [{ ...rule, categoryId: null }], categories)).toEqual([])
+  })
+})
+
+describe('incomeSuggestion', () => {
+  const wage = 'Fast Transfer From ACME FARMS PTY LTD CREDIT TO ACCOUNT PAYMENT WAGES'
+  const own = 'Fast Transfer From Alex Example CREDIT TO ACCOUNT'
+  const rules = [makeRule('acme farms pty', { action: 'income', categoryId: null })]
+
+  it('knows the credits of a marked employer', () => {
+    expect(isIncomeCredit(makeBankTx('2026-09-17', 143_260, { description: wage }), rules)).toBe(
+      true,
+    )
+    expect(isIncomeCredit(makeBankTx('2026-09-17', 143_260, { description: own }), rules)).toBe(
+      false,
+    )
+    expect(isIncomeCredit(makeBankTx('2026-09-17', -143_260, { description: wage }), rules)).toBe(
+      false,
+    )
+    expect(isIncomeCredit(makeBankTx('2026-09-17', 143_260, { description: wage }), [])).toBe(false)
+    expect(
+      isIncomeCredit(makeBankTx('2026-09-17', 1, { description: wage, deletedAt: NOW }), rules),
+    ).toBe(false)
+  })
+
+  it('suggests what was paid from Monday to Sunday of the week', () => {
+    const inWeek = makeBankTx('2026-09-17', 143_260, { id: 'b', description: wage })
+    const lines = [
+      inWeek,
+      makeBankTx('2026-09-13', 100_000, { description: wage }), // Sunday before
+      makeBankTx('2026-09-21', 100_000, { description: wage }), // Monday after
+      makeBankTx('2026-09-16', 50_000, { description: own }),
+      makeBankTx('2026-09-18', -3_764),
+    ]
+    expect(incomeSuggestion(lines, rules, '2026-09-14')).toEqual({
+      totalCents: 143_260,
+      credits: [inWeek],
+    })
+  })
+
+  it('adds up several payments, newest first', () => {
+    const monday = makeBankTx('2026-09-14', 60_000, { id: 'm', description: wage })
+    const sunday = makeBankTx('2026-09-20', 80_000, { id: 's', description: wage })
+    expect(incomeSuggestion([monday, sunday], rules, '2026-09-14')).toEqual({
+      totalCents: 140_000,
+      credits: [sunday, monday],
+    })
+  })
+
+  it('has nothing to say without a marked employer or without a payment in the week', () => {
+    const line = makeBankTx('2026-09-17', 143_260, { description: wage })
+    expect(incomeSuggestion([line], [], '2026-09-14')).toBeNull()
+    expect(incomeSuggestion([line], rules, '2026-09-21')).toBeNull()
+    expect(incomeSuggestion([], rules, '2026-09-14')).toBeNull()
   })
 })

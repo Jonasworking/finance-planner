@@ -1,5 +1,5 @@
 import type { ParsedBankRow } from './bankImport'
-import { addDaysISO, weekStartOf } from './dates'
+import { addDaysISO, weekEndOf, weekStartOf } from './dates'
 import { isActive, type BankTransaction, type Expense, type ISODate, type Week } from './types'
 
 /*
@@ -155,3 +155,19 @@ export function closedWeekFor(
 /** Newest first; lines of one day in a stable order. */
 export const byNewest = (a: BankTransaction, b: BankTransaction): number =>
   b.date.localeCompare(a.date) || a.id.localeCompare(b.id)
+
+/** Debits that were dealt with – what "Erledigt" lists and "Zurück in die Inbox" can bring back. */
+export const isDone = (tx: BankTransaction): boolean =>
+  isActive(tx) && tx.amountCents < 0 && tx.status !== 'open'
+
+/** Lines of the inbox whose purchase fell into this week – they are missing from its spending. */
+export function inboxOfWeek(
+  transactions: readonly BankTransaction[],
+  weekStart: ISODate,
+): BankTransaction[] {
+  const weekEnd = weekEndOf(weekStart)
+  return transactions.filter((tx) => {
+    const day = purchaseDay(tx)
+    return isInInbox(tx) && day >= weekStart && day <= weekEnd
+  })
+}

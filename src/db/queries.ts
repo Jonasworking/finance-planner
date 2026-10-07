@@ -1,7 +1,21 @@
 import type { ParsedBankRow } from '@/lib/bankImport'
-import { byNewest, closedWeekFor, isInInbox, matchCandidates, planImport } from '@/lib/bankInbox'
+import {
+  byNewest,
+  closedWeekFor,
+  inboxOfWeek,
+  isDone,
+  isInInbox,
+  matchCandidates,
+  planImport,
+} from '@/lib/bankInbox'
 import { weekEndOf, weekStartOf } from '@/lib/dates'
-import { autoAssignable, categoryUsage, suggestCategories } from '@/lib/merchantRules'
+import {
+  autoAssignable,
+  categoryUsage,
+  incomeSuggestion,
+  isIncomeCredit,
+  suggestCategories,
+} from '@/lib/merchantRules'
 import { potBalance, potBalances } from '@/lib/savings'
 import { collectTags } from '@/lib/tags'
 import {
@@ -263,12 +277,14 @@ export async function loadPots(db: FinanceDB) {
 
 /** Data for "Woche abschließen" / "Woche bearbeiten" of one week. */
 export async function loadCloseWeek(db: FinanceDB, weekStart: ISODate) {
-  const [settings, week, weeks, budgets, expenses] = await Promise.all([
+  const [settings, week, weeks, budgets, expenses, bankTransactions, rules] = await Promise.all([
     db.settings.get(SETTINGS_ID),
     db.weeks.get(weekStart),
     db.weeks.toArray(),
     db.budgets.toArray(),
     db.expenses.where('date').between(weekStart, weekEndOf(weekStart), true, true).toArray(),
+    db.bankTransactions.toArray(),
+    db.merchantRules.toArray(),
   ])
   return {
     settings: settings ?? null,
@@ -276,6 +292,10 @@ export async function loadCloseWeek(db: FinanceDB, weekStart: ISODate) {
     weeks: weeks.filter(isActive),
     budgets,
     expenses: expenses.filter(isActive),
+    /** What the bank says was earned this week (credits of marked employers), if anything. */
+    bankIncome: incomeSuggestion(bankTransactions, rules, weekStart),
+    /** Bank lines of this week that still wait in the inbox – missing from the spending. */
+    inboxCount: inboxOfWeek(bankTransactions, weekStart).length,
   }
 }
 
@@ -381,6 +401,16 @@ export async function loadInbox(db: FinanceDB) {
     auto: autoAssignable(inbox, rules, selectable),
     categories: selectable,
     allCategories: categories,
+    /** Debits that were dealt with, newest first – "Erledigt" with "Zurück in die Inbox". */
+    doneLines: active.filter(isDone).sort(byNewest),
+    /** Credits, newest first, with whether their sender is marked as the employer. */
+    credits: active
+      .filter((tx) => tx.amountCents > 0)
+      .sort(byNewest)
+      .map((tx) => ({ tx, isIncome: isIncomeCredit(tx, rules) })),
+    expenseCategoryIds: Object.fromEntries(
+      expenses.map((expense) => [expense.id, expense.categoryId]),
+    ),
     done: {
       assigned: debits.filter((tx) => tx.status === 'assigned').length,
       matched: debits.filter((tx) => tx.status === 'matched').length,

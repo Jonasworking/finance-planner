@@ -477,3 +477,138 @@ describe('bank.import learns from hand-entered matches', () => {
     ])
   })
 })
+
+describe('income source', () => {
+  beforeEach(async () => {
+    await repos.bank.import(fileRows())
+  })
+
+  it('marks the sender of a credit as the employer and takes it back', async () => {
+    const [wage] = await byText('Fast Transfer From ACME')
+    const before = await repos.bank.markIncomeSource(wage!.id)
+    expect(before).toBeNull()
+    expect(await db.merchantRules.get('rule:acme farms pty')).toMatchObject({
+      action: 'income',
+      categoryId: null,
+      deletedAt: null,
+    })
+    // the credit itself is untouched – it never becomes an expense
+    expect(await db.bankTransactions.get(wage!.id)).toMatchObject({
+      status: 'open',
+      expenseId: null,
+    })
+
+    await repos.bank.unmarkIncomeSource(wage!.id, before)
+    expect((await db.merchantRules.get('rule:acme farms pty'))!.deletedAt).not.toBeNull()
+  })
+
+  it('only accepts credits', async () => {
+    const [tavern] = await byText('Seaside Tavern')
+    await expectCode(repos.bank.markIncomeSource(tavern!.id), 'not-open')
+    await expectCode(repos.bank.markIncomeSource('bank:nope:0'), 'not-found')
+  })
+})
+
+describe('bank.backToInbox', () => {
+  beforeEach(async () => {
+    await repos.bank.import(fileRows())
+  })
+
+  it('brings an assigned line back and removes its expense, also in a closed week', async () => {
+    await repos.weeks.close(WEEK, { incomeCents: 200_000 })
+    const [tavern] = await byText('Seaside Tavern')
+    await repos.bank.assign(tavern!.id, GROCERIES)
+    expect(await primaryBalance()).toBe(198_320)
+    const rule = await db.merchantRules.get('rule:seaside tavern fremantle')
+
+    await repos.bank.backToInbox(tavern!.id)
+    expect(await db.bankTransactions.get(tavern!.id)).toMatchObject({
+      status: 'open',
+      expenseId: null,
+    })
+    expect((await db.expenses.toArray()).every((expense) => expense.deletedAt !== null)).toBe(true)
+    expect(await primaryBalance()).toBe(200_000)
+    // one booking taken back says nothing about the merchant
+    expect(await db.merchantRules.get('rule:seaside tavern fremantle')).toEqual(rule)
+  })
+
+  it('brings back a line whose expense was deleted in the meantime', async () => {
+    const [tavern] = await byText('Seaside Tavern')
+    const { expense } = await repos.bank.assign(tavern!.id, GROCERIES)
+    await repos.expenses.remove(expense.id)
+    await repos.bank.backToInbox(tavern!.id)
+    expect((await db.bankTransactions.get(tavern!.id))!.status).toBe('open')
+  })
+
+  it('brings back linked and ignored lines without touching any expense', async () => {
+    const manual = await repos.expenses.add({
+      date: '2026-09-19',
+      amountCents: 1_700,
+      categoryId: GROCERIES,
+    })
+    const [tavern] = await byText('Seaside Tavern')
+    const [hostel] = await byText('HARBOUR HOSTEL')
+    await repos.bank.linkExisting(tavern!.id, manual.id)
+    await repos.bank.ignore(hostel!.id)
+
+    await repos.bank.backToInbox(tavern!.id)
+    await repos.bank.backToInbox(hostel!.id)
+    expect((await stored()).filter((tx) => tx.status === 'matched')).toEqual([])
+    expect((await db.bankTransactions.get(hostel!.id))!.status).toBe('open')
+    expect((await db.expenses.get(manual.id))!.deletedAt).toBeNull()
+  })
+
+  it('refuses open lines, credits and unknown lines', async () => {
+    const [tavern] = await byText('Seaside Tavern')
+    const [wage] = await byText('Fast Transfer From ACME')
+    await expectCode(repos.bank.backToInbox(tavern!.id), 'not-open')
+    await expectCode(repos.bank.backToInbox(wage!.id), 'not-open')
+    await expectCode(repos.bank.backToInbox('bank:nope:0'), 'not-found')
+  })
+
+  it('undo puts a line back exactly as it was, with its own expense', async () => {
+    await repos.weeks.close(WEEK, { incomeCents: 200_000 })
+    const [tavern] = await byText('Seaside Tavern')
+    const [hostel] = await byText('HARBOUR HOSTEL')
+    const { expense } = await repos.bank.assign(tavern!.id, GROCERIES)
+    await repos.bank.ignore(hostel!.id)
+    const rules = await db.merchantRules.toArray()
+
+    await repos.bank.backToInbox(tavern!.id)
+    await repos.bank.backToInbox(hostel!.id)
+    await repos.bank.restoreDone(tavern!.id, { status: 'assigned', expenseId: expense.id })
+    await repos.bank.restoreDone(hostel!.id, { status: 'ignored', expenseId: null })
+
+    expect(await db.bankTransactions.get(tavern!.id)).toMatchObject({
+      status: 'assigned',
+      expenseId: expense.id,
+    })
+    expect((await db.expenses.get(expense.id))!.deletedAt).toBeNull()
+    expect(await db.expenses.count()).toBe(1) // the same expense, not a second one
+    expect(await primaryBalance()).toBe(198_320)
+    expect((await db.bankTransactions.get(hostel!.id))!.status).toBe('ignored')
+    expect(await db.merchantRules.toArray()).toEqual(rules)
+
+    await expectCode(
+      repos.bank.restoreDone(tavern!.id, { status: 'assigned', expenseId: expense.id }),
+      'not-open',
+    )
+  })
+
+  it('undo refuses an expense that is gone or belongs to another line', async () => {
+    const [first, second] = await byText('QUICK VENDING')
+    const { expense } = await repos.bank.assign(first!.id, GROCERIES)
+    await expectCode(
+      repos.bank.restoreDone(second!.id, { status: 'matched', expenseId: expense.id }),
+      'already-linked',
+    )
+    await expectCode(
+      repos.bank.restoreDone(second!.id, { status: 'assigned', expenseId: 'nope' }),
+      'not-found',
+    )
+    await expectCode(
+      repos.bank.restoreDone(second!.id, { status: 'matched', expenseId: null }),
+      'not-found',
+    )
+  })
+})

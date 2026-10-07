@@ -5,6 +5,8 @@ import {
   bankNote,
   byNewest,
   closedWeekFor,
+  inboxOfWeek,
+  isDone,
   isInInbox,
   matchCandidates,
   planImport,
@@ -237,5 +239,36 @@ describe('byNewest', () => {
       makeBankTx('2026-09-17', -1, { id: 'a' }),
     ]
     expect(rows.sort(byNewest).map((tx) => tx.id)).toEqual(['c', 'a', 'b'])
+  })
+})
+
+describe('isDone / inboxOfWeek', () => {
+  it('counts dealt-with debits as done', () => {
+    expect(isDone(makeBankTx('2026-09-18', -500, { status: 'assigned', expenseId: 'e' }))).toBe(
+      true,
+    )
+    expect(isDone(makeBankTx('2026-09-18', -500, { status: 'ignored' }))).toBe(true)
+    expect(isDone(makeBankTx('2026-09-18', -500))).toBe(false)
+    expect(isDone(makeBankTx('2026-09-18', 500, { status: 'ignored' }))).toBe(false)
+    expect(isDone(makeBankTx('2026-09-18', -500, { status: 'ignored', deletedAt: NOW }))).toBe(
+      false,
+    )
+  })
+
+  it('finds the inbox lines whose purchase fell into a week', () => {
+    const lines = [
+      makeBankTx('2026-09-14', -1, { id: 'monday' }),
+      makeBankTx('2026-09-20', -1, { id: 'sunday' }),
+      makeBankTx('2026-09-21', -1, { id: 'next-week' }),
+      makeBankTx('2026-09-22', -1, { id: 'bought-in-week', valueDate: '2026-09-19' }),
+      makeBankTx('2026-09-15', -1, { id: 'bought-before', valueDate: '2026-09-12' }),
+      makeBankTx('2026-09-16', -1, { id: 'done', status: 'ignored' }),
+      makeBankTx('2026-09-16', 1, { id: 'credit' }),
+    ]
+    expect(inboxOfWeek(lines, '2026-09-14').map((tx) => tx.id)).toEqual([
+      'monday',
+      'sunday',
+      'bought-in-week',
+    ])
   })
 })
