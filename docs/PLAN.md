@@ -22,7 +22,7 @@
 - [ ] Phase 7 (optional) – Sync
 - [ ] **Phase 8 (v2)** – Bank-Import für CommBank: CSV → Inbox → Wisch-Stapel → Händler-Regeln — Plan freigegeben 2026-10-05 (Abschnitt „Plan v2" ganz unten), vier Teilphasen:
   - [x] **8a** – Format prüfen, Schema v2, Dexie-Migration, Backup-Format (keine sichtbare Funktion) — freigegeben 2026-10-05, fertig 2026-10-05 (Branch `phase-8a-bank-schema`), **abgenommen 2026-10-06 (Backup vorher gespeichert), in `main`**, Notizen unten
-  - [ ] **8b** – Import & Inbox (Dateiauswahl, Vorschau, Dedupe gegen manuell Erfasstes, Listen-Ansicht) — freigegeben 2026-10-07, fertig 2026-10-07 (Branch `phase-8b-bank-import`), **wartet auf Abnahme**, Notizen unten
+  - [x] **8b** – Import & Inbox (Dateiauswahl, Vorschau, Dedupe gegen manuell Erfasstes, Listen-Ansicht) — freigegeben 2026-10-07, fertig 2026-10-07 (Branch `phase-8b-bank-import`), **abgenommen 2026-10-07 (am iPhone in der installierten Preview getestet, CSV aus „Dateien" wählbar; Backup vorher gespeichert), in `main`**, Notizen unten
   - [ ] **8c** – Wisch-Stapel & Händler-Regeln (Lernen, Auto-Zuordnung mit Vorschau, Regel-Seite)
   - [ ] **8d** – Lohn-Vorschlag beim Wochenabschluss & Feinschliff
 
@@ -33,20 +33,19 @@
 **Wo wir stehen**
 
 - Production (**https://jonas-finanzen.vercel.app**, `main`) läuft seit 2026-10-06 auf Schema v2; die Migration ist am iPhone bestätigt („Daten prüfen" grün).
-- **8b ist fertig und wartet auf Abnahme** (Branch `phase-8b-bank-import`): Route `/inbox` mit CSV-Import, Vorschau, Erkennung von Hand erfasster Ausgaben, Zuordnen per Kategorie-Auswahl, Home-Karte und Zähler in „Mehr"/Sidebar.
+- **8b ist abgenommen (2026-10-07) und in `main`**: Route `/inbox` mit CSV-Import, Vorschau, Erkennung von Hand erfasster Ausgaben, Zuordnen per Kategorie-Auswahl, Home-Karte und Zähler in „Mehr"/Sidebar.
 - Plan v2 steht ganz unten („Plan v2"), offen sind 8c (Wisch-Stapel, Händler-Regeln) und 8d (Lohn-Vorschlag).
 
 **Offen** (nicht blockierend)
 
-- Am iPhone zu prüfen: Lässt sich die NetBank-CSV in der installierten App über „CSV importieren" aus „Dateien" wählen?
 - Ignorierte und verknüpfte Buchungen lassen sich nur direkt per „Rückgängig" im Toast zurückholen; eine Liste „Erledigt" mit „Zurück in die Inbox" ist für 8d vorgesehen.
 - Smoke-Suite gegen entfernte Adressen: mit den längeren Wartezeiten 14/14 und 13/14 – im Fehlschlag erschien das Onboarding auch nach 30 s nicht (Ursache nicht untersucht).
 - Aus v1 unverändert: Ausgaben-Sheet mit offenen Details höher als der Bildschirm · `AnimatedNumber` nicht gebaut · Ausgabe aus archiviertem Topf erst nach „Wiederherstellen" änderbar · `forced-colors`-Textur für Charts.
 
 **Als Nächstes**
 
-1. Du: 8b auf der Preview bzw. am iPhone ansehen (echten Export importieren – Preview-Adressen haben eine eigene, leere Datenbank), abnehmen → `main`.
-2. Danach 8c freigeben. Die echten Händlertexte für die Normalisierung stehen in den 8a-Notizen.
+1. 8c (Wisch-Stapel, Händler-Regeln) ist freigegeben – Branch `phase-8c-swipe-stack`. Zuerst: warum erschien das Onboarding im Smoke-Lauf gegen Production einmal nach 30 s nicht?
+2. Die echten Händlertexte für die Normalisierung stehen in den 8a-Notizen.
 3. Echte Kontoauszüge (`~/Downloads/CSVData*.csv`) werden nie committet.
 
 ## Phase 0 – Ergebnis & Abweichungen vom Plan
@@ -227,7 +226,7 @@
 ## Phase 8b – Ergebnis & Abweichungen vom Plan
 
 **Geprüft:** typecheck · lint · build grün · **1036 Testläufe** (518 Tests × 2 Zeitzonen; Coverage `src/lib` 99,9 % Zeilen / 100 % Funktionen / 96 % Branches) · `npm run test:e2e` **15 Journeys grün**, auch mit `E2E_REDUCED_MOTION=1`; neu: „Bank-Import" · initiales JS 239 KB gzip (+2 KB: Home-Karte, Zähler; Parser und Inbox-Seite liegen im Lazy-Chunk) · Sichtprüfung im echten Chrome 390×844 und 1440×900 (dunkel): leere Inbox, Vorschau, Liste, Zuordnen-Sheet, „Mehr", Home.
-**DoD:** derselbe Export zweimal → 0 neue Zeilen, überlappende Exporte → nur die neuen, auch bei parallelem Doppelaufruf (Repo-Tests) · Gutschriften erzeugen nie eine Ausgabe (Repo lehnt ab, Ledger prüft) · eindeutig passende manuelle Ausgabe wird verknüpft statt verdoppelt; zwei gleiche Zeilen für eine Ausgabe → Entscheidung beim Nutzer · Zuordnung in abgeschlossener Woche zieht die `auto:`-Buchung nach, Rückgängig stellt den alten Stand her · Ledger-Check nach jedem Repo-Test. **Offen bis zur Abnahme am Gerät:** Datei aus „Dateien" in der installierten App wählbar.
+**DoD:** derselbe Export zweimal → 0 neue Zeilen, überlappende Exporte → nur die neuen, auch bei parallelem Doppelaufruf (Repo-Tests) · Gutschriften erzeugen nie eine Ausgabe (Repo lehnt ab, Ledger prüft) · eindeutig passende manuelle Ausgabe wird verknüpft statt verdoppelt; zwei gleiche Zeilen für eine Ausgabe → Entscheidung beim Nutzer · Zuordnung in abgeschlossener Woche zieht die `auto:`-Buchung nach, Rückgängig stellt den alten Stand her · Ledger-Check nach jedem Repo-Test. Am Gerät bestätigt (2026-10-07): Datei aus „Dateien" in der installierten App wählbar.
 
 - **Vergleich zweier echter Exporte (2026-10-07):** CommBank hat **keinen Buchungstext geändert** – alle 38 gemeinsamen Zeilen sind zeichengleich, auch der Kontostand. Aber: jeder Export hat genau **40 Zeilen und schneidet mitten im Tag ab** (die 8a-Annahme „immer ganze Tage" war falsch).
 - **Dedupe-ID bleibt (Entscheidung 2026-10-07):** Datum + Betrag + Text + Zähler identischer Zeilen, ohne Kontostand. Der Zähler läuft von der neuesten Zeile abwärts, deshalb stimmt die Anzahl auch, wenn unten abgeschnitten wird oder oben eine identische Buchung dazukommt. Restlücke: zwei identische Buchungen eines Tages, die nie gemeinsam in einer Datei stehen. Dafür warnt die Vorschau, wenn eine Datei **nicht an den letzten Import anschließt** („dazwischen können Buchungen fehlen").
