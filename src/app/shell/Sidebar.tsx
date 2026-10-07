@@ -5,8 +5,9 @@ import { cn } from '@/shared/lib/utils'
 import { useUiStore } from '@/shared/stores/uiStore'
 import { Button } from '@/shared/ui/button'
 import { primaryNav, secondaryNav, type NavItem } from './navItems'
+import { useInboxCount } from './useInboxCount'
 
-function SidebarLink({ item }: { item: NavItem }) {
+function SidebarLink({ item, count = 0 }: { item: NavItem; count?: number }) {
   const Icon = item.icon
   return (
     <NavLink
@@ -22,12 +23,21 @@ function SidebarLink({ item }: { item: NavItem }) {
     >
       <Icon className="size-5" strokeWidth={1.75} aria-hidden />
       {item.label}
+      {count > 0 ? (
+        <span
+          aria-label={`${count} offen`}
+          className="ml-auto rounded-full bg-income-soft px-2 py-0.5 font-semibold text-income tabular-nums"
+        >
+          {count}
+        </span>
+      ) : null}
     </NavLink>
   )
 }
 
 export function Sidebar({ className }: { className?: string }) {
   const setQuickAddOpen = useUiStore((state) => state.setQuickAddOpen)
+  const inboxCount = useInboxCount()
 
   return (
     <aside className={cn('flex-col gap-6 border-r bg-surface-1 p-4', className)}>
@@ -53,7 +63,7 @@ export function Sidebar({ className }: { className?: string }) {
       <nav aria-label="Weitere Bereiche" className="flex flex-col gap-1">
         <p className="px-3 pb-1 text-caption text-fg-subtle uppercase">Mehr</p>
         {secondaryNav.map((item) => (
-          <SidebarLink key={item.to} item={item} />
+          <SidebarLink key={item.to} item={item} count={item.badge === 'inbox' ? inboxCount : 0} />
         ))}
       </nav>
 

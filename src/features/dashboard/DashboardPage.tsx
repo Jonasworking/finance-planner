@@ -1,5 +1,6 @@
 import { useLiveQuery } from 'dexie-react-hooks'
 import { db, loadDashboard } from '@/db'
+import { InboxCard } from '@/features/bank'
 import { InsightCards, useDismissedInsights } from '@/features/insights'
 import { ReadinessCard } from '@/features/setup'
 import { TasksCard } from '@/features/tasks'
@@ -126,6 +127,7 @@ export function DashboardPage() {
             today={today}
           />
           <NextStepCard step={step} today={today} />
+          {data.inboxCount > 0 ? <InboxCard count={data.inboxCount} /> : null}
           {insights.length > 0 ? (
             <InsightCards
               insights={insights}

@@ -4,7 +4,7 @@
  * Every journey starts with an empty database and a pinned clock (see harness.mjs).
  */
 import assert from 'node:assert/strict'
-import { mkdtempSync, readFileSync } from 'node:fs'
+import { mkdtempSync, readFileSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { after, before, test } from 'node:test'
@@ -554,6 +554,136 @@ journey(
     await page.keyboard.up(' ')
   },
   { downloadPath: DOWNLOADS },
+)
+
+// Invented bookings in the layout of a CommBank export (no header, newest first, CRLF), dated
+// around the pinned clock (Sunday 2026-09-20). The second file overlaps the first by three lines.
+const bankFile = (name, lines) => {
+  const path = join(DOWNLOADS, name)
+  writeFileSync(path, lines.join('\r\n') + '\r\n')
+  return path
+}
+const COLES = '20/09/2026,"-12.00","COLES 0456 FREMANTLE AU","+2300.00"'
+const TAVERN = '19/09/2026,"-16.80","Seaside Tavern Fremantle AU","+2312.00"'
+const WOOLWORTHS =
+  '18/09/2026,"-37.64","WOOLWORTHS 1234 MIDLAND WA AUS Card xx1234 Value Date: 16/09/2026","+2328.80"'
+
+/** The numbers of the import preview, by their label. */
+const previewCounts = (page) =>
+  page.evaluate(() =>
+    Object.fromEntries(
+      [...document.querySelectorAll('[role="dialog"] dt')].map((term) => [
+        term.textContent,
+        Number(term.nextElementSibling.textContent),
+      ]),
+    ),
+  )
+
+async function pickBankFile(page, path) {
+  const input = await page.$('input[type="file"]')
+  await input.uploadFile(path)
+  await waitForModals(page, 1)
+  await waitForText(page, 'Neu in der Inbox')
+}
+
+journey(
+  'a bank export lands in the inbox once, however often it is imported',
+  PHONE,
+  async (page) => {
+    const first = bankFile('export-1.csv', [
+      COLES,
+      TAVERN,
+      WOOLWORTHS,
+      '17/09/2026,"+1432.60","Fast Transfer From ACME FARMS PTY LTD CREDIT TO ACCOUNT","+2366.44"',
+      '16/09/2026,"-29.00","TELCO PREPAID RECHARGE MELBOURNE AUS Card xx1234 Value Date: 14/09/2026","+933.84"',
+      '15/09/2026,"-9.25","4321-EXPRESS FUEL STOP PERTH AU","+962.84"',
+    ])
+    const second = bankFile('export-2.csv', [
+      '20/09/2026,"-4.50","SMP*Corner Cafe Perth06 AU","+2274.50"',
+      '20/09/2026,"-21.00","KMART 1001 PERTH AU","+2279.00"',
+      COLES,
+      TAVERN,
+      WOOLWORTHS,
+    ])
+
+    // entered by hand before the bank knew about it
+    await onboard(page)
+    await clickText(page, 'button', 'Ausgabe erfassen')
+    await fillQuickAdd(page, ['1', '2'], 'Lebensmittel')
+
+    await goto(page, '/inbox')
+    await waitForText(page, 'Noch nichts importiert')
+    await assertFitsViewport(page, 'inbox before the first import')
+
+    // the preview says what will happen – the hand-entered expense is recognised
+    await pickBankFile(page, first)
+    assert.deepEqual(await previewCounts(page), {
+      'Neu in der Inbox': 4,
+      'Schon von Hand erfasst': 1,
+      'Bereits importiert': 0,
+      Gutschriften: 1,
+    })
+    await assertFitsViewport(page, 'import preview')
+    await clickText(page, '[role="dialog"] button', 'Importieren', { exact: true })
+    await waitForModals(page, 0)
+    await waitForText(page, '4 Buchungen offen')
+    await assertFitsViewport(page, 'inbox with bookings')
+    assert.equal(await has(page, 'Fast Transfer From'), false, 'credits stay out of the inbox')
+
+    // nothing became an expense, and nothing was doubled
+    await goto(page, '/expenses')
+    await waitForExpenseRows(page, 1)
+
+    // the same export again: nothing new
+    await goto(page, '/inbox')
+    await waitForText(page, '4 Buchungen offen')
+    await pickBankFile(page, first)
+    assert.deepEqual(await previewCounts(page), {
+      'Neu in der Inbox': 0,
+      'Schon von Hand erfasst': 0,
+      'Bereits importiert': 6,
+      Gutschriften: 0,
+    })
+    await waitForText(page, 'Nichts Neues')
+    await page.keyboard.press('Escape')
+    await waitForModals(page, 0)
+
+    // an overlapping export: only its two new bookings come in
+    await pickBankFile(page, second)
+    assert.deepEqual(await previewCounts(page), {
+      'Neu in der Inbox': 2,
+      'Schon von Hand erfasst': 0,
+      'Bereits importiert': 3,
+      Gutschriften: 0,
+    })
+    await clickText(page, '[role="dialog"] button', 'Importieren', { exact: true })
+    await waitForModals(page, 0)
+    await waitForText(page, '6 Buchungen offen')
+
+    // a booking becomes an expense by picking its category – and comes back with undo
+    await clickText(page, 'main button', 'Seaside Tavern')
+    await waitForModals(page, 1)
+    await waitForText(page, 'Buchung zuordnen')
+    await assertFitsViewport(page, 'assign sheet')
+    await clickText(page, '[role="dialog"] [role="radio"]', 'Essen gehen')
+    await waitForModals(page, 0)
+    await waitForText(page, '5 Buchungen offen')
+    await clickToastAction(page, 'Seaside Tavern', 'Rückgängig')
+    await waitForText(page, '6 Buchungen offen')
+
+    await clickText(page, 'main button', 'Seaside Tavern')
+    await waitForModals(page, 1)
+    await clickText(page, '[role="dialog"] [role="radio"]', 'Essen gehen')
+    await waitForModals(page, 0)
+    await waitForText(page, '5 Buchungen offen')
+    await goto(page, '/expenses')
+    await waitForExpenseRows(page, 2)
+
+    // the home screen says what is waiting
+    await goto(page, '/')
+    await waitForText(page, '5 Buchungen in der Inbox')
+    await assertFitsViewport(page, 'dashboard with inbox card')
+  },
 )
 
 journey('desktop layout keeps every card inside the window', DESKTOP, async (page) => {

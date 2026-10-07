@@ -4,6 +4,7 @@ import {
   FolderCog,
   Gauge,
   House,
+  Inbox,
   ListChecks,
   PiggyBank,
   ReceiptText,
@@ -19,6 +20,8 @@ export interface NavItem {
   /** Match the path exactly (needed for "/"). */
   end?: boolean
   description?: string
+  /** Shows the number of bank lines waiting in the inbox. */
+  badge?: 'inbox'
 }
 
 /** Bottom tabs on mobile (split around the "+" button) and first sidebar group on desktop. */
@@ -31,6 +34,13 @@ export const primaryNav: NavItem[] = [
 
 /** "Mehr" page on mobile, second sidebar group on desktop. */
 export const secondaryNav: NavItem[] = [
+  {
+    to: '/inbox',
+    label: 'Inbox',
+    icon: Inbox,
+    description: 'Bank-Export zuordnen',
+    badge: 'inbox',
+  },
   {
     to: '/recurring',
     label: 'Daueraufträge',

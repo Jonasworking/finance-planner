@@ -18,7 +18,7 @@ import { cn } from '@/shared/lib/utils'
 import { spring } from '@/shared/motion'
 import { Button } from '@/shared/ui/button'
 import { Input } from '@/shared/ui/input'
-import { CategoryGrid } from './CategoryGrid'
+import { CategoryGrid } from '@/shared/components/CategoryGrid'
 
 export interface ExpenseFormValues {
   /** Raw numpad text, e.g. '12,5'. */

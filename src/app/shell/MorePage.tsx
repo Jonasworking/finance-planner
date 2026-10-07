@@ -3,13 +3,15 @@ import { Link } from 'react-router'
 import { GlassCard } from '@/shared/components/GlassCard'
 import { Page } from '@/shared/components/Page'
 import { secondaryNav } from './navItems'
+import { useInboxCount } from './useInboxCount'
 
 /** Mobile hub for everything that does not fit into the bottom tabs. */
 export function MorePage() {
+  const inboxCount = useInboxCount()
   return (
     <Page title="Mehr" hideMoreLink>
       <GlassCard padded={false} className="divide-y divide-border overflow-hidden">
-        {secondaryNav.map(({ to, label, description, icon: Icon }) => (
+        {secondaryNav.map(({ to, label, description, icon: Icon, badge }) => (
           <Link
             key={to}
             to={to}
@@ -24,6 +26,14 @@ export function MorePage() {
                 <span className="block truncate text-label text-fg-muted">{description}</span>
               ) : null}
             </span>
+            {badge === 'inbox' && inboxCount > 0 ? (
+              <span
+                aria-label={`${inboxCount} offen`}
+                className="rounded-full bg-income-soft px-2 py-0.5 text-label font-semibold text-income tabular-nums"
+              >
+                {inboxCount}
+              </span>
+            ) : null}
             <ChevronRight className="size-5 text-fg-subtle" aria-hidden />
           </Link>
         ))}

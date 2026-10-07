@@ -11,7 +11,7 @@ import { cn } from '@/shared/lib/utils'
 import { Button } from '@/shared/ui/button'
 import { Input } from '@/shared/ui/input'
 import { Switch } from '@/shared/ui/switch'
-import { CategoryGrid } from './CategoryGrid'
+import { CategoryGrid } from '@/shared/components/CategoryGrid'
 
 const INTERVALS: { value: RecurrenceInterval; label: string }[] = [
   { value: 'weekly', label: 'Wöchentlich' },

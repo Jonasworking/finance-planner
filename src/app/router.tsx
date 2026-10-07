@@ -41,6 +41,7 @@ const TasksPage = lazyPage('Tasks', () => import('@/features/tasks/pages').then(
 const WhatIfPage = lazyPage('Was-wäre-wenn', () =>
   import('@/features/whatif').then((m) => m.WhatIfPage),
 )
+const InboxPage = lazyPage('Inbox', () => import('@/features/bank/pages').then((m) => m.InboxPage))
 const SettingsPage = lazyPage('Einstellungen', () =>
   import('@/features/settings/pages').then((m) => m.SettingsPage),
 )
@@ -58,6 +59,7 @@ export const router = createBrowserRouter([
       { path: 'pots/:potId', Component: PotDetailPage },
       { path: 'analytics', Component: AnalyticsPage },
       { path: 'budget', Component: BudgetPage },
+      { path: 'inbox', Component: InboxPage },
       { path: 'tasks', Component: TasksPage },
       { path: 'what-if', Component: WhatIfPage },
       { path: 'settings', Component: SettingsPage },
