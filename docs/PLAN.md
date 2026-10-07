@@ -23,7 +23,7 @@
 - [ ] **Phase 8 (v2)** – Bank-Import für CommBank: CSV → Inbox → Wisch-Stapel → Händler-Regeln — Plan freigegeben 2026-10-05 (Abschnitt „Plan v2" ganz unten), vier Teilphasen:
   - [x] **8a** – Format prüfen, Schema v2, Dexie-Migration, Backup-Format (keine sichtbare Funktion) — freigegeben 2026-10-05, fertig 2026-10-05 (Branch `phase-8a-bank-schema`), **abgenommen 2026-10-06 (Backup vorher gespeichert), in `main`**, Notizen unten
   - [x] **8b** – Import & Inbox (Dateiauswahl, Vorschau, Dedupe gegen manuell Erfasstes, Listen-Ansicht) — freigegeben 2026-10-07, fertig 2026-10-07 (Branch `phase-8b-bank-import`), **abgenommen 2026-10-07 (am iPhone in der installierten Preview getestet, CSV aus „Dateien" wählbar; Backup vorher gespeichert), in `main`**, Notizen unten
-  - [ ] **8c** – Wisch-Stapel & Händler-Regeln (Lernen, Auto-Zuordnung mit Vorschau, Regel-Seite) — freigegeben 2026-10-07, fertig 2026-10-07 (Branch `phase-8c-swipe-stack`), **wartet auf Abnahme**, Notizen unten
+  - [x] **8c** – Wisch-Stapel & Händler-Regeln (Lernen, Auto-Zuordnung mit Vorschau, Regel-Seite) — freigegeben 2026-10-07, fertig 2026-10-07 (Branch `phase-8c-swipe-stack`), **abgenommen 2026-10-07 (am iPhone getestet, Wisch-Gefühl passt; Backup vorher gespeichert), in `main`**, Notizen unten
   - [ ] **8d** – Lohn-Vorschlag beim Wochenabschluss & Feinschliff
 
 ## Session-Notiz – Stand 2026-10-07
@@ -33,19 +33,18 @@
 **Wo wir stehen**
 
 - Production (**https://jonas-finanzen.vercel.app**, `main`) enthält 8a und 8b: Schema v2, CSV-Import, Inbox als Liste.
-- **8c ist fertig und wartet auf Abnahme** (Branch `phase-8c-swipe-stack`): Wisch-Stapel als Standardansicht der Inbox, Händler-Regeln (lernen bei jeder Zuordnung), „Bekannte Händler" mit Vorschau, Regel-Seite unter Einstellungen → Bank-Import.
+- **8c ist abgenommen (2026-10-07) und in `main`**: Wisch-Stapel als Standardansicht der Inbox, Händler-Regeln (lernen bei jeder Zuordnung), „Bekannte Händler" mit Vorschau, Regel-Seite unter Einstellungen → Bank-Import.
 - Offen aus Plan v2: 8d (Lohn-Vorschlag beim Wochenabschluss, Liste der erledigten Buchungen mit „Zurück in die Inbox").
 
 **Offen** (nicht blockierend)
 
-- **Entscheidung für dich:** Schlägt beim Start ein einziger Request für einen Start-Baustein fehl, bleibt die App dunkel und leer; schlägt ein nachgeladener Teil fehl, erscheint React Routers englische Fehlerseite. Vorschlag: einmal automatisch neu laden, sonst eine deutsche Meldung mit „Neu laden" (kleine Änderung an `index.html` und am Router – nicht ohne Freigabe gebaut).
-- Wisch-Gefühl, Schwellen (110 px bzw. schneller Wisch) und die Aktionsleiste am iPhone ansehen.
+- **Ladefehler (entschieden 2026-10-07: ja):** beim Start einmal automatisch neu laden (mit Sperre gegen Endlosschleife), sonst deutsche Meldung mit „Neu laden" und dem Hinweis, dass die Daten sicher auf dem Gerät liegen – auch statt der englischen Fehlerseite bei anderen unerwarteten Fehlern. Wird mit 8d gebaut.
 - Aus v1 unverändert: Ausgaben-Sheet mit offenen Details höher als der Bildschirm · `AnimatedNumber` nicht gebaut · Ausgabe aus archiviertem Topf erst nach „Wiederherstellen" änderbar · `forced-colors`-Textur für Charts.
 
 **Als Nächstes**
 
-1. Du: 8c auf der Preview bzw. am iPhone ansehen (Preview-Adressen haben eine eigene, leere Datenbank), abnehmen → `main`.
-2. Danach 8d freigeben.
+1. 8d ist freigegeben (Branch `phase-8d-bank-income`): Lohn-Vorschlag beim Wochenabschluss, „Zurück in die Inbox" für erledigte Buchungen, Ladefehler-Behandlung.
+2. Danach ist Plan v2 komplett.
 3. Echte Kontoauszüge (`~/Downloads/CSVData*.csv`) werden nie committet.
 
 ## Phase 0 – Ergebnis & Abweichungen vom Plan
