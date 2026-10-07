@@ -54,7 +54,7 @@ export function createRepos(db: FinanceDB, clock: Clock = systemClock) {
 }
 
 export type Repos = ReturnType<typeof createRepos>
-export type { BankImportOptions } from './bank'
+export type { BankImportOptions, RuleUndo } from './bank'
 export type { Clock } from './context'
 export type { ExpenseInput, ExpensePatch } from './expenses'
 export type { OnboardingInput } from './onboarding'

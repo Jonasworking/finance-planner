@@ -1,6 +1,7 @@
 import type { ParsedBankRow } from '@/lib/bankImport'
 import { byNewest, closedWeekFor, isInInbox, matchCandidates, planImport } from '@/lib/bankInbox'
 import { weekEndOf, weekStartOf } from '@/lib/dates'
+import { autoAssignable, categoryUsage, suggestCategories } from '@/lib/merchantRules'
 import { potBalance, potBalances } from '@/lib/savings'
 import { collectTags } from '@/lib/tags'
 import {
@@ -338,18 +339,30 @@ export async function previewBankImport(
 
 /** Everything the inbox screen shows, in one querier. */
 export async function loadInbox(db: FinanceDB) {
-  const [stored, expenses, categories, weeks] = await Promise.all([
+  const [stored, expenses, categories, weeks, rules] = await Promise.all([
     db.bankTransactions.toArray(),
     db.expenses.toArray(),
     db.categories.toArray(),
     db.weeks.toArray(),
+    db.merchantRules.toArray(),
   ])
+  const selectable = categories
+    .filter((category) => isActive(category) && !category.archived)
+    .sort(bySortOrder)
+  const usage = categoryUsage(expenses)
   const active = stored.filter(isActive)
   const inbox = active.filter(isInInbox).sort(byNewest)
   const linked = linkedExpenseIds(stored)
   const candidates: Record<string, Expense[]> = {}
   const closedWeeks: Record<string, ISODate> = {}
+  const suggestions: Record<string, Category[]> = {}
   for (const tx of inbox) {
+    suggestions[tx.id] = suggestCategories({
+      description: tx.description,
+      rules,
+      usage,
+      categories: selectable,
+    })
     const found = matchCandidates(tx, expenses, linked)
     if (found.length > 0) candidates[tx.id] = found
     const closed = closedWeekFor(tx, weeks)
@@ -362,9 +375,11 @@ export async function loadInbox(db: FinanceDB) {
     candidates,
     /** Inbox lines whose expense would land in an already closed week. */
     closedWeeks,
-    categories: categories
-      .filter((category) => isActive(category) && !category.archived)
-      .sort(bySortOrder),
+    /** Selectable categories per inbox line, most likely first (the first two are the swipe targets). */
+    suggestions,
+    /** Lines of well-known merchants – what "bekannte Händler zuordnen" would do. */
+    auto: autoAssignable(inbox, rules, selectable),
+    categories: selectable,
     allCategories: categories,
     done: {
       assigned: debits.filter((tx) => tx.status === 'assigned').length,
@@ -373,5 +388,19 @@ export async function loadInbox(db: FinanceDB) {
       credits: active.filter((tx) => tx.amountCents > 0).length,
     },
     hasImported: active.length > 0,
+  }
+}
+
+/** The learned merchant rules for the settings, most recently used first. */
+export async function loadMerchantRules(db: FinanceDB) {
+  const [rules, categories] = await Promise.all([
+    db.merchantRules.toArray(),
+    db.categories.toArray(),
+  ])
+  return {
+    rules: rules
+      .filter(isActive)
+      .sort((a, b) => b.lastUsedAt - a.lastUsedAt || a.id.localeCompare(b.id)),
+    categories,
   }
 }

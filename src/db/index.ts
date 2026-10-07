@@ -24,6 +24,7 @@ export {
   loadExpenseFormData,
   loadExpensesOfWeek,
   loadInbox,
+  loadMerchantRules,
   loadPots,
   loadRecurring,
   loadTasks,

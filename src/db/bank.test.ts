@@ -187,13 +187,13 @@ describe('bank.assign', () => {
 
   it('creates the expense on the day of the purchase and takes the line out of the inbox', async () => {
     const [line] = await byText('WOOLWORTHS 5678')
-    const expense = await repos.bank.assign(line!.id, GROCERIES)
+    const { expense } = await repos.bank.assign(line!.id, GROCERIES)
 
     expect(expense).toMatchObject({
       date: '2026-09-12',
       amountCents: 1_105,
       categoryId: GROCERIES,
-      note: 'WOOLWORTHS 5678 PERTH WA AUS',
+      note: 'Woolworths',
       tags: [],
       fundedByPotId: null,
     })
@@ -247,7 +247,7 @@ describe('bank.assign', () => {
     const [tavern] = await byText('Seaside Tavern')
     await expectCode(repos.bank.undoAssign(tavern!.id), 'not-open')
 
-    const expense = await repos.bank.assign(tavern!.id, GROCERIES)
+    const { expense } = await repos.bank.assign(tavern!.id, GROCERIES)
     await repos.expenses.remove(expense.id)
     // the deleted expense keeps its line – it does not come back by itself
     expect((await db.bankTransactions.get(tavern!.id))!.status).toBe('assigned')
@@ -312,5 +312,168 @@ describe('bank.linkExisting / unlink / ignore / reopen', () => {
 
     await repos.bank.reopen(tavern!.id)
     expect((await db.bankTransactions.get(tavern!.id))!.status).toBe('open')
+  })
+})
+
+describe('merchant rules', () => {
+  const rules = () => db.merchantRules.toArray()
+  const rule = (pattern: string) => db.merchantRules.get(`rule:${pattern}`)
+
+  beforeEach(async () => {
+    await repos.bank.import(fileRows())
+  })
+
+  it('learns a rule with every assignment and confirms it with the next branch', async () => {
+    const [first] = await byText('WOOLWORTHS 5678')
+    const [second] = await byText('WOOLWORTHS 1234 MIDLAND WA AUS Card xx1234 Value Date: 16')
+    expect(await rules()).toEqual([])
+
+    await repos.bank.assign(first!.id, GROCERIES)
+    expect(await rules()).toMatchObject([
+      {
+        id: 'rule:woolworths',
+        pattern: 'woolworths',
+        action: 'categorize',
+        categoryId: GROCERIES,
+        confirmations: 1,
+      },
+    ])
+
+    await repos.bank.assign(second!.id, GROCERIES)
+    expect(await rules()).toHaveLength(1)
+    expect(await rule('woolworths')).toMatchObject({ confirmations: 2, lastUsedAt: tick })
+  })
+
+  it('starts over when the merchant gets another category', async () => {
+    const [first] = await byText('WOOLWORTHS 5678')
+    const [second] = await byText('WOOLWORTHS 1234 MIDLAND WA AUS Card xx1234 Value Date: 16')
+    await repos.bank.assign(first!.id, GROCERIES)
+    await repos.bank.assign(second!.id, 'cat:eating-out')
+    expect(await rule('woolworths')).toMatchObject({
+      categoryId: 'cat:eating-out',
+      confirmations: 1,
+    })
+  })
+
+  it('undo restores expense, line and rule – a new rule goes, a changed one comes back', async () => {
+    const [first] = await byText('WOOLWORTHS 5678')
+    const [second] = await byText('WOOLWORTHS 1234 MIDLAND WA AUS Card xx1234 Value Date: 16')
+
+    const one = await repos.bank.assign(first!.id, GROCERIES)
+    expect(one.rule).toBeNull()
+    const before = await rule('woolworths')
+
+    const two = await repos.bank.assign(second!.id, 'cat:eating-out')
+    expect(two.rule).toEqual(before)
+    await repos.bank.undoAssign(second!.id, two.rule)
+    expect(await rule('woolworths')).toEqual(before)
+
+    await repos.bank.undoAssign(first!.id, one.rule)
+    expect((await rule('woolworths'))!.deletedAt).not.toBeNull()
+    expect((await db.expenses.toArray()).every((expense) => expense.deletedAt !== null)).toBe(true)
+    expect((await stored()).filter((tx) => tx.status === 'assigned')).toEqual([])
+
+    // without the hand-back the rule is left alone
+    const again = await repos.bank.assign(first!.id, GROCERIES)
+    expect(again.rule).toMatchObject({ deletedAt: expect.any(Number) })
+    await repos.bank.undoAssign(first!.id)
+    expect(await rule('woolworths')).toMatchObject({ confirmations: 1, deletedAt: null })
+  })
+
+  it('learns "keine Ausgabe" and what a hand-made link says', async () => {
+    const [hostel] = await byText('HARBOUR HOSTEL')
+    const ignored = await repos.bank.ignore(hostel!.id)
+    expect(await rule('harbour hostel perth')).toMatchObject({
+      action: 'ignore',
+      categoryId: null,
+      confirmations: 1,
+    })
+    await repos.bank.reopen(hostel!.id, ignored)
+    expect((await rule('harbour hostel perth'))!.deletedAt).not.toBeNull()
+
+    const manual = await repos.expenses.add({
+      date: '2026-09-19',
+      amountCents: 1_700,
+      categoryId: 'cat:eating-out',
+    })
+    const [tavern] = await byText('Seaside Tavern')
+    const linked = await repos.bank.linkExisting(tavern!.id, manual.id)
+    expect(await rule('seaside tavern fremantle')).toMatchObject({ categoryId: 'cat:eating-out' })
+    await repos.bank.unlink(tavern!.id, linked)
+    expect((await rule('seaside tavern fremantle'))!.deletedAt).not.toBeNull()
+  })
+
+  it('removes and restores a rule', async () => {
+    const [first] = await byText('WOOLWORTHS 5678')
+    await repos.bank.assign(first!.id, GROCERIES)
+
+    await repos.bank.removeRule('rule:woolworths')
+    await repos.bank.removeRule('rule:woolworths') // idempotent
+    expect((await rule('woolworths'))!.deletedAt).not.toBeNull()
+    await repos.bank.restoreRule('rule:woolworths')
+    await repos.bank.restoreRule('rule:woolworths')
+    expect((await rule('woolworths'))!.deletedAt).toBeNull()
+
+    await expectCode(repos.bank.removeRule('rule:nope'), 'not-found')
+    await expectCode(repos.bank.restoreRule('rule:nope'), 'not-found')
+  })
+
+  it('applies known rules in one step and takes all of it back', async () => {
+    const [w1] = await byText('WOOLWORTHS 5678')
+    const [w2] = await byText('WOOLWORTHS 1234 MIDLAND WA AUS Card xx1234 Value Date: 16')
+    const [w3] = await byText('WOOLWORTHS 1234 MIDLAND WA AUS Card xx1234 Value Date: 08')
+    const [hostel] = await byText('HARBOUR HOSTEL')
+    await repos.bank.assign(w1!.id, GROCERIES)
+    await repos.bank.assign(w2!.id, GROCERIES)
+    const before = await rules()
+
+    const done = await repos.bank.applyRules([
+      { txId: w3!.id, target: { action: 'categorize', categoryId: GROCERIES } },
+      { txId: hostel!.id, target: { action: 'ignore', categoryId: null } },
+      {
+        txId: (await byText('Seaside Tavern'))[0]!.id,
+        target: { action: 'income', categoryId: null },
+      },
+    ])
+    expect(done).toEqual([
+      { txId: w3!.id, action: 'categorize' },
+      { txId: hostel!.id, action: 'ignore' },
+    ])
+    expect((await db.bankTransactions.get(w3!.id))!.status).toBe('assigned')
+    expect((await db.bankTransactions.get(hostel!.id))!.status).toBe('ignored')
+    expect(await db.expenses.count()).toBe(3)
+    // a rule acting by itself is no confirmation
+    expect(await rules()).toEqual(before)
+
+    await repos.bank.undoApplyRules(done)
+    expect((await db.bankTransactions.get(w3!.id))!.status).toBe('open')
+    expect((await db.bankTransactions.get(hostel!.id))!.status).toBe('open')
+    expect(
+      (await db.expenses.toArray()).filter((expense) => expense.deletedAt === null),
+    ).toHaveLength(2)
+    expect(await rules()).toEqual(before)
+  })
+
+  it('rolls back the whole batch when one line cannot be applied', async () => {
+    const [w1] = await byText('WOOLWORTHS 5678')
+    await expectCode(
+      repos.bank.applyRules([
+        { txId: w1!.id, target: { action: 'categorize', categoryId: GROCERIES } },
+        { txId: 'bank:nope:0', target: { action: 'ignore', categoryId: null } },
+      ]),
+      'not-found',
+    )
+    expect((await db.bankTransactions.get(w1!.id))!.status).toBe('open')
+    expect(await db.expenses.count()).toBe(0)
+  })
+})
+
+describe('bank.import learns from hand-entered matches', () => {
+  it('creates a rule from the category of the matched expense', async () => {
+    await repos.expenses.add({ date: '2026-09-16', amountCents: 3_764, categoryId: GROCERIES })
+    await repos.bank.import(fileRows())
+    expect(await db.merchantRules.toArray()).toMatchObject([
+      { pattern: 'woolworths', categoryId: GROCERIES, confirmations: 1 },
+    ])
   })
 })
