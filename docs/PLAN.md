@@ -22,30 +22,32 @@
 - [ ] Phase 7 (optional) – Sync
 - [ ] **Phase 8 (v2)** – Bank-Import für CommBank: CSV → Inbox → Wisch-Stapel → Händler-Regeln — Plan freigegeben 2026-10-05 (Abschnitt „Plan v2" ganz unten), vier Teilphasen:
   - [x] **8a** – Format prüfen, Schema v2, Dexie-Migration, Backup-Format (keine sichtbare Funktion) — freigegeben 2026-10-05, fertig 2026-10-05 (Branch `phase-8a-bank-schema`), **abgenommen 2026-10-06 (Backup vorher gespeichert), in `main`**, Notizen unten
-  - [ ] **8b** – Import & Inbox (Dateiauswahl, Vorschau, Dedupe gegen manuell Erfasstes, Listen-Ansicht)
+  - [ ] **8b** – Import & Inbox (Dateiauswahl, Vorschau, Dedupe gegen manuell Erfasstes, Listen-Ansicht) — freigegeben 2026-10-07, fertig 2026-10-07 (Branch `phase-8b-bank-import`), **wartet auf Abnahme**, Notizen unten
   - [ ] **8c** – Wisch-Stapel & Händler-Regeln (Lernen, Auto-Zuordnung mit Vorschau, Regel-Seite)
   - [ ] **8d** – Lohn-Vorschlag beim Wochenabschluss & Feinschliff
 
-## Session-Notiz – Stand 2026-10-05
+## Session-Notiz – Stand 2026-10-07
 
 > Einstieg für die nächste Session. Wird bei jedem Sessionende überschrieben, nicht fortgeschrieben – die dauerhaften Ergebnisse stehen in den Phasen-Notizen unten.
 
 **Wo wir stehen**
 
-- v1 läuft mit echten Daten in Production (**https://jonas-finanzen.vercel.app**, `main`).
-- **v2 (Bank-Import) ist geplant und freigegeben** – Plan ganz unten („Plan v2"), Phasen 8a–8d.
-- **8a ist abgenommen (2026-10-06) und in `main`** → Production läuft auf Schema v2: `bankTransactions` + `merchantRules`, erste Dexie-Migration, Backup-Format 2 mit `migrateBackup`-Schritt, CommBank-Parser `lib/bankImport`. Keine sichtbare Funktion.
+- Production (**https://jonas-finanzen.vercel.app**, `main`) läuft seit 2026-10-06 auf Schema v2; die Migration ist am iPhone bestätigt („Daten prüfen" grün).
+- **8b ist fertig und wartet auf Abnahme** (Branch `phase-8b-bank-import`): Route `/inbox` mit CSV-Import, Vorschau, Erkennung von Hand erfasster Ausgaben, Zuordnen per Kategorie-Auswahl, Home-Karte und Zähler in „Mehr"/Sidebar.
+- Plan v2 steht ganz unten („Plan v2"), offen sind 8c (Wisch-Stapel, Händler-Regeln) und 8d (Lohn-Vorschlag).
 
 **Offen** (nicht blockierend)
 
-- Ändert CommBank den Text einer Buchung nachträglich (vorgemerkt → gebucht)? Aus EINER Datei nicht zu sehen – in 8b mit einem zweiten, überlappenden Export prüfen; dann würde die Dedupe-ID nicht mehr passen.
+- Am iPhone zu prüfen: Lässt sich die NetBank-CSV in der installierten App über „CSV importieren" aus „Dateien" wählen?
+- Ignorierte und verknüpfte Buchungen lassen sich nur direkt per „Rückgängig" im Toast zurückholen; eine Liste „Erledigt" mit „Zurück in die Inbox" ist für 8d vorgesehen.
+- Smoke-Suite gegen entfernte Adressen: mit den längeren Wartezeiten 14/14 und 13/14 – im Fehlschlag erschien das Onboarding auch nach 30 s nicht (Ursache nicht untersucht).
 - Aus v1 unverändert: Ausgaben-Sheet mit offenen Details höher als der Bildschirm · `AnimatedNumber` nicht gebaut · Ausgabe aus archiviertem Topf erst nach „Wiederherstellen" änderbar · `forced-colors`-Textur für Charts.
 
 **Als Nächstes**
 
-1. Production ein paar Tage auf Schema v2 laufen lassen. Ein zweiter, noch offener Tab mit der alten Version muss einmal von Hand neu geladen werden.
-2. Danach 8b freigeben (Import & Inbox). Dafür hilfreich: ein zweiter NetBank-Export, der sich mit dem ersten überschneidet.
-3. Die echte Beispieldatei (`~/Downloads/CSVData.csv`) wird nie committet; Tests nutzen `src/lib/__fixtures__/commbank-sample.csv` (erfundene Händler und Beträge, gleiche Struktur).
+1. Du: 8b auf der Preview bzw. am iPhone ansehen (echten Export importieren – Preview-Adressen haben eine eigene, leere Datenbank), abnehmen → `main`.
+2. Danach 8c freigeben. Die echten Händlertexte für die Normalisierung stehen in den 8a-Notizen.
+3. Echte Kontoauszüge (`~/Downloads/CSVData*.csv`) werden nie committet.
 
 ## Phase 0 – Ergebnis & Abweichungen vom Plan
 
@@ -221,6 +223,23 @@
 - **Neue Ledger-Regeln** (gelten auch für Backup-Import und „Daten prüfen"): zugeordnete/verknüpfte Bank-Zeile zeigt auf eine vorhandene Ausgabe (gelöscht erlaubt – sie soll nicht in die Inbox zurückkehren), höchstens eine Bank-Zeile je Ausgabe, offene/ignorierte Zeilen und Gutschriften haben keine Ausgabe, Betrag ≠ 0, Regel hat ein gültiges Ziel.
 - **Backup-Vorschau** nennt „Bank-Buchungen" nur, wenn die Datei welche enthält. Ein Backup der neuen Version lässt sich in der alten nicht einspielen („neuere App-Version") – gewollt.
 - **Nicht gebaut (gehört zu 8b–8d):** Repo `repos.bank`, Abgleich mit manuell Erfasstem, jede Oberfläche. Die neuen Tabellen bleiben bis 8b leer.
+
+## Phase 8b – Ergebnis & Abweichungen vom Plan
+
+**Geprüft:** typecheck · lint · build grün · **1036 Testläufe** (518 Tests × 2 Zeitzonen; Coverage `src/lib` 99,9 % Zeilen / 100 % Funktionen / 96 % Branches) · `npm run test:e2e` **15 Journeys grün**, auch mit `E2E_REDUCED_MOTION=1`; neu: „Bank-Import" · initiales JS 239 KB gzip (+2 KB: Home-Karte, Zähler; Parser und Inbox-Seite liegen im Lazy-Chunk) · Sichtprüfung im echten Chrome 390×844 und 1440×900 (dunkel): leere Inbox, Vorschau, Liste, Zuordnen-Sheet, „Mehr", Home.
+**DoD:** derselbe Export zweimal → 0 neue Zeilen, überlappende Exporte → nur die neuen, auch bei parallelem Doppelaufruf (Repo-Tests) · Gutschriften erzeugen nie eine Ausgabe (Repo lehnt ab, Ledger prüft) · eindeutig passende manuelle Ausgabe wird verknüpft statt verdoppelt; zwei gleiche Zeilen für eine Ausgabe → Entscheidung beim Nutzer · Zuordnung in abgeschlossener Woche zieht die `auto:`-Buchung nach, Rückgängig stellt den alten Stand her · Ledger-Check nach jedem Repo-Test. **Offen bis zur Abnahme am Gerät:** Datei aus „Dateien" in der installierten App wählbar.
+
+- **Vergleich zweier echter Exporte (2026-10-07):** CommBank hat **keinen Buchungstext geändert** – alle 38 gemeinsamen Zeilen sind zeichengleich, auch der Kontostand. Aber: jeder Export hat genau **40 Zeilen und schneidet mitten im Tag ab** (die 8a-Annahme „immer ganze Tage" war falsch).
+- **Dedupe-ID bleibt (Entscheidung 2026-10-07):** Datum + Betrag + Text + Zähler identischer Zeilen, ohne Kontostand. Der Zähler läuft von der neuesten Zeile abwärts, deshalb stimmt die Anzahl auch, wenn unten abgeschnitten wird oder oben eine identische Buchung dazukommt. Restlücke: zwei identische Buchungen eines Tages, die nie gemeinsam in einer Datei stehen. Dafür warnt die Vorschau, wenn eine Datei **nicht an den letzten Import anschließt** („dazwischen können Buchungen fehlen").
+- **Erkennung von Hand Erfasstem** (`lib/bankInbox.matchCandidates`/`planImport`): gleiche Summe, Ausgabedatum zwischen drei Tagen vor dem Kauftag (Wertdatum, sonst Buchungsdatum) und dem Buchungsdatum, noch mit keiner Bank-Zeile verknüpft. Automatisch verknüpft wird nur, wenn es **in beide Richtungen eindeutig** ist (genau eine Ausgabe für die Zeile, und diese Ausgabe passt zu keiner anderen neuen Zeile). Alles andere bleibt in der Inbox mit dem Hinweis „vielleicht schon erfasst"; im Zuordnen-Sheet steht dann „Schon von Hand erfasst?" mit den Kandidaten. Die Vorschau listet die automatischen Treffer, jeder ist dort lösbar.
+- **Buchungen vor dem Tracking-Beginn** (Kauftag vor der Woche von `trackingSince`) werden gespeichert, aber als „keine Ausgabe" – sie würden Wochen erzeugen, die es in der App nicht gibt. Die Vorschau nennt die Zahl.
+- **Ausgabedatum = Kauftag** (Wertdatum), Notiz = Banktext ohne den Kartenzusatz. Ein lesbarer Händlername kommt mit der Normalisierung in 8c.
+- **Abgeschlossene Woche:** die Zeile trägt „Woche abgeschlossen", das Sheet sagt „… ist abgeschlossen – als neue Ausgabe sinkt ihr Gespartes um A$X". Geschrieben wird über `writeExpense`, also ohne Sonderlogik.
+- **Oberfläche:** `/inbox` (lazy) mit Datei-Auswahl, Vorschau-Sheet und Liste; Tipp öffnet das Zuordnen-Sheet (Kategorie antippen = Ausgabe anlegen, „Keine Ausgabe", „ist dieselbe"). Jede Aktion bietet Rückgängig im Toast. Eintrag „Inbox" mit Zähler in „Mehr" und Sidebar, Home-Karte nur bei offenen Buchungen; der „Nächste Schritt" bleibt unverändert.
+- **Im Browser gefunden (390 px):** Untertitel „5 Buchungen warten auf ein…", die Home-Karte (zweizeilig + abgeschnitten) und die Beschreibung in „Mehr" schnitten genau die wichtige Hälfte ab; „deine Ausgabe vom Heute" war kein Deutsch. Alle vier gekürzt bzw. umformuliert.
+- **`CategoryGrid` liegt jetzt in `shared/components`** (aus 8c vorgezogen, die Inbox braucht es).
+- **Smoke-Suite gegen entfernte Adressen** (Nebenauftrag): mit `E2E_BASE_URL` 45 s für Seitenaufrufe und 30 s für Wartebedingungen statt 10 s; lokal unverändert. Nur das Navigations-Timeout zu erhöhen reichte nicht – danach rissen die Wartebedingungen auf nachgeladene Seitenteile.
+- **Nicht gebaut (8c/8d):** Wisch-Stapel, Händler-Regeln und Auto-Zuordnung, Lohn-Vorschlag, Liste der erledigten Buchungen mit „Zurück in die Inbox".
 
 ---
 
