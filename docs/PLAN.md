@@ -24,7 +24,7 @@
   - [x] **8a** – Format prüfen, Schema v2, Dexie-Migration, Backup-Format (keine sichtbare Funktion) — freigegeben 2026-10-05, fertig 2026-10-05 (Branch `phase-8a-bank-schema`), **abgenommen 2026-10-06 (Backup vorher gespeichert), in `main`**, Notizen unten
   - [x] **8b** – Import & Inbox (Dateiauswahl, Vorschau, Dedupe gegen manuell Erfasstes, Listen-Ansicht) — freigegeben 2026-10-07, fertig 2026-10-07 (Branch `phase-8b-bank-import`), **abgenommen 2026-10-07 (am iPhone in der installierten Preview getestet, CSV aus „Dateien" wählbar; Backup vorher gespeichert), in `main`**, Notizen unten
   - [x] **8c** – Wisch-Stapel & Händler-Regeln (Lernen, Auto-Zuordnung mit Vorschau, Regel-Seite) — freigegeben 2026-10-07, fertig 2026-10-07 (Branch `phase-8c-swipe-stack`), **abgenommen 2026-10-07 (am iPhone getestet, Wisch-Gefühl passt; Backup vorher gespeichert), in `main`**, Notizen unten
-  - [ ] **8d** – Lohn-Vorschlag beim Wochenabschluss & Feinschliff
+  - [ ] **8d** – Lohn-Vorschlag beim Wochenabschluss, „Zurück in die Inbox", Ladefehler-Behandlung — freigegeben 2026-10-07, fertig 2026-10-07 (Branch `phase-8d-bank-income`), **wartet auf Abnahme**, Notizen unten
 
 ## Session-Notiz – Stand 2026-10-07
 
@@ -32,19 +32,20 @@
 
 **Wo wir stehen**
 
-- Production (**https://jonas-finanzen.vercel.app**, `main`) enthält 8a und 8b: Schema v2, CSV-Import, Inbox als Liste.
-- **8c ist abgenommen (2026-10-07) und in `main`**: Wisch-Stapel als Standardansicht der Inbox, Händler-Regeln (lernen bei jeder Zuordnung), „Bekannte Händler" mit Vorschau, Regel-Seite unter Einstellungen → Bank-Import.
-- Offen aus Plan v2: 8d (Lohn-Vorschlag beim Wochenabschluss, Liste der erledigten Buchungen mit „Zurück in die Inbox").
+- Production (**https://jonas-finanzen.vercel.app**, `main`) enthält 8a–8c: Schema v2, CSV-Import, Inbox mit Wisch-Stapel, Händler-Regeln.
+- **8d ist fertig und wartet auf Abnahme** (Branch `phase-8d-bank-income`): Lohn-Vorschlag beim Wochenabschluss, Ansicht „Erledigt" mit „Zurück in die Inbox", Ladefehler-Behandlung (einmal automatisch neu laden, sonst deutsche Meldung).
+- Mit 8d ist Plan v2 komplett.
 
 **Offen** (nicht blockierend)
 
-- **Ladefehler (entschieden 2026-10-07: ja):** beim Start einmal automatisch neu laden (mit Sperre gegen Endlosschleife), sonst deutsche Meldung mit „Neu laden" und dem Hinweis, dass die Daten sicher auf dem Gerät liegen – auch statt der englischen Fehlerseite bei anderen unerwarteten Fehlern. Wird mit 8d gebaut.
+- Am iPhone ansehen: „Erledigt"-Ansicht, Wochenabschluss mit Bank-Vorschlag.
+- Die Ladefehler-Meldung lässt sich am Gerät kaum provozieren – sie ist in der Smoke-Suite mit absichtlich abgebrochenen Requests geprüft.
 - Aus v1 unverändert: Ausgaben-Sheet mit offenen Details höher als der Bildschirm · `AnimatedNumber` nicht gebaut · Ausgabe aus archiviertem Topf erst nach „Wiederherstellen" änderbar · `forced-colors`-Textur für Charts.
 
 **Als Nächstes**
 
-1. 8d ist freigegeben (Branch `phase-8d-bank-income`): Lohn-Vorschlag beim Wochenabschluss, „Zurück in die Inbox" für erledigte Buchungen, Ladefehler-Behandlung.
-2. Danach ist Plan v2 komplett.
+1. Du: 8d auf der Preview bzw. am iPhone ansehen, abnehmen → `main`.
+2. Danach: ein paar Wochen mit echten Exporten nutzen; was fehlt, wird gezielt gebaut (andere Banken, Topf-Finanzierung aus dem Stapel, Tags im Stapel stehen als „bewusst nicht in v2" im Plan).
 3. Echte Kontoauszüge (`~/Downloads/CSVData*.csv`) werden nie committet.
 
 ## Phase 0 – Ergebnis & Abweichungen vom Plan
@@ -254,6 +255,18 @@
 - **Ausgaben aus der Inbox tragen jetzt den Händlernamen als Notiz** („Woolworths") statt des Banktexts.
 - **Von der Smoke-Suite gefunden (kein Unit-Test sah es):** die hervorlugende nächste Karte lag ÜBER der obersten (sie ist skaliert und bildet damit eine eigene Ebene) – ein Tipp in die Kartenmitte hätte die falsche Karte getroffen. Die oberste liegt jetzt ausdrücklich darüber.
 - **Nicht gebaut (8d):** Lohn markieren und Vorschlag beim Wochenabschluss, Liste der erledigten Buchungen mit „Zurück in die Inbox".
+
+## Phase 8d – Ergebnis & Abweichungen vom Plan
+
+**Geprüft:** typecheck · lint · build grün · **1214 Testläufe** (607 Tests × 2 Zeitzonen; Coverage `src/lib` 99,9 % Zeilen / 100 % Funktionen / 96,6 % Branches) · `npm run test:e2e` **17 Journeys grün**, auch mit `E2E_REDUCED_MOTION=1`; neu: „Start, den das Netz bricht", erweitert: „Bank-Import" (Zurück in die Inbox, Lohn markieren, Wochenabschluss vorbelegt) · initiales JS 241,3 KB gzip · Sichtprüfung im echten Chrome 390×844: „Erledigt", Wochenabschluss mit Bank-Vorschlag, beide Fehlermeldungen.
+**DoD:** Vorschlag nur mit markiertem Lohn-Absender und Gutschrift in der Woche; gespeichertes Wochen-Einkommen hat Vorrang; ohne bestätigten Abschluss wird nichts geschrieben (RTL gegen die echte DB-Schicht: keine Wochen-Zeile vor dem Abschluss).
+
+- **Lohn-Vorschlag:** In „Erledigt" stehen die Gutschriften mit dem Schalter „Mein Lohn" (einmal je Absender; gespeichert als Regel `action: 'income'`). Der Wochenabschluss belegt das Einkommensfeld dann mit der Summe der Lohn-Gutschriften **Mo–So derselben Woche** vor und sagt, woher die Zahl kommt („Aus dem Bank-Import: Gutschrift vom Do., 17. Sep. – bitte prüfen, du kannst den Betrag überschreiben"). Reihenfolge: gespeichertes Einkommen der Woche → Bank → Standard-Einkommen. Geschrieben wird wie bisher erst mit „Woche abschließen".
+- **Hinweis im Wochenabschluss:** „n Buchungen dieser Woche warten noch in der Inbox – sie fehlen in ‚Ausgegeben'" mit Link zur Inbox (gezählt nach Kauftag).
+- **„Zurück in die Inbox":** dritte Ansicht „Erledigt" (auch bei leerer Inbox erreichbar) listet zugeordnete, verknüpfte und aussortierte Buchungen, neueste zuerst (die 50 neuesten). Zurückholen entfernt bei einer zugeordneten Buchung ihre Ausgabe (der Toast sagt das), bei einer verknüpften nur die Verknüpfung; „Rückgängig" stellt exakt den alten Stand her – dieselbe Ausgabe, keine zweite. Die Händler-Regel bleibt, wie sie ist: eine einzelne zurückgeholte Buchung sagt nichts über den Händler.
+- **Ladefehler (Entscheidung 2026-10-07):** (1) Kommt eine Datei, mit der die App **startet**, nicht an, lädt ein kleines Skript in `index.html` die Seite einmal neu; (2) kommt ein **nachgeladener** Teil nicht an, tut das der Fehler-Bildschirm des Routers. Die Sperre gegen Endlosschleifen ist für beide dieselbe: Zeitpunkt des letzten automatischen Neuladens je Tab (`sessionStorage` `fp.autoReloadAt`), ein weiterer Fehler innerhalb von 60 s zeigt stattdessen die Meldung „Die App konnte nicht geladen werden … Deine Daten liegen sicher auf diesem Gerät." mit „Neu laden". Ohne funktionierenden Speicher gibt es keine Sperre und deshalb auch kein automatisches Neuladen. (3) Jeder andere unerwartete Fehler zeigt „Etwas ist schiefgelaufen" mit demselben Hinweis und Button – ohne automatisches Neuladen – statt „Unexpected Application Error!".
+- **Smoke-Journey mit absichtlich abgebrochenen Requests** (Service Worker umgangen): nachgeladener Teil fällt einmal aus → App startet von selbst; fällt dauerhaft aus → deutsche Meldung, kein zweites Neuladen; Start-Datei fällt dauerhaft aus → Meldung statt leerer Seite; Start-Datei fällt einmal aus (Sperre abgelaufen) → App startet von selbst.
+- **Abweichung:** „Das ist mein Lohn" und „Zurück in die Inbox" sitzen in der Inbox („Erledigt") statt an der einzelnen Ausgabe – dort sind auch aussortierte Buchungen erreichbar, die gar keine Ausgabe haben.
 
 ---
 
