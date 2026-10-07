@@ -2,10 +2,11 @@ import { useLiveQuery } from 'dexie-react-hooks'
 import { Check, LockOpen } from 'lucide-react'
 import { m } from 'motion/react'
 import { useState } from 'react'
+import { Link } from 'react-router'
 import { toast } from 'sonner'
 import { db, loadCloseWeek, repos } from '@/db'
 import { resolveBudget } from '@/lib/budget'
-import { formatWeekRange } from '@/lib/dates'
+import { formatDayLabel, formatWeekRange } from '@/lib/dates'
 import { formatAUD } from '@/lib/money'
 import { pendingWeeks, summarizeWeek, type WeekSummary } from '@/lib/savings'
 import type { Cents, ISODate } from '@/lib/types'
@@ -52,8 +53,14 @@ function CloseWeekForm({ weekStart, data, today }: CloseWeekFormProps) {
 
   const alreadyClosed = data.week?.closedAt != null
   const [incomeCents, setIncomeCents] = useState<Cents | null>(
-    data.week?.incomeCents ?? data.settings?.defaultWeeklyIncomeCents ?? null,
+    // What was stored for the week wins; then what the bank says was paid; then the default.
+    // Only a prefill – nothing is written before the week is closed.
+    data.week?.incomeCents ??
+      data.bankIncome?.totalCents ??
+      data.settings?.defaultWeeklyIncomeCents ??
+      null,
   )
+  const fromBank = data.week?.incomeCents == null ? data.bankIncome : null
   const [note, setNote] = useState(data.week?.note ?? '')
   const [busy, setBusy] = useState(false)
   const [done, setDone] = useState<WeekSummary | null>(null)
@@ -160,6 +167,15 @@ function CloseWeekForm({ weekStart, data, today }: CloseWeekFormProps) {
           aria-label="Einkommen dieser Woche"
           size="lg"
         />
+        {fromBank ? (
+          <p className="text-label text-fg-muted">
+            Aus dem Bank-Import:{' '}
+            {fromBank.credits.length === 1
+              ? `Gutschrift vom ${formatDayLabel(fromBank.credits[0]!.date, today)}`
+              : `${fromBank.credits.length} Gutschriften`}{' '}
+            – bitte prüfen, du kannst den Betrag überschreiben.
+          </p>
+        ) : null}
         <Input
           value={note}
           onChange={(event) => setNote(event.target.value)}
@@ -169,6 +185,19 @@ function CloseWeekForm({ weekStart, data, today }: CloseWeekFormProps) {
           className="h-11 rounded-md"
         />
       </div>
+
+      {data.inboxCount > 0 && !alreadyClosed ? (
+        <Link
+          to="/inbox"
+          onClick={dismiss}
+          className="rounded-md bg-income-soft px-4 py-3 text-label outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
+        >
+          {data.inboxCount === 1
+            ? '1 Buchung dieser Woche wartet noch in der Inbox – sie fehlt in „Ausgegeben".'
+            : `${data.inboxCount} Buchungen dieser Woche warten noch in der Inbox – sie fehlen in „Ausgegeben".`}{' '}
+          <span className="font-medium">Zur Inbox</span>
+        </Link>
+      ) : null}
 
       <div className="flex flex-col gap-3 rounded-lg bg-surface-1 p-4">
         <SummaryRow label="Ausgegeben">

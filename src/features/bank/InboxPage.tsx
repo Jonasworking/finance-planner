@@ -17,15 +17,17 @@ import { Button } from '@/shared/ui/button'
 import { Skeleton } from '@/shared/ui/skeleton'
 import { AssignSheet } from './components/AssignSheet'
 import { AutoAssignSheet } from './components/AutoAssignSheet'
+import { DoneView } from './components/DoneView'
 import { ImportPreviewSheet, type PendingImport } from './components/ImportPreviewSheet'
 import { SwipeStack } from './components/SwipeStack'
 
 const plural = (count: number, one: string, many: string) => `${count} ${count === 1 ? one : many}`
 
-type View = 'stack' | 'list'
+type View = 'stack' | 'list' | 'done'
 const VIEWS = [
   { value: 'stack', label: 'Stapel' },
   { value: 'list', label: 'Liste' },
+  { value: 'done', label: 'Erledigt' },
 ] as const
 
 /** Bank lines waiting for a category, and the way in for a new export. */
@@ -111,19 +113,6 @@ export function InboxPage() {
             </div>
             {importButton('CSV importieren')}
           </GlassCard>
-        ) : data.inbox.length === 0 ? (
-          <GlassCard className="flex flex-col items-center gap-3 py-10 text-center">
-            <span className="grid size-14 place-items-center rounded-full bg-saved-soft text-saved">
-              <CircleCheck className="size-6" aria-hidden />
-            </span>
-            <div>
-              <p className="text-h2">Alles zugeordnet</p>
-              <p className="text-label text-fg-muted">
-                Der nächste Export darf sich mit dem letzten überschneiden – doppelt kommt nichts
-                herein.
-              </p>
-            </div>
-          </GlassCard>
         ) : (
           <>
             {data.auto.length > 0 ? (
@@ -147,7 +136,28 @@ export function InboxPage() {
               </GlassCard>
             ) : null}
             <SegmentedControl label="Ansicht" options={VIEWS} value={view} onChange={setView} />
-            {view === 'stack' ? (
+            {view === 'done' ? (
+              <DoneView
+                lines={data.doneLines}
+                credits={data.credits}
+                categories={data.allCategories}
+                expenseCategoryIds={data.expenseCategoryIds}
+                today={today}
+              />
+            ) : data.inbox.length === 0 ? (
+              <GlassCard className="flex flex-col items-center gap-3 py-10 text-center">
+                <span className="grid size-14 place-items-center rounded-full bg-saved-soft text-saved">
+                  <CircleCheck className="size-6" aria-hidden />
+                </span>
+                <div>
+                  <p className="text-h2">Alles zugeordnet</p>
+                  <p className="text-label text-fg-muted">
+                    Der nächste Export darf sich mit dem letzten überschneiden – doppelt kommt
+                    nichts herein.
+                  </p>
+                </div>
+              </GlassCard>
+            ) : view === 'stack' ? (
               <SwipeStack
                 inbox={data.inbox}
                 suggestions={data.suggestions}
@@ -182,7 +192,7 @@ export function InboxPage() {
           </>
         )}
 
-        {doneParts.length > 0 ? (
+        {doneParts.length > 0 && view !== 'done' ? (
           <p className="px-1 text-label text-fg-muted">Erledigt: {doneParts.join(' · ')}</p>
         ) : null}
       </div>

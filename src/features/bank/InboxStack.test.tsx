@@ -309,3 +309,84 @@ describe('MerchantRulesPage', () => {
     expect(await screen.findByText('Woolworths')).toBeInTheDocument()
   })
 })
+
+describe('InboxPage – Erledigt', () => {
+  const showDone = async (user: ReturnType<typeof userEvent.setup>) =>
+    user.click(await screen.findByRole('radio', { name: 'Erledigt' }))
+
+  it('lists what was dealt with and brings a booking back to the inbox, with undo', async () => {
+    await importSample()
+    const rows = await db.bankTransactions.toArray()
+    const tavern = rows.find((tx) => tx.description.startsWith('Seaside Tavern'))!
+    const hostel = rows.find((tx) => tx.description.startsWith('HARBOUR HOSTEL'))!
+    const { expense } = await repos.bank.assign(tavern.id, 'cat:eating-out')
+    await repos.bank.ignore(hostel.id)
+    const user = userEvent.setup()
+    renderPage()
+    await showDone(user)
+
+    expect(await screen.findByText('Seaside Tavern Fremantle')).toBeInTheDocument()
+    expect(screen.getByText(/→ Essen gehen · Gestern/)).toBeInTheDocument()
+    expect(screen.getByText(/keine Ausgabe · Do\., 10\. Sep\./)).toBeInTheDocument()
+
+    await user.click(
+      screen.getByRole('button', { name: 'Seaside Tavern Fremantle zurück in die Inbox' }),
+    )
+    await waitFor(() =>
+      expect(screen.queryByText('Seaside Tavern Fremantle')).not.toBeInTheDocument(),
+    )
+    expect(toast).toHaveBeenLastCalledWith(
+      'Zurück in der Inbox – die Ausgabe ist entfernt',
+      expect.anything(),
+    )
+    expect(await active()).toEqual([])
+    expect((await db.bankTransactions.get(tavern.id))!.status).toBe('open')
+
+    lastToastAction()()
+    expect(await screen.findByText('Seaside Tavern Fremantle')).toBeInTheDocument()
+    expect((await active()).map((row) => row.id)).toEqual([expense.id])
+
+    await user.click(
+      screen.getByRole('button', { name: 'Harbour Hostel Perth zurück in die Inbox' }),
+    )
+    await waitFor(() => expect(screen.queryByText('Harbour Hostel Perth')).not.toBeInTheDocument())
+    expect(toast).toHaveBeenLastCalledWith('Zurück in der Inbox', expect.anything())
+  })
+
+  it('marks the employer among the credits and takes the mark back', async () => {
+    await importSample()
+    const user = userEvent.setup()
+    renderPage()
+    await showDone(user)
+
+    const mark = await screen.findByRole('button', { name: 'Acme Farms Pty: das ist mein Lohn' })
+    expect(mark).toHaveAttribute('aria-pressed', 'false')
+    expect(
+      screen.getByRole('button', { name: 'Alex Example: das ist mein Lohn' }),
+    ).toBeInTheDocument()
+
+    await user.click(mark)
+    await waitFor(() => expect(mark).toHaveAttribute('aria-pressed', 'true'))
+    expect(await db.merchantRules.get('rule:acme farms pty')).toMatchObject({ action: 'income' })
+    expect(await active()).toEqual([]) // a credit never becomes an expense
+
+    await user.click(mark)
+    await waitFor(() => expect(mark).toHaveAttribute('aria-pressed', 'false'))
+    expect((await db.merchantRules.get('rule:acme farms pty'))!.deletedAt).not.toBeNull()
+  })
+
+  it('is reachable when the inbox is empty and explains itself without entries', async () => {
+    const parsed = parseBankFile(
+      '20/09/2026,"+100.00","Fast Transfer From Alex Example CREDIT TO ACCOUNT","+100.00"',
+    )
+    if (!parsed.ok) throw new Error(parsed.reason)
+    await repos.bank.import(parsed.rows)
+    const user = userEvent.setup()
+    renderPage()
+
+    expect(await screen.findByText('Alles zugeordnet')).toBeInTheDocument()
+    await showDone(user)
+    expect(await screen.findByText(/Noch nichts erledigt/)).toBeInTheDocument()
+    expect(screen.getByText('Alex Example')).toBeInTheDocument()
+  })
+})

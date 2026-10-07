@@ -686,6 +686,35 @@ journey(
     await goto(page, '/')
     await waitForText(page, '5 Buchungen in der Inbox')
     await assertFitsViewport(page, 'dashboard with inbox card')
+
+    // "Erledigt": a booking comes back to the inbox (its expense goes), undo restores both
+    await goto(page, '/inbox')
+    await waitForText(page, '5 Buchungen offen')
+    await clickText(page, '[role="radio"]', 'Erledigt')
+    await waitForText(page, 'Erledigte Buchungen')
+    await assertFitsViewport(page, 'inbox, done view')
+    await clickSelector(page, 'button[aria-label="Seaside Tavern Fremantle zurück in die Inbox"]')
+    await waitForText(page, '6 Buchungen offen')
+    await clickToastAction(page, 'Zurück in der Inbox', 'Rückgängig')
+    await waitForText(page, '5 Buchungen offen')
+
+    // the employer is marked once – closing the week then starts from what the bank says
+    await clickSelector(page, 'button[aria-label="Acme Farms Pty: das ist mein Lohn"]')
+    await waitForText(page, 'Lohn ✓')
+    await goto(page, '/')
+    await clickText(page, 'button', 'Diese Woche abschließen')
+    await waitForModals(page, 1)
+    await waitForText(page, 'Aus dem Bank-Import: Gutschrift vom Do., 17. Sep.')
+    assert.equal(
+      await page.$eval('input[aria-label="Einkommen dieser Woche"]', (input) => input.value),
+      '1432,60',
+    )
+    await waitForText(page, 'Buchungen dieser Woche warten noch in der Inbox')
+    await assertFitsViewport(page, 'close week with bank income')
+    // only a suggestion: it can be overwritten, and nothing is booked before the week is closed
+    await typeInto(page, 'Einkommen dieser Woche', '1500')
+    await clickText(page, '[role="dialog"] button', 'Woche abschließen')
+    await waitForText(page, 'In „Nur gespart" gebucht')
   },
 )
 
