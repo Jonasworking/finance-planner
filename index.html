@@ -134,6 +134,58 @@
   </head>
   <body>
     <div id="root"></div>
+    <!--
+      Start guard. If a file the app starts with does not arrive, the entry module never runs and
+      the page would stay empty for good. Reload once by itself (the time is kept for this tab –
+      same key and lock as src/shared/lib/reloadOnce.ts, so there is no reload loop); if that
+      fails too, say so. React replaces the content of #root as soon as the app does start.
+    -->
+    <script>
+      ;(function () {
+        var KEY = 'fp.autoReloadAt'
+        var LOCK_MS = 60000
+        var root = document.getElementById('root')
+        function show() {
+          var light = document.documentElement.dataset.theme === 'light'
+          root.innerHTML =
+            '<div role="alert" style="min-height:100dvh;display:grid;place-items:center;padding:24px;box-sizing:border-box;font-family:system-ui,-apple-system,sans-serif;text-align:center;color:' +
+            (light ? '#14161A' : '#F5F6F8') +
+            '"><div style="max-width:22rem"><h1 style="font-size:1.5rem;font-weight:600;line-height:1.25;margin:0 0 8px">Die App konnte nicht geladen werden</h1>' +
+            '<p style="margin:0 0 20px;opacity:.75">Ein Teil der App kam nicht an – meist liegt das an der Verbindung. Deine Daten liegen sicher auf diesem Gerät.</p>' +
+            '<button type="button" id="fp-reload" style="min-height:44px;padding:0 20px;border:0;border-radius:9999px;font:inherit;font-weight:600;cursor:pointer;background:' +
+            (light ? '#0B7C58;color:#FFFFFF' : '#3EE0A8;color:#0B0C0F') +
+            '">Neu laden</button></div></div>'
+          document.getElementById('fp-reload').addEventListener('click', function () {
+            location.reload()
+          })
+        }
+        function failed() {
+          if (root.childElementCount > 0) return // the app runs (or the message is up already)
+          var now = Date.now()
+          try {
+            var last = Number(sessionStorage.getItem(KEY)) || 0
+            if (now - last > LOCK_MS) {
+              sessionStorage.setItem(KEY, String(now))
+              location.reload()
+              return
+            }
+          } catch (e) {
+            /* no storage, no lock: do not reload by itself */
+          }
+          show()
+        }
+        // A module script whose own file or any statically imported file fails fires `error` on
+        // the element; it does not bubble, hence the capturing listener.
+        window.addEventListener(
+          'error',
+          function (event) {
+            var target = event.target
+            if (target && target.tagName === 'SCRIPT' && target.type === 'module') failed()
+          },
+          true,
+        )
+      })()
+    </script>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

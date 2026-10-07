@@ -145,7 +145,7 @@ export async function openSession(viewport, { downloadPath } = {}) {
   )
 
   sessionProblems.set(page, problems)
-  return { page, problems, failedRequests, close: () => context.close() }
+  return { page, problems, failedRequests, baseUrl, close: () => context.close() }
 }
 
 export async function saveScreenshot(page, name) {

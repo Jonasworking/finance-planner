@@ -1,6 +1,7 @@
 import { createBrowserRouter, type RouteObject } from 'react-router'
 import { DashboardPage } from '@/features/dashboard'
 import { lazyPage } from './routes/lazyPage'
+import { AppError } from './AppError'
 import { AppShell } from './shell/AppShell'
 import { MorePage } from './shell/MorePage'
 
@@ -53,6 +54,9 @@ export const router = createBrowserRouter([
   {
     path: '/',
     Component: AppShell,
+    // Instead of React Router's English default: one automatic reload for a part that did not
+    // load, otherwise a German screen with "Neu laden".
+    ErrorBoundary: AppError,
     children: [
       { index: true, Component: DashboardPage },
       { path: 'expenses', Component: ExpensesPage },

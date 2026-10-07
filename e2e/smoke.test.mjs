@@ -52,7 +52,7 @@ function journey(name, viewport, run, options = {}) {
   test(name, { timeout: 120_000 }, async () => {
     const session = await openSession(viewport, options)
     try {
-      await run(session.page)
+      await run(session.page, session)
       assert.deepEqual(session.problems, [], 'the browser console must stay clean')
     } catch (error) {
       console.log(`screenshot: ${await saveScreenshot(session.page, name)}`)
@@ -778,6 +778,65 @@ journey(
     await waitForNoText(page, '→ Shopping · 2× bestätigt')
     await clickToastAction(page, 'gelöscht', 'Rückgängig')
     await waitForText(page, '→ Shopping · 2× bestätigt')
+  },
+)
+
+/** Lets requests through unless `shouldFail(url)` says otherwise; the service worker stays out of it. */
+async function failRequests(page, state) {
+  await page.setBypassServiceWorker(true)
+  await page.setRequestInterception(true)
+  page.on('request', (request) =>
+    state.shouldFail(request.url()) ? request.abort('failed') : request.continue(),
+  )
+}
+
+journey(
+  'a start the network breaks recovers by itself or says what to do',
+  PHONE,
+  async (page, session) => {
+    const state = { shouldFail: () => false }
+    await failRequests(page, state)
+    const isOnboardingChunk = (url) => /\/assets\/onboarding-[^/]+\.js$/.test(url)
+    const isStartChunk = (url) =>
+      /\/assets\/(?!index-)[^/]+\.js$/.test(url) && !isOnboardingChunk(url)
+
+    // a part that is loaded after the start fails once: the app reloads itself and carries on
+    let lost = 0
+    state.shouldFail = (url) => isOnboardingChunk(url) && lost++ === 0
+    await page.goto(session.baseUrl + '/', { waitUntil: 'networkidle0' })
+    await waitForText(page, 'Willkommen beim Finanzplaner')
+    assert.equal(lost > 1, true, 'the page was loaded a second time')
+
+    // it keeps failing: no second automatic reload (no loop), but a message in German
+    state.shouldFail = isOnboardingChunk
+    await page.reload({ waitUntil: 'networkidle0' })
+    await waitForText(page, 'Die App konnte nicht geladen werden')
+    await waitForText(page, 'Deine Daten liegen sicher auf diesem Gerät')
+    assert.equal(await has(page, 'Unexpected Application Error'), false)
+    await assertFitsViewport(page, 'load error screen')
+    state.shouldFail = () => false
+    await clickText(page, 'button', 'Neu laden')
+    await waitForText(page, 'Willkommen beim Finanzplaner')
+
+    // a file the app STARTS with fails: the page must not stay empty
+    state.shouldFail = isStartChunk
+    await page.reload({ waitUntil: 'networkidle0' })
+    await waitForText(page, 'Die App konnte nicht geladen werden')
+    await waitForText(page, 'Deine Daten liegen sicher auf diesem Gerät')
+    state.shouldFail = () => false
+    await clickText(page, 'button', 'Neu laden')
+    await waitForText(page, 'Willkommen beim Finanzplaner')
+
+    // … and with the lock run out, a single lost start file is repaired without anyone noticing
+    await page.evaluate(() => sessionStorage.removeItem('fp.autoReloadAt'))
+    let lostAtStart = 0
+    state.shouldFail = (url) => isStartChunk(url) && lostAtStart++ === 0
+    await page.reload({ waitUntil: 'networkidle0' })
+    await waitForText(page, 'Willkommen beim Finanzplaner')
+    assert.equal(lostAtStart > 1, true, 'the page was loaded a second time')
+
+    // the failed requests were the point of this journey
+    session.problems.length = 0
   },
 )
 
