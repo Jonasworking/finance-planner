@@ -23,7 +23,7 @@
 - [ ] **Phase 8 (v2)** – Bank-Import für CommBank: CSV → Inbox → Wisch-Stapel → Händler-Regeln — Plan freigegeben 2026-10-05 (Abschnitt „Plan v2" ganz unten), vier Teilphasen:
   - [x] **8a** – Format prüfen, Schema v2, Dexie-Migration, Backup-Format (keine sichtbare Funktion) — freigegeben 2026-10-05, fertig 2026-10-05 (Branch `phase-8a-bank-schema`), **abgenommen 2026-10-06 (Backup vorher gespeichert), in `main`**, Notizen unten
   - [x] **8b** – Import & Inbox (Dateiauswahl, Vorschau, Dedupe gegen manuell Erfasstes, Listen-Ansicht) — freigegeben 2026-10-07, fertig 2026-10-07 (Branch `phase-8b-bank-import`), **abgenommen 2026-10-07 (am iPhone in der installierten Preview getestet, CSV aus „Dateien" wählbar; Backup vorher gespeichert), in `main`**, Notizen unten
-  - [ ] **8c** – Wisch-Stapel & Händler-Regeln (Lernen, Auto-Zuordnung mit Vorschau, Regel-Seite)
+  - [ ] **8c** – Wisch-Stapel & Händler-Regeln (Lernen, Auto-Zuordnung mit Vorschau, Regel-Seite) — freigegeben 2026-10-07, fertig 2026-10-07 (Branch `phase-8c-swipe-stack`), **wartet auf Abnahme**, Notizen unten
   - [ ] **8d** – Lohn-Vorschlag beim Wochenabschluss & Feinschliff
 
 ## Session-Notiz – Stand 2026-10-07
@@ -32,20 +32,20 @@
 
 **Wo wir stehen**
 
-- Production (**https://jonas-finanzen.vercel.app**, `main`) läuft seit 2026-10-06 auf Schema v2; die Migration ist am iPhone bestätigt („Daten prüfen" grün).
-- **8b ist abgenommen (2026-10-07) und in `main`**: Route `/inbox` mit CSV-Import, Vorschau, Erkennung von Hand erfasster Ausgaben, Zuordnen per Kategorie-Auswahl, Home-Karte und Zähler in „Mehr"/Sidebar.
-- Plan v2 steht ganz unten („Plan v2"), offen sind 8c (Wisch-Stapel, Händler-Regeln) und 8d (Lohn-Vorschlag).
+- Production (**https://jonas-finanzen.vercel.app**, `main`) enthält 8a und 8b: Schema v2, CSV-Import, Inbox als Liste.
+- **8c ist fertig und wartet auf Abnahme** (Branch `phase-8c-swipe-stack`): Wisch-Stapel als Standardansicht der Inbox, Händler-Regeln (lernen bei jeder Zuordnung), „Bekannte Händler" mit Vorschau, Regel-Seite unter Einstellungen → Bank-Import.
+- Offen aus Plan v2: 8d (Lohn-Vorschlag beim Wochenabschluss, Liste der erledigten Buchungen mit „Zurück in die Inbox").
 
 **Offen** (nicht blockierend)
 
-- Ignorierte und verknüpfte Buchungen lassen sich nur direkt per „Rückgängig" im Toast zurückholen; eine Liste „Erledigt" mit „Zurück in die Inbox" ist für 8d vorgesehen.
-- Smoke-Suite gegen entfernte Adressen: mit den längeren Wartezeiten 14/14 und 13/14 – im Fehlschlag erschien das Onboarding auch nach 30 s nicht (Ursache nicht untersucht).
+- **Entscheidung für dich:** Schlägt beim Start ein einziger Request für einen Start-Baustein fehl, bleibt die App dunkel und leer; schlägt ein nachgeladener Teil fehl, erscheint React Routers englische Fehlerseite. Vorschlag: einmal automatisch neu laden, sonst eine deutsche Meldung mit „Neu laden" (kleine Änderung an `index.html` und am Router – nicht ohne Freigabe gebaut).
+- Wisch-Gefühl, Schwellen (110 px bzw. schneller Wisch) und die Aktionsleiste am iPhone ansehen.
 - Aus v1 unverändert: Ausgaben-Sheet mit offenen Details höher als der Bildschirm · `AnimatedNumber` nicht gebaut · Ausgabe aus archiviertem Topf erst nach „Wiederherstellen" änderbar · `forced-colors`-Textur für Charts.
 
 **Als Nächstes**
 
-1. 8c (Wisch-Stapel, Händler-Regeln) ist freigegeben – Branch `phase-8c-swipe-stack`. Zuerst: warum erschien das Onboarding im Smoke-Lauf gegen Production einmal nach 30 s nicht?
-2. Die echten Händlertexte für die Normalisierung stehen in den 8a-Notizen.
+1. Du: 8c auf der Preview bzw. am iPhone ansehen (Preview-Adressen haben eine eigene, leere Datenbank), abnehmen → `main`.
+2. Danach 8d freigeben.
 3. Echte Kontoauszüge (`~/Downloads/CSVData*.csv`) werden nie committet.
 
 ## Phase 0 – Ergebnis & Abweichungen vom Plan
@@ -239,6 +239,22 @@
 - **`CategoryGrid` liegt jetzt in `shared/components`** (aus 8c vorgezogen, die Inbox braucht es).
 - **Smoke-Suite gegen entfernte Adressen** (Nebenauftrag): mit `E2E_BASE_URL` 45 s für Seitenaufrufe und 30 s für Wartebedingungen statt 10 s; lokal unverändert. Nur das Navigations-Timeout zu erhöhen reichte nicht – danach rissen die Wartebedingungen auf nachgeladene Seitenteile.
 - **Nicht gebaut (8c/8d):** Wisch-Stapel, Händler-Regeln und Auto-Zuordnung, Lohn-Vorschlag, Liste der erledigten Buchungen mit „Zurück in die Inbox".
+
+## Phase 8c – Ergebnis & Abweichungen vom Plan
+
+**Geprüft:** typecheck · lint · build grün · **1152 Testläufe** (576 Tests × 2 Zeitzonen; Coverage `src/lib` 99,9 % Zeilen / 100 % Funktionen / 96,6 % Branches) · `npm run test:e2e` **16 Journeys grün**, auch mit `E2E_REDUCED_MOTION=1`; neu: „Wisch-Stapel" · initiales JS 240,6 KB gzip · Sichtprüfung im echten Chrome 390×844 dunkel **und** hell sowie 1440×900: Stapel in Ruhe und beim Ziehen, „Bekannte Händler", Vorschau, Regel-Seite · Mutationsprobe: ohne Klick-Schlucken wird genau der zuständige Test rot.
+**DoD:** Normalisierungs-Tabelle mit den Formen der echten Texte grün · jede Zuordnung legt/aktualisiert genau eine Regel, Zielwechsel setzt `confirmations` auf 1 · die Ränder zeigen `suggestCategories` · Stapel komplett per Touch **und** Tastatur · „Rückgängig" stellt Ausgabe, Bank-Zeile **und** Regel wieder her · RTL-Tests mit echtem Pointer-Drag.
+
+- **Zuerst untersucht (Auftrag): „Onboarding erschien nach 30 s nicht".** Ursache nachgestellt: Schlägt beim Start **ein** Request für einen statisch geladenen Start-Baustein fehl, läuft das Einstiegsmodul nie – die Seite bleibt dunkel und leer, für immer (Nachstell-Screenshot bytegleich groß wie der vom fehlgeschlagenen Lauf). Kein Timeout hätte geholfen. Schlägt dagegen ein **nachgeladener** Teil fehl, zeigt React Router „Unexpected Application Error!". Beides ist Netz, aber die App fängt es nicht ab → Vorschlag in der Session-Notiz. Die Suite lädt bei entfernten Zielen eine nicht gestartete Seite jetzt einmal neu, druckt bei einem Fehlschlag Konsolenfehler und fehlgeschlagene Requests und bricht bei verschwundenen Klick-Zielen sofort ab (der Insight-Fehlschlag vom selben Tag: der Toast war schon weg, die Suite wartete 30 s auf einen Button, den es nicht mehr gab). Danach Production 2× 15/15.
+- **Händler-Normalisierung** (`lib/merchantRules.normalizeMerchant`): Kartenzusatz, Zahlungsdienst-Präfix (`SMP*`, `SQ *`) und führende Filialnummer (`6943-`) fallen weg, ebenso Staat/Land am Ende (auch angeklebt: `… StAU`); ab dem ersten Wort mit Ziffer ist alles Filiale oder Ort; Namen ganz ohne Zahl behalten ihre ersten drei Wörter; Lastschriften und Überweisungen heißen nach der Gegenseite. `WOOLWORTHS 1234 PERTH` → `woolworths`. **Grenze:** ohne Filialnummer ist der Ort nicht vom Namen zu trennen (`Tambrey Tavern Nickol` bleibt dreiteilig) – derselbe Laden ergibt aber immer dasselbe Muster, und eine Regel greift auch als Wortanfang (`woolworths` deckt `woolworths metro`).
+- **Lernen:** jede Zuordnung im Stapel/Sheet, jedes „Keine Ausgabe", jedes „ist dieselbe" und jeder automatische Treffer beim Import schreibt die Regel `rule:<muster>`. Gleiches Ziel erneut = Bestätigung, anderes Ziel = wieder 1.
+- **Wisch-Stapel** (Standardansicht, „Liste" bleibt als Umschalter und Desktop-Alternative): Kassenzettel-Karte mit Betrag, Händler, Kauftag und dem Banktext klein darunter; die nächste Karte lugt hervor. Links und rechts warten die zwei wahrscheinlichsten Kategorien (Regel des Händlers, sonst die meistgenutzten) – mit Icon **und** Namen, zugleich Buttons; sie werden beim Ziehen kräftiger. Rechts = die wahrscheinlichste. Alle Kategorien als Raster darunter (**feste Reihenfolge** – im ersten Wurf folgte es den Vorschlägen und sprang von Karte zu Karte). Pfeiltasten auf der fokussierten Karte. „Überspringen" legt die Karte für diesen Besuch ans Ende, „Rückgängig" nimmt Schritt für Schritt zurück, Fortschritt „3 von 12" mit Balken und „Zuletzt: …". Im Stapel gibt es bewusst keine Toasts (sie würden bei jedem Wisch die Karte verdecken).
+- **Abweichung:** Hinweise „Woche abgeschlossen" und „Vielleicht schon erfasst – ansehen" stehen auf der Karte; der zweite öffnet das Zuordnen-Sheet aus 8b mit „ist dieselbe".
+- **Bekannte Händler:** ab **zwei Bestätigungen** bietet die Inbox „n Buchungen von bekannten Händlern" an → Vorschau (einzeln abwählbar) → „Übernehmen" in einer Transaktion, Toast mit Rückgängig. Gilt auch für gelernte „Keine Ausgabe". Eine Regel, die von selbst greift, zählt **nicht** als Bestätigung.
+- **Regeln ansehen/löschen:** Einstellungen → „Bank-Import" → `/settings/merchant-rules` (Muster, Ziel, „n× bestätigt"; Wegwischen mit Rückgängig; Ausgaben bleiben).
+- **Ausgaben aus der Inbox tragen jetzt den Händlernamen als Notiz** („Woolworths") statt des Banktexts.
+- **Von der Smoke-Suite gefunden (kein Unit-Test sah es):** die hervorlugende nächste Karte lag ÜBER der obersten (sie ist skaliert und bildet damit eine eigene Ebene) – ein Tipp in die Kartenmitte hätte die falsche Karte getroffen. Die oberste liegt jetzt ausdrücklich darüber.
+- **Nicht gebaut (8d):** Lohn markieren und Vorschlag beim Wochenabschluss, Liste der erledigten Buchungen mit „Zurück in die Inbox".
 
 ---
 
