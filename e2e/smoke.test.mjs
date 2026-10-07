@@ -662,7 +662,8 @@ journey(
     await waitForModals(page, 0)
     await waitForText(page, '6 Buchungen offen')
 
-    // a booking becomes an expense by picking its category – and comes back with undo
+    // the plain list: a booking becomes an expense by picking its category – undo brings it back
+    await clickText(page, '[role="radio"]', 'Liste')
     await clickText(page, 'main button', 'Seaside Tavern')
     await waitForModals(page, 1)
     await waitForText(page, 'Buchung zuordnen')
@@ -685,6 +686,98 @@ journey(
     await goto(page, '/')
     await waitForText(page, '5 Buchungen in der Inbox')
     await assertFitsViewport(page, 'dashboard with inbox card')
+  },
+)
+
+const stackCard = (page, merchant) =>
+  page.waitForSelector(`[role="group"][aria-label^="${merchant}"]`)
+
+journey(
+  'bookings are filed by swiping cards, and the merchants are remembered',
+  PHONE,
+  async (page) => {
+    const first = bankFile('stack-1.csv', [
+      '20/09/2026,"-9.25","4321-EXPRESS FUEL STOP PERTH AU","+2300.00"',
+      TAVERN,
+      WOOLWORTHS,
+      '17/09/2026,"-11.05","WOOLWORTHS 5678 PERTH WA AUS Card xx1234 Value Date: 15/09/2026","+2366.44"',
+    ])
+    const second = bankFile('stack-2.csv', [
+      '20/09/2026,"-23.15","WOOLWORTHS 9012 FREMANTLE AU","+2276.85"',
+      '20/09/2026,"-9.25","4321-EXPRESS FUEL STOP PERTH AU","+2300.00"',
+      TAVERN,
+    ])
+
+    await onboard(page)
+    await goto(page, '/inbox')
+    await waitForText(page, 'Noch nichts importiert')
+    await pickBankFile(page, first)
+    await clickText(page, '[role="dialog"] button', 'Importieren', { exact: true })
+    await waitForModals(page, 0)
+    await waitForText(page, '1 von 4')
+    await assertFitsViewport(page, 'card stack')
+
+    // swipe right: the card goes to the category waiting at the right edge – and opens nothing
+    await watchForModals(page)
+    await swipe(page, await stackCard(page, 'Express Fuel Stop'), 220)
+    await waitForText(page, 'Zuletzt: Express Fuel Stop → Miete/Wohnen')
+    await waitForText(page, '2 von 4')
+    assert.equal(await sawModal(page), false, 'a swipe opened a sheet')
+
+    // "Rückgängig" brings the card back; a short drag leaves it where it is
+    await clickText(page, 'main button', 'Rückgängig')
+    await waitForText(page, '1 von 4')
+    await swipe(page, await stackCard(page, 'Express Fuel Stop'), 40)
+    await waitForText(page, '1 von 4')
+    await swipe(page, await stackCard(page, 'Express Fuel Stop'), -220)
+    await waitForText(page, 'Zuletzt: Express Fuel Stop → Lebensmittel')
+
+    // any other category is a tap
+    await stackCard(page, 'Seaside Tavern Fremantle')
+    await clickText(page, 'main [role="radio"]', 'Essen gehen')
+    await waitForText(page, '3 von 4')
+
+    // skip the first Woolworths, file the second – the skipped one now knows its category
+    await stackCard(page, 'Woolworths, A$37,64')
+    await clickText(page, 'main button', 'Überspringen')
+    await stackCard(page, 'Woolworths, A$11,05')
+    await clickText(page, 'main [role="radio"]', 'Shopping')
+    await stackCard(page, 'Woolworths, A$37,64')
+    await clickSelector(page, 'button[aria-label="Nach rechts: Shopping"]')
+    await waitForText(page, 'Alles zugeordnet')
+    await assertFitsViewport(page, 'inbox done')
+
+    // the next export: the known merchant is offered with a preview, nothing happens by itself
+    await pickBankFile(page, second)
+    assert.equal((await previewCounts(page))['Neu in der Inbox'], 1)
+    await clickText(page, '[role="dialog"] button', 'Importieren', { exact: true })
+    await waitForModals(page, 0)
+    await waitForText(page, '1 Buchung von bekannten Händlern')
+    await assertFitsViewport(page, 'card stack with known merchants')
+    await clickText(page, 'main button', 'Vorschau')
+    await waitForModals(page, 1)
+    await waitForText(page, '→ Shopping')
+    await assertFitsViewport(page, 'known merchants preview')
+    await clickText(page, '[role="dialog"] button', 'Übernehmen (1)')
+    await waitForModals(page, 0)
+    await waitForText(page, 'Alles zugeordnet')
+    await clickToastAction(page, '1 Buchung zugeordnet', 'Rückgängig')
+    await waitForText(page, '1 Buchung offen')
+
+    await goto(page, '/expenses')
+    await waitForExpenseRows(page, 4)
+
+    // what was learned is visible in the settings and can be forgotten (with undo)
+    await goto(page, '/settings/merchant-rules')
+    await waitForText(page, '→ Shopping · 2× bestätigt')
+    await assertFitsViewport(page, 'merchant rules')
+    const rule = await page.evaluateHandle(() =>
+      [...document.querySelectorAll('main span')].find((el) => el.textContent === 'Woolworths'),
+    )
+    await swipeLeft(page, rule.asElement(), 260)
+    await waitForNoText(page, '→ Shopping · 2× bestätigt')
+    await clickToastAction(page, 'gelöscht', 'Rückgängig')
+    await waitForText(page, '→ Shopping · 2× bestätigt')
   },
 )
 

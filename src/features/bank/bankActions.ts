@@ -1,6 +1,6 @@
 import { toast } from 'sonner'
 import { repos } from '@/db'
-import { bankNote } from '@/lib/bankInbox'
+import { displayMerchant } from '@/lib/merchantRules'
 import type { BankTransaction, Category, Expense } from '@/lib/types'
 import { errorMessage } from '@/shared/lib/errorMessages'
 
@@ -22,22 +22,22 @@ const run = async (work: () => Promise<void>) => {
 /** Inbox line → new expense. Nothing asks beforehand; the toast takes it back. */
 export const assignWithUndo = (tx: BankTransaction, category: Category) =>
   run(async () => {
-    await repos.bank.assign(tx.id, category.id)
-    toast(`${bankNote(tx.description)} → ${category.name}`, {
-      action: undo(() => repos.bank.undoAssign(tx.id)),
+    const { rule } = await repos.bank.assign(tx.id, category.id)
+    toast(`${displayMerchant(tx.description)} → ${category.name}`, {
+      action: undo(() => repos.bank.undoAssign(tx.id, rule)),
     })
   })
 
 /** "Ist dieselbe": the line belongs to an expense that was entered by hand. */
 export const linkWithUndo = (tx: BankTransaction, expense: Expense) =>
   run(async () => {
-    await repos.bank.linkExisting(tx.id, expense.id)
-    toast('Mit deiner Ausgabe verknüpft', { action: undo(() => repos.bank.unlink(tx.id)) })
+    const rule = await repos.bank.linkExisting(tx.id, expense.id)
+    toast('Mit deiner Ausgabe verknüpft', { action: undo(() => repos.bank.unlink(tx.id, rule)) })
   })
 
 /** "Keine Ausgabe": own transfers and the like. */
 export const ignoreWithUndo = (tx: BankTransaction) =>
   run(async () => {
-    await repos.bank.ignore(tx.id)
-    toast('Als „keine Ausgabe" markiert', { action: undo(() => repos.bank.reopen(tx.id)) })
+    const rule = await repos.bank.ignore(tx.id)
+    toast('Als „keine Ausgabe" markiert', { action: undo(() => repos.bank.reopen(tx.id, rule)) })
   })

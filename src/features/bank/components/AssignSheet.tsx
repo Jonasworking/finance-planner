@@ -1,6 +1,7 @@
 import { CalendarCheck } from 'lucide-react'
-import { bankNote, purchaseDay } from '@/lib/bankInbox'
+import { purchaseDay } from '@/lib/bankInbox'
 import { formatDayLabel, formatWeekRange } from '@/lib/dates'
+import { displayMerchant } from '@/lib/merchantRules'
 import type { BankTransaction, Category, Expense, ISODate } from '@/lib/types'
 import { CategoryGrid } from '@/shared/components/CategoryGrid'
 import { CategoryIcon } from '@/shared/components/CategoryIcon'
@@ -64,7 +65,8 @@ export function AssignSheet({
         <div className="flex flex-col gap-4">
           <div className="text-center">
             <Money cents={amountCents} className="text-display" />
-            <p className="break-words">{bankNote(tx.description)}</p>
+            <p className="break-words">{displayMerchant(tx.description)}</p>
+            <p className="text-caption break-words text-fg-subtle">{tx.description}</p>
           </div>
 
           {closedWeek ? (

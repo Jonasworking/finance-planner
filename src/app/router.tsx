@@ -42,6 +42,9 @@ const WhatIfPage = lazyPage('Was-wäre-wenn', () =>
   import('@/features/whatif').then((m) => m.WhatIfPage),
 )
 const InboxPage = lazyPage('Inbox', () => import('@/features/bank/pages').then((m) => m.InboxPage))
+const MerchantRulesPage = lazyPage('Händler-Regeln', () =>
+  import('@/features/bank/pages').then((m) => m.MerchantRulesPage),
+)
 const SettingsPage = lazyPage('Einstellungen', () =>
   import('@/features/settings/pages').then((m) => m.SettingsPage),
 )
@@ -60,6 +63,7 @@ export const router = createBrowserRouter([
       { path: 'analytics', Component: AnalyticsPage },
       { path: 'budget', Component: BudgetPage },
       { path: 'inbox', Component: InboxPage },
+      { path: 'settings/merchant-rules', Component: MerchantRulesPage },
       { path: 'tasks', Component: TasksPage },
       { path: 'what-if', Component: WhatIfPage },
       { path: 'settings', Component: SettingsPage },

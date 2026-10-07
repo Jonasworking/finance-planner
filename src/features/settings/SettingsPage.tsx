@@ -1,6 +1,6 @@
 import { useLiveQuery } from 'dexie-react-hooks'
 import { lazy, Suspense, useEffect } from 'react'
-import { useLocation } from 'react-router'
+import { Link, useLocation } from 'react-router'
 import { toast } from 'sonner'
 import { db } from '@/db'
 import { ReadinessCard } from '@/features/setup'
@@ -94,6 +94,18 @@ export function SettingsPage() {
           </div>
           <Button type="button" variant="secondary" size="touch" onClick={() => openEurRate()}>
             {settings.eurRate != null ? 'Ändern' : 'Eintragen'}
+          </Button>
+        </GlassCard>
+
+        <GlassCard className="flex items-center gap-3">
+          <div className="min-w-0 flex-1">
+            <h2 className="text-h2">Bank-Import</h2>
+            <p className="text-label text-fg-muted">
+              Die Inbox merkt sich, welcher Händler in welche Kategorie gehört.
+            </p>
+          </div>
+          <Button asChild variant="secondary" size="touch">
+            <Link to="/settings/merchant-rules">Regeln</Link>
           </Button>
         </GlassCard>
 

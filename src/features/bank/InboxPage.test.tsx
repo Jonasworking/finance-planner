@@ -52,6 +52,10 @@ async function importFile(user: ReturnType<typeof userEvent.setup>, file: File =
   await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument())
 }
 
+/** The plain list instead of the card stack (the default view). */
+const showList = async (user: ReturnType<typeof userEvent.setup>) =>
+  user.click(await screen.findByRole('radio', { name: 'Liste' }))
+
 const count = (dialog: HTMLElement, label: string) =>
   within(dialog).getByText(label).nextElementSibling?.textContent
 
@@ -97,7 +101,8 @@ describe('InboxPage – import', () => {
     })
 
     expect(await screen.findByText('15 Buchungen offen')).toBeInTheDocument()
-    expect(screen.getByText('Seaside Tavern Fremantle AU')).toBeInTheDocument()
+    await showList(user)
+    expect(screen.getByText('Seaside Tavern Fremantle')).toBeInTheDocument()
     expect(screen.queryByText(/Fast Transfer From/)).not.toBeInTheDocument() // credits stay out
     expect(screen.getByText('Erledigt: 1 schon erfasst · 1 keine Ausgabe · 2 Gutschriften'))
     expect(await db.expenses.count()).toBe(1)
@@ -139,6 +144,7 @@ describe('InboxPage – import', () => {
     const rows = await db.bankTransactions.toArray()
     expect(rows.filter((tx) => tx.status === 'matched')).toEqual([])
     // the line now shows that it may be a duplicate
+    await showList(user)
     expect(await screen.findByText(/vielleicht schon erfasst/)).toBeInTheDocument()
   })
 
@@ -179,24 +185,27 @@ describe('InboxPage – assigning', () => {
     const user = userEvent.setup()
     renderPage()
     await importFile(user)
+    await showList(user)
 
-    await user.click(await screen.findByRole('button', { name: /Seaside Tavern Fremantle AU/ }))
+    await user.click(await screen.findByRole('button', { name: /Seaside Tavern Fremantle/ }))
     const dialog = await screen.findByRole('dialog', { name: 'Buchung zuordnen' })
     await user.click(within(dialog).getByRole('radio', { name: 'Essen gehen' }))
 
     await waitFor(() =>
-      expect(screen.queryByText('Seaside Tavern Fremantle AU')).not.toBeInTheDocument(),
+      expect(screen.queryByText('Seaside Tavern Fremantle')).not.toBeInTheDocument(),
     )
     expect(await db.expenses.toArray()).toMatchObject([
-      { date: '2026-09-19', amountCents: 1_680, note: 'Seaside Tavern Fremantle AU' },
+      { date: '2026-09-19', amountCents: 1_680, note: 'Seaside Tavern Fremantle' },
     ])
     expect(toast).toHaveBeenLastCalledWith(
-      'Seaside Tavern Fremantle AU → Essen gehen',
+      'Seaside Tavern Fremantle → Essen gehen',
       expect.anything(),
     )
 
     lastToastAction()()
-    expect(await screen.findByText('Seaside Tavern Fremantle AU')).toBeInTheDocument()
+    expect(await screen.findByText('Seaside Tavern Fremantle')).toBeInTheDocument()
+    // the rule the assignment had taught is forgotten again
+    expect((await db.merchantRules.toArray()).filter((rule) => rule.deletedAt === null)).toEqual([])
     expect((await db.expenses.toArray()).filter((expense) => expense.deletedAt === null)).toEqual(
       [],
     )
@@ -207,6 +216,7 @@ describe('InboxPage – assigning', () => {
     const user = userEvent.setup()
     renderPage()
     await importFile(user)
+    await showList(user)
 
     await user.click(
       await screen.findByRole('button', { name: /Seaside Tavern.*Woche abgeschlossen/ }),
@@ -231,9 +241,10 @@ describe('InboxPage – assigning', () => {
     const user = userEvent.setup()
     renderPage()
     await importFile(user)
+    await showList(user)
 
     const [first] = await screen.findAllByRole('button', {
-      name: /QUICK VENDING.*vielleicht schon erfasst/,
+      name: /Quick Vending.*vielleicht schon erfasst/,
     })
     await user.click(first!)
     const dialog = await screen.findByRole('dialog', { name: 'Buchung zuordnen' })
@@ -258,24 +269,26 @@ describe('InboxPage – assigning', () => {
     const user = userEvent.setup()
     renderPage()
     await importFile(user)
+    await showList(user)
 
-    await user.click(await screen.findByRole('button', { name: /HARBOUR HOSTEL/ }))
+    await user.click(await screen.findByRole('button', { name: /Harbour Hostel/ }))
     const dialog = await screen.findByRole('dialog', { name: 'Buchung zuordnen' })
     await user.click(within(dialog).getByRole('button', { name: 'Keine Ausgabe' }))
 
-    await waitFor(() => expect(screen.queryByText(/HARBOUR HOSTEL/)).not.toBeInTheDocument())
+    await waitFor(() => expect(screen.queryByText(/Harbour Hostel/)).not.toBeInTheDocument())
     expect(await db.expenses.count()).toBe(0)
 
     lastToastAction()()
-    expect(await screen.findByText(/HARBOUR HOSTEL/)).toBeInTheDocument()
+    expect(await screen.findByText(/Harbour Hostel/)).toBeInTheDocument()
   })
 
   it('says "Alles zugeordnet" once the inbox is empty', async () => {
     const user = userEvent.setup()
     renderPage()
     await importFile(user, csv('20/09/2026,"-9.25","4321-EXPRESS FUEL STOP PERTH AU","+10.00"'))
+    await showList(user)
 
-    await user.click(await screen.findByRole('button', { name: /4321-EXPRESS/ }))
+    await user.click(await screen.findByRole('button', { name: /Express Fuel Stop/ }))
     const dialog = await screen.findByRole('dialog', { name: 'Buchung zuordnen' })
     await user.click(within(dialog).getByRole('radio', { name: 'Transport' }))
 
