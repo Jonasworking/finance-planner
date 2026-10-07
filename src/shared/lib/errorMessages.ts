@@ -20,6 +20,8 @@ const MESSAGES: Record<string, string> = {
   'invalid-backup': 'Die Datei ist kein gültiges Backup.',
   'inconsistent-backup': 'Das Backup ist in sich nicht stimmig.',
   'no-safety-copy': 'Es gibt keine Sicherheitskopie.',
+  'not-open': 'Diese Buchung ist schon erledigt.',
+  'already-linked': 'Diese Ausgabe gehört schon zu einer anderen Bank-Buchung.',
 }
 
 export function errorMessage(error: unknown): string {

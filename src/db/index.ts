@@ -14,6 +14,7 @@ db.on('versionchange', (event) => {
 
 export { DomainError, type DomainErrorCode } from './errors'
 export {
+  countInbox,
   loadAnalytics,
   loadAppData,
   loadBudget,
@@ -22,10 +23,12 @@ export {
   loadDashboard,
   loadExpenseFormData,
   loadExpensesOfWeek,
+  loadInbox,
   loadPots,
   loadRecurring,
   loadTasks,
   loadWhatIf,
+  previewBankImport,
 } from './queries'
 export { createRepos, type Repos } from './repos'
 export { FinanceDB } from './schema'

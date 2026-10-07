@@ -1,3 +1,5 @@
+import type { ParsedBankRow } from '@/lib/bankImport'
+import { byNewest, closedWeekFor, isInInbox, matchCandidates, planImport } from '@/lib/bankInbox'
 import { weekEndOf, weekStartOf } from '@/lib/dates'
 import { potBalance, potBalances } from '@/lib/savings'
 import { collectTags } from '@/lib/tags'
@@ -6,7 +8,9 @@ import {
   PRIMARY_POT_ID,
   SETTINGS_ID,
   type AppData,
+  type BankTransaction,
   type Category,
+  type Expense,
   type ISODate,
   type Pot,
 } from '@/lib/types'
@@ -104,18 +108,29 @@ export async function loadCategories(db: FinanceDB) {
  * runs over every closed week, and ~1,000 rows a year are cheap to read.
  */
 export async function loadDashboard(db: FinanceDB) {
-  const [settings, weeks, budgets, expenses, templates, categories, transactions, tasks, pots] =
-    await Promise.all([
-      db.settings.get(SETTINGS_ID),
-      db.weeks.toArray(),
-      db.budgets.toArray(),
-      db.expenses.toArray(),
-      db.recurringExpenses.toArray(),
-      db.categories.toArray(),
-      db.potTransactions.toArray(),
-      db.tasks.toArray(),
-      db.pots.toArray(),
-    ])
+  const [
+    settings,
+    weeks,
+    budgets,
+    expenses,
+    templates,
+    categories,
+    transactions,
+    tasks,
+    pots,
+    inboxCount,
+  ] = await Promise.all([
+    db.settings.get(SETTINGS_ID),
+    db.weeks.toArray(),
+    db.budgets.toArray(),
+    db.expenses.toArray(),
+    db.recurringExpenses.toArray(),
+    db.categories.toArray(),
+    db.potTransactions.toArray(),
+    db.tasks.toArray(),
+    db.pots.toArray(),
+    countInbox(db),
+  ])
   const activeExpenses = expenses.filter(isActive)
   const activeTransactions = transactions.filter(isActive)
   return {
@@ -131,6 +146,8 @@ export async function loadDashboard(db: FinanceDB) {
     /** Pots and their bookings, so a task's pot reference can show where the pot stands. */
     pots: pots.filter(isActive),
     potTransactions: activeTransactions,
+    /** Bank lines waiting to be categorised. */
+    inboxCount,
   }
 }
 
@@ -274,5 +291,87 @@ export async function loadRecurring(db: FinanceDB) {
       .sort((a, b) => Number(b.active) - Number(a.active) || a.title.localeCompare(b.title, 'de')),
     categories: categories.filter(isActive).sort(bySortOrder),
     trackingSince: settings?.trackingSince ?? null,
+  }
+}
+
+/** How many bank lines wait in the inbox (home card, navigation badge). */
+export async function countInbox(db: FinanceDB): Promise<number> {
+  const open = await db.bankTransactions.where('status').equals('open').toArray()
+  return open.filter(isInInbox).length
+}
+
+/**
+ * What `planImport` needs to know about the stored state. Shared by the preview and by the
+ * import itself (inside its transaction), so both always see the same plan.
+ */
+export async function loadImportState(db: FinanceDB) {
+  const [stored, expenses, settings] = await Promise.all([
+    db.bankTransactions.toArray(),
+    db.expenses.toArray(),
+    db.settings.get(SETTINGS_ID),
+  ])
+  return {
+    existingIds: new Set(stored.map((tx) => tx.id)),
+    latestStoredDate: stored.reduce<ISODate | null>(
+      (max, tx) => (max === null || tx.date > max ? tx.date : max),
+      null,
+    ),
+    expenses,
+    linkedExpenseIds: linkedExpenseIds(stored),
+    trackingSince: settings?.trackingSince ?? null,
+  }
+}
+
+const linkedExpenseIds = (stored: readonly BankTransaction[]) =>
+  new Set(stored.flatMap((tx) => (isActive(tx) && tx.expenseId !== null ? [tx.expenseId] : [])))
+
+/** The import preview: what importing these lines would do right now. Writes nothing. */
+export async function previewBankImport(
+  db: FinanceDB,
+  rows: readonly ParsedBankRow[],
+  keepOpen?: ReadonlySet<string>,
+) {
+  const state = await loadImportState(db)
+  if (state.trackingSince === null) return null
+  return planImport({ ...state, trackingSince: state.trackingSince, rows, keepOpen })
+}
+
+/** Everything the inbox screen shows, in one querier. */
+export async function loadInbox(db: FinanceDB) {
+  const [stored, expenses, categories, weeks] = await Promise.all([
+    db.bankTransactions.toArray(),
+    db.expenses.toArray(),
+    db.categories.toArray(),
+    db.weeks.toArray(),
+  ])
+  const active = stored.filter(isActive)
+  const inbox = active.filter(isInInbox).sort(byNewest)
+  const linked = linkedExpenseIds(stored)
+  const candidates: Record<string, Expense[]> = {}
+  const closedWeeks: Record<string, ISODate> = {}
+  for (const tx of inbox) {
+    const found = matchCandidates(tx, expenses, linked)
+    if (found.length > 0) candidates[tx.id] = found
+    const closed = closedWeekFor(tx, weeks)
+    if (closed) closedWeeks[tx.id] = closed
+  }
+  const debits = active.filter((tx) => tx.amountCents < 0)
+  return {
+    inbox,
+    /** Hand-entered expenses that could be the same booking, per inbox line. */
+    candidates,
+    /** Inbox lines whose expense would land in an already closed week. */
+    closedWeeks,
+    categories: categories
+      .filter((category) => isActive(category) && !category.archived)
+      .sort(bySortOrder),
+    allCategories: categories,
+    done: {
+      assigned: debits.filter((tx) => tx.status === 'assigned').length,
+      matched: debits.filter((tx) => tx.status === 'matched').length,
+      ignored: debits.filter((tx) => tx.status === 'ignored').length,
+      credits: active.filter((tx) => tx.amountCents > 0).length,
+    },
+    hasImported: active.length > 0,
   }
 }

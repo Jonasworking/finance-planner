@@ -19,6 +19,8 @@ export type DomainErrorCode =
   | 'invalid-backup'
   | 'inconsistent-backup'
   | 'no-safety-copy'
+  | 'not-open'
+  | 'already-linked'
 
 /** A rule of the domain was violated; the write was rolled back. `code` drives the UI message. */
 export class DomainError extends Error {
