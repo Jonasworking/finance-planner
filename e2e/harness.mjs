@@ -94,6 +94,9 @@ export async function stopSuite() {
   preview?.kill()
 }
 
+/** Console problems per page, so `goto` can forget those of a start that the network broke. */
+const sessionProblems = new WeakMap()
+
 /**
  * One journey = one browser context = fresh storage, i.e. an empty database. `downloadPath`
  * lets the context save downloads (backup, CSV) into that folder.
@@ -141,6 +144,7 @@ export async function openSession(viewport, { downloadPath } = {}) {
     failedRequests.push(`${request.url()} – ${request.failure()?.errorText ?? 'failed'}`),
   )
 
+  sessionProblems.set(page, problems)
   return { page, problems, failedRequests, close: () => context.close() }
 }
 
@@ -162,6 +166,8 @@ export async function goto(page, path) {
   const booted = await page.evaluate(() => document.getElementById('root')?.childElementCount > 0)
   if (booted) return
   console.log(`the app did not start at ${path} (a start chunk failed to load?) – loading again`)
+  // The lost request also left a console error; it belongs to the network, not to the journey.
+  sessionProblems.get(page)?.splice(0)
   await page.reload({ waitUntil: 'networkidle0' })
 }
 
