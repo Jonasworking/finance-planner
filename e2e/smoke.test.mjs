@@ -817,6 +817,9 @@ journey(
 async function failRequests(page, state) {
   await page.setBypassServiceWorker(true)
   await page.setRequestInterception(true)
+  // `/assets` is immutable in production: without this a reload takes the file from the cache,
+  // never asks the network, and a part that should keep failing loads anyway
+  await page.setCacheEnabled(false)
   page.on('request', (request) =>
     state.shouldFail(request.url()) ? request.abort('failed') : request.continue(),
   )

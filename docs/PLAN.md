@@ -20,33 +20,31 @@
 - [x] **Phase 6** – PWA, Export, Polish — **Backup-Erinnerung ist Pflichtfeature:** Insight-Karte („Backup älter als 14 Tage" bzw. noch nie) plus Hinweis in den Einstellungen (siehe §5) — freigegeben 2026-09-24, fertig 2026-09-24 (Branch `phase-6-pwa`), **abgenommen 2026-09-24, in `main`**, Notizen unten. **Endgültige Adresse: https://jonas-finanzen.vercel.app** (fest am Projekt eingetragen am 2026-09-24, Entscheidung des Nutzers). Zusätzlich gewünscht: ein deutlich sichtbarer Hinweis, ab wann echte Daten gefahrlos erfasst werden können.
 - [x] **v1 fertig (2026-09-24)** – Phasen 0–6 abgenommen und in `main`; Production: https://jonas-finanzen.vercel.app
 - [ ] Phase 7 (optional) – Sync
-- [ ] **Phase 8 (v2)** – Bank-Import für CommBank: CSV → Inbox → Wisch-Stapel → Händler-Regeln — Plan freigegeben 2026-10-05 (Abschnitt „Plan v2" ganz unten), vier Teilphasen:
+- [x] **Phase 8 (v2)** – Bank-Import für CommBank: CSV → Inbox → Wisch-Stapel → Händler-Regeln — Plan freigegeben 2026-10-05 (Abschnitt „Plan v2" ganz unten), vier Teilphasen:
   - [x] **8a** – Format prüfen, Schema v2, Dexie-Migration, Backup-Format (keine sichtbare Funktion) — freigegeben 2026-10-05, fertig 2026-10-05 (Branch `phase-8a-bank-schema`), **abgenommen 2026-10-06 (Backup vorher gespeichert), in `main`**, Notizen unten
   - [x] **8b** – Import & Inbox (Dateiauswahl, Vorschau, Dedupe gegen manuell Erfasstes, Listen-Ansicht) — freigegeben 2026-10-07, fertig 2026-10-07 (Branch `phase-8b-bank-import`), **abgenommen 2026-10-07 (am iPhone in der installierten Preview getestet, CSV aus „Dateien" wählbar; Backup vorher gespeichert), in `main`**, Notizen unten
   - [x] **8c** – Wisch-Stapel & Händler-Regeln (Lernen, Auto-Zuordnung mit Vorschau, Regel-Seite) — freigegeben 2026-10-07, fertig 2026-10-07 (Branch `phase-8c-swipe-stack`), **abgenommen 2026-10-07 (am iPhone getestet, Wisch-Gefühl passt; Backup vorher gespeichert), in `main`**, Notizen unten
-  - [ ] **8d** – Lohn-Vorschlag beim Wochenabschluss, „Zurück in die Inbox", Ladefehler-Behandlung — freigegeben 2026-10-07, fertig 2026-10-07 (Branch `phase-8d-bank-income`), **wartet auf Abnahme**, Notizen unten
+  - [x] **8d** – Lohn-Vorschlag beim Wochenabschluss, „Zurück in die Inbox", Ladefehler-Behandlung — freigegeben 2026-10-07, fertig 2026-10-07, Zusatz „Prognose rechnet mit dem Lohn“ 2026-10-08 (Branch `phase-8d-bank-income`), **abgenommen 2026-10-08 (am iPhone getestet; Backup vorher gespeichert), in `main`**, Notizen unten
+- [x] **v2 fertig (2026-10-08)** – Phasen 8a–8d abgenommen und in `main`; Production: https://jonas-finanzen.vercel.app
 
-## Session-Notiz – Stand 2026-10-07
+## Session-Notiz – Stand 2026-10-08
 
 > Einstieg für die nächste Session. Wird bei jedem Sessionende überschrieben, nicht fortgeschrieben – die dauerhaften Ergebnisse stehen in den Phasen-Notizen unten.
 
 **Wo wir stehen**
 
-- Production (**https://jonas-finanzen.vercel.app**, `main`) enthält 8a–8c: Schema v2, CSV-Import, Inbox mit Wisch-Stapel, Händler-Regeln.
-- **8d ist fertig und wartet auf Abnahme** (Branch `phase-8d-bank-income`): Lohn-Vorschlag beim Wochenabschluss, Ansicht „Erledigt" mit „Zurück in die Inbox", Ladefehler-Behandlung (einmal automatisch neu laden, sonst deutsche Meldung).
-- Mit 8d ist Plan v2 komplett.
+- **v2 ist fertig.** Production (**https://jonas-finanzen.vercel.app**, `main`) enthält 8a–8d: Schema v2, CSV-Import, Inbox mit Wisch-Stapel, Händler-Regeln, Lohn-Vorschlag (Wochenabschluss und Prognose auf Home), „Erledigt“ mit „Zurück in die Inbox“, Ladefehler-Behandlung.
+- Smoke-Suite gegen Production am 2026-10-08: 17/17.
 
 **Offen** (nicht blockierend)
 
-- Am iPhone ansehen: „Erledigt"-Ansicht, Wochenabschluss mit Bank-Vorschlag.
 - Die Ladefehler-Meldung lässt sich am Gerät kaum provozieren – sie ist in der Smoke-Suite mit absichtlich abgebrochenen Requests geprüft.
 - Aus v1 unverändert: Ausgaben-Sheet mit offenen Details höher als der Bildschirm · `AnimatedNumber` nicht gebaut · Ausgabe aus archiviertem Topf erst nach „Wiederherstellen" änderbar · `forced-colors`-Textur für Charts.
 
 **Als Nächstes**
 
-1. Du: 8d auf der Preview bzw. am iPhone ansehen, abnehmen → `main`.
-2. Danach: ein paar Wochen mit echten Exporten nutzen; was fehlt, wird gezielt gebaut (andere Banken, Topf-Finanzierung aus dem Stapel, Tags im Stapel stehen als „bewusst nicht in v2" im Plan).
-3. Echte Kontoauszüge (`~/Downloads/CSVData*.csv`) werden nie committet.
+1. Ein paar Wochen mit echten Exporten nutzen; was fehlt, wird gezielt gebaut (andere Banken, Topf-Finanzierung aus dem Stapel, Tags im Stapel stehen als „bewusst nicht in v2" im Plan).
+2. Echte Kontoauszüge (`~/Downloads/CSVData*.csv`) werden nie committet.
 
 ## Phase 0 – Ergebnis & Abweichungen vom Plan
 
@@ -263,6 +261,7 @@
 
 - **Lohn-Vorschlag:** In „Erledigt" stehen die Gutschriften mit dem Schalter „Mein Lohn" (einmal je Absender; gespeichert als Regel `action: 'income'`). Der Wochenabschluss belegt das Einkommensfeld dann mit der Summe der Lohn-Gutschriften **Mo–So derselben Woche** vor und sagt, woher die Zahl kommt („Aus dem Bank-Import: Gutschrift vom Do., 17. Sep. – bitte prüfen, du kannst den Betrag überschreiben"). Reihenfolge: gespeichertes Einkommen der Woche → Bank → Standard-Einkommen. Geschrieben wird wie bisher erst mit „Woche abschließen".
 - **Zusatz (2026-10-08) – Prognose auf Home rechnet mit dem Lohn:** Sobald eine Lohn-Gutschrift der laufenden Woche importiert ist, nimmt „Voraussichtlich gespart“ diesen Betrag statt des Standard-Einkommens; die Zeile sagt „bei A$1.433 Lohn (Do.)“ statt „bei A$2.000 Einkommen“. Gleiche Reihenfolge wie beim Abschluss (eingetragen → Bank → Standard), nur Anzeige – ohne Abschluss entsteht keine Wochen-Zeile (RTL gegen die echte DB-Schicht, Smoke-Suite). Der Wochentag kommt aus dem Buchungsdatum der Gutschrift, nicht fest aus „Donnerstag“ (bucht die Bank wegen eines Feiertags am Mittwoch, steht dort „Mi.“); bei Gutschriften an verschiedenen Tagen steht „mehrere Gutschriften“. Vor dem Lohntag bzw. vor dem Import bleibt es beim Standard-Einkommen. 1228 Testläufe, 17 Journeys grün, initiales JS 241,5 KB gzip. **Nicht am 390-px-Bild angesehen** (nur `assertFitsViewport`).
+- **Abnahme 2026-10-08:** kein strengerer Donnerstag-Filter – das Buchungsdatum der Gutschrift ist richtig (Entscheidung des Nutzers). Deployment von `2381883` READY, Smoke-Suite gegen Production 17/17. Zwei Stolpersteine auf dem Weg: (1) Wiederholtes Abfragen der Adresse per `curl` (40× im 8-s-Takt, um auf das Deployment zu warten) rief Vercels Sicherheitskontrolle auf den Plan – danach scheiterte ein kompletter Lauf an „Überprüfung Ihres Browsers fehlgeschlagen“; nach wenigen Minuten war es vorbei. Auf ein Deployment über den Vercel-Status warten, nicht über die Adresse. (2) Die Journey „Start, den das Netz bricht“ war gegen Production noch nie gelaufen und dort rot: `/assets` ist `immutable`, der Reload nahm den nachgeladenen Teil aus dem Cache, das „fällt dauerhaft aus“ griff nicht. Die Journey schaltet den Cache jetzt ab – ein Fehler der Suite, nicht der App.
 - **Hinweis im Wochenabschluss:** „n Buchungen dieser Woche warten noch in der Inbox – sie fehlen in ‚Ausgegeben'" mit Link zur Inbox (gezählt nach Kauftag).
 - **„Zurück in die Inbox":** dritte Ansicht „Erledigt" (auch bei leerer Inbox erreichbar) listet zugeordnete, verknüpfte und aussortierte Buchungen, neueste zuerst (die 50 neuesten). Zurückholen entfernt bei einer zugeordneten Buchung ihre Ausgabe (der Toast sagt das), bei einer verknüpften nur die Verknüpfung; „Rückgängig" stellt exakt den alten Stand her – dieselbe Ausgabe, keine zweite. Die Händler-Regel bleibt, wie sie ist: eine einzelne zurückgeholte Buchung sagt nichts über den Händler.
 - **Ladefehler (Entscheidung 2026-10-07):** (1) Kommt eine Datei, mit der die App **startet**, nicht an, lädt ein kleines Skript in `index.html` die Seite einmal neu; (2) kommt ein **nachgeladener** Teil nicht an, tut das der Fehler-Bildschirm des Routers. Die Sperre gegen Endlosschleifen ist für beide dieselbe: Zeitpunkt des letzten automatischen Neuladens je Tab (`sessionStorage` `fp.autoReloadAt`), ein weiterer Fehler innerhalb von 60 s zeigt stattdessen die Meldung „Die App konnte nicht geladen werden … Deine Daten liegen sicher auf diesem Gerät." mit „Neu laden". Ohne funktionierenden Speicher gibt es keine Sperre und deshalb auch kein automatisches Neuladen. (3) Jeder andere unerwartete Fehler zeigt „Etwas ist schiefgelaufen" mit demselben Hinweis und Button – ohne automatisches Neuladen – statt „Unexpected Application Error!".
