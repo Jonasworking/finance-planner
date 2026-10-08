@@ -116,6 +116,11 @@ export function formatDayLabel(iso: ISODate, today: ISODate): string {
   return format(parseISODate(iso), pattern, { locale: de })
 }
 
+/** Short weekday of a day: "Do." */
+export function formatWeekday(iso: ISODate): string {
+  return format(parseISODate(iso), 'EEE', { locale: de })
+}
+
 /**
  * "21.–27. Sep. 2026", "28. Sep. – 4. Okt. 2026" or "28. Dez. 2026 – 3. Jan. 2027".
  * `year: false` drops the year for narrow table cells – unless the range crosses a year.

@@ -45,24 +45,39 @@ export function nextStep(input: {
 
 export interface WeekProjection {
   incomeCents: Cents
-  /** True while the week's income has not been entered – the default income is assumed. */
+  /**
+   * Where the income comes from: entered for the week, the wage credits the bank import saw
+   * in it, or the default income.
+   */
+  source: 'entered' | 'bank' | 'default'
+  /** True while the week's income has not been entered – bank or default income is assumed. */
   isEstimate: boolean
+  /** Booking days of the wage credits (oldest first, distinct) – only with `source: 'bank'`. */
+  wageDays: ISODate[]
   /** income − spent − still reserved standing orders. */
   projectedSavedCents: Cents
 }
 
-/** "Voraussichtlich gespart": meaningful from day one, even though nothing is closed yet. */
+/**
+ * "Voraussichtlich gespart": meaningful from day one, even though nothing is closed yet.
+ * Same order as the close-week prefill: entered income, then the wage the bank saw, then the
+ * default. Display only – the week's income is written when the week is closed.
+ */
 export function projectWeek(input: {
   incomeCents: Cents | null
+  /** Wage credits of the week from the bank import (`incomeSuggestion`), if any. */
+  bankIncome?: { totalCents: Cents; credits: readonly { date: ISODate }[] } | null
   defaultIncomeCents: Cents
   spentCents: Cents
   reservedCents: Cents
 }): WeekProjection {
-  const isEstimate = input.incomeCents === null
-  const incomeCents = input.incomeCents ?? input.defaultIncomeCents
+  const bank = input.incomeCents === null ? (input.bankIncome ?? null) : null
+  const incomeCents = input.incomeCents ?? bank?.totalCents ?? input.defaultIncomeCents
   return {
     incomeCents,
-    isEstimate,
+    source: input.incomeCents !== null ? 'entered' : bank ? 'bank' : 'default',
+    isEstimate: input.incomeCents === null,
+    wageDays: bank ? [...new Set(bank.credits.map((credit) => credit.date))].sort() : [],
     projectedSavedCents: incomeCents - input.spentCents - input.reservedCents,
   }
 }

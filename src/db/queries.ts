@@ -134,6 +134,8 @@ export async function loadDashboard(db: FinanceDB) {
     tasks,
     pots,
     inboxCount,
+    bankTransactions,
+    merchantRules,
   ] = await Promise.all([
     db.settings.get(SETTINGS_ID),
     db.weeks.toArray(),
@@ -145,6 +147,8 @@ export async function loadDashboard(db: FinanceDB) {
     db.tasks.toArray(),
     db.pots.toArray(),
     countInbox(db),
+    db.bankTransactions.toArray(),
+    db.merchantRules.toArray(),
   ])
   const activeExpenses = expenses.filter(isActive)
   const activeTransactions = transactions.filter(isActive)
@@ -163,6 +167,9 @@ export async function loadDashboard(db: FinanceDB) {
     potTransactions: activeTransactions,
     /** Bank lines waiting to be categorised. */
     inboxCount,
+    /** Credits of marked employers – the running week's wage, once it is imported. */
+    wageCredits: bankTransactions.filter((tx) => isIncomeCredit(tx, merchantRules)),
+    merchantRules: merchantRules.filter(isActive),
   }
 }
 

@@ -9,6 +9,7 @@ import { nextStep, projectWeek, weekProgress } from '@/lib/dashboard'
 import { formatWeekRange, parseISODate, weekStartOf } from '@/lib/dates'
 import { groupByWeek } from '@/lib/expenses'
 import { dashboardRules, runInsights } from '@/lib/insights'
+import { incomeSuggestion } from '@/lib/merchantRules'
 import { pendingWeeks, summarizeWeek } from '@/lib/savings'
 import { computeStreak } from '@/lib/streak'
 import { tasksForDashboard } from '@/lib/tasks'
@@ -66,6 +67,7 @@ export function DashboardPage() {
   })
   const projection = projectWeek({
     incomeCents: weekRow?.incomeCents ?? null,
+    bankIncome: incomeSuggestion(data.wageCredits, data.merchantRules, currentWeek),
     defaultIncomeCents: settings.defaultWeeklyIncomeCents,
     spentCents: summary.spentCents,
     reservedCents: reserved.totalCents,

@@ -702,6 +702,9 @@ journey(
     await clickSelector(page, 'button[aria-label="Acme Farms Pty: das ist mein Lohn"]')
     await waitForText(page, 'Lohn ✓')
     await goto(page, '/')
+    // the home projection counts on that wage right away, long before the week is closed
+    await waitForText(page, 'bei A$1.433 Lohn (Do.)')
+    await assertFitsViewport(page, 'home with wage from the bank')
     await clickText(page, 'button', 'Diese Woche abschließen')
     await waitForModals(page, 1)
     await waitForText(page, 'Aus dem Bank-Import: Gutschrift vom Do., 17. Sep.')

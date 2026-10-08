@@ -74,7 +74,13 @@ describe('projectWeek', () => {
         spentCents: 13_250,
         reservedCents: 18_000,
       }),
-    ).toEqual({ incomeCents: 200_000, isEstimate: true, projectedSavedCents: 168_750 })
+    ).toEqual({
+      incomeCents: 200_000,
+      source: 'default',
+      isEstimate: true,
+      wageDays: [],
+      projectedSavedCents: 168_750,
+    })
   })
 
   it('uses the entered income (also zero) and can go negative', () => {
@@ -85,6 +91,63 @@ describe('projectWeek', () => {
         spentCents: 5_000,
         reservedCents: 0,
       }),
-    ).toEqual({ incomeCents: 0, isEstimate: false, projectedSavedCents: -5_000 })
+    ).toEqual({
+      incomeCents: 0,
+      source: 'entered',
+      isEstimate: false,
+      wageDays: [],
+      projectedSavedCents: -5_000,
+    })
+  })
+
+  const wage = (date: string, amountCents: number) => ({ date, amountCents })
+
+  it('counts on the wage the bank import saw instead of the default income', () => {
+    expect(
+      projectWeek({
+        incomeCents: null,
+        bankIncome: { totalCents: 184_350, credits: [wage('2026-09-24', 184_350)] },
+        defaultIncomeCents: 200_000,
+        spentCents: 13_250,
+        reservedCents: 18_000,
+      }),
+    ).toEqual({
+      incomeCents: 184_350,
+      source: 'bank',
+      isEstimate: true,
+      wageDays: ['2026-09-24'],
+      projectedSavedCents: 153_100,
+    })
+  })
+
+  it('lists each wage day once, oldest first', () => {
+    const projection = projectWeek({
+      incomeCents: null,
+      bankIncome: {
+        totalCents: 230_000,
+        credits: [
+          wage('2026-09-25', 30_000),
+          wage('2026-09-24', 100_000),
+          wage('2026-09-24', 100_000),
+        ],
+      },
+      defaultIncomeCents: 200_000,
+      spentCents: 0,
+      reservedCents: 0,
+    })
+    expect(projection.wageDays).toEqual(['2026-09-24', '2026-09-25'])
+    expect(projection.incomeCents).toBe(230_000)
+  })
+
+  it('lets the entered income win over the bank', () => {
+    expect(
+      projectWeek({
+        incomeCents: 150_000,
+        bankIncome: { totalCents: 184_350, credits: [wage('2026-09-24', 184_350)] },
+        defaultIncomeCents: 200_000,
+        spentCents: 0,
+        reservedCents: 0,
+      }),
+    ).toMatchObject({ incomeCents: 150_000, source: 'entered', isEstimate: false, wageDays: [] })
   })
 })

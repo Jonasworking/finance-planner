@@ -2,7 +2,7 @@ import { CircleCheck } from 'lucide-react'
 import { Link } from 'react-router'
 import type { ReservedItem, Usage } from '@/lib/budget'
 import type { WeekProjection } from '@/lib/dashboard'
-import { formatDayLabel } from '@/lib/dates'
+import { formatDayLabel, formatWeekday } from '@/lib/dates'
 import { formatAUD } from '@/lib/money'
 import type { WeekSummary } from '@/lib/savings'
 import type { ISODate } from '@/lib/types'
@@ -21,6 +21,16 @@ function ringValueText(usage: Usage): string {
       ? `${whole(usage.remainingCents)} übrig`
       : `${whole(-usage.remainingCents)} drüber`
   return `${whole(usage.spentCents)} von ${whole(usage.limitCents)} ausgegeben${reserved}, ${rest}`
+}
+
+/** Where the projected income comes from – the wage names its day ("Do."), as the bank booked it. */
+function incomeHint(projection: WeekProjection): string {
+  const amount = whole(projection.incomeCents)
+  if (projection.source === 'entered') return `Einkommen ${amount} eingetragen`
+  if (projection.source === 'default') return `bei ${amount} Einkommen`
+  const [day] = projection.wageDays
+  const when = projection.wageDays.length === 1 && day ? formatWeekday(day) : 'mehrere Gutschriften'
+  return `bei ${amount} Lohn (${when})`
 }
 
 export interface WeekHeroProps {
@@ -111,10 +121,7 @@ export function WeekHero({ summary, usage, projection, reserved, daysLeft, today
               <p className="text-caption text-saved uppercase">Voraussichtlich gespart</p>
               <Money cents={projection.projectedSavedCents} tone="auto" className="text-h1" />
               <p className="text-label text-fg-muted">
-                {projection.isEstimate
-                  ? `bei ${formatAUD(projection.incomeCents, { decimals: false })} Einkommen`
-                  : `Einkommen ${formatAUD(projection.incomeCents, { decimals: false })} eingetragen`}{' '}
-                ·{' '}
+                {incomeHint(projection)} ·{' '}
                 {daysLeft === 0
                   ? 'letzter Tag der Woche'
                   : `noch ${daysLeft} ${daysLeft === 1 ? 'Tag' : 'Tage'}`}

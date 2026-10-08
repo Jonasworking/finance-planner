@@ -11,6 +11,7 @@ import {
   formatMonth,
   formatWeekRange,
   formatWeekTick,
+  formatWeekday,
   isISODate,
   isMonday,
   listWeeks,
@@ -170,6 +171,11 @@ describe('German labels', () => {
     expect(formatDayLabel('2026-09-21', '2026-09-23')).toBe('Mo., 21. Sep.')
     expect(formatDayLabel('2025-12-31', '2026-01-02')).toBe('Mi., 31. Dez. 2025')
     expect(formatDayLabel('2026-01-01', '2026-01-02')).toBe('Gestern')
+  })
+
+  it('names the weekday of a day', () => {
+    expect(formatWeekday('2026-09-24')).toBe('Do.')
+    expect(formatWeekday('2026-09-27')).toBe('So.')
   })
 
   it('formats week ranges within a month, across months and across years', () => {
