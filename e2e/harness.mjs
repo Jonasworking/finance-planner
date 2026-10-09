@@ -432,6 +432,23 @@ export async function swipe(page, element, dx) {
 
 export const swipeLeft = (page, row, distance) => swipe(page, row, -distance)
 
+/*
+ * A finger dragging a natively scrolling row by `dx` px (negative = to the left). Touch events,
+ * not the mouse: only they make the browser scroll and snap.
+ */
+export async function touchSwipe(page, element, dx) {
+  await waitUntilActionable(page, element)
+  const box = await element.boundingBox()
+  const y = box.y + box.height / 2
+  const startX = dx < 0 ? box.x + box.width - 30 : box.x + 30
+  await page.touchscreen.touchStart(startX, y)
+  for (let step = 1; step <= 12; step++) {
+    await page.touchscreen.touchMove(startX + (dx / 12) * step, y)
+    await new Promise((resolve) => setTimeout(resolve, 16))
+  }
+  await page.touchscreen.touchEnd()
+}
+
 /** Taps the row's content. A revealed row is shifted to the left, so stay inside the screen. */
 export async function tapRow(page, row) {
   const box = await row.boundingBox()
@@ -496,6 +513,12 @@ export async function assertFitsViewport(page, where) {
         const rect = el.getBoundingClientRect()
         if (rect.width === 0 || rect.height === 0) return []
         if (rect.left >= -1 && rect.right <= window.innerWidth + 1) return []
+        // Inside a row that scrolls sideways on purpose (the home hero), cards wait beyond the
+        // edge – the row itself is measured like everything else.
+        for (let parent = el.parentElement; parent && parent.tagName !== 'MAIN';) {
+          if (['auto', 'scroll'].includes(getComputedStyle(parent).overflowX)) return []
+          parent = parent.parentElement
+        }
         const classes = (el.getAttribute('class') ?? '').slice(0, 80)
         return [
           `<${el.tagName.toLowerCase()} class="${classes}"> spans ${Math.round(rect.left)}…${Math.round(rect.right)} px of ${window.innerWidth}`,

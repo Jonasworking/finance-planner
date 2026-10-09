@@ -154,8 +154,8 @@ export function formatWeekTick(weekStart: ISODate): string {
   return format(parseISODate(weekStart), 'd.M.')
 }
 
-/** 'YYYY-MM' → "Sep 26" (axis) or "September 2026". */
-export function formatMonth(month: string, style: 'short' | 'long' = 'long'): string {
-  const pattern = style === 'short' ? 'LLL yy' : 'LLLL yyyy'
+/** 'YYYY-MM' → "Sep 26" (axis), "September 2026", or just "Sep" where the year is obvious. */
+export function formatMonth(month: string, style: 'short' | 'long' | 'name' = 'long'): string {
+  const pattern = style === 'short' ? 'LLL yy' : style === 'name' ? 'LLL' : 'LLLL yyyy'
   return format(parseISODate(`${month}-01`), pattern, { locale: de })
 }

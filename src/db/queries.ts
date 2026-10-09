@@ -16,11 +16,10 @@ import {
   isIncomeCredit,
   suggestCategories,
 } from '@/lib/merchantRules'
-import { potBalance, potBalances } from '@/lib/savings'
+import { potBalances } from '@/lib/savings'
 import { collectTags } from '@/lib/tags'
 import {
   isActive,
-  PRIMARY_POT_ID,
   SETTINGS_ID,
   type AppData,
   type BankTransaction,
@@ -159,7 +158,6 @@ export async function loadDashboard(db: FinanceDB) {
     expenses: activeExpenses,
     templates: templates.filter(isActive),
     categories: categories.filter(isActive),
-    primaryBalanceCents: potBalance(activeTransactions, PRIMARY_POT_ID),
     hasAnyExpense: activeExpenses.length > 0,
     tasks: tasks.filter(isActive),
     /** Pots and their bookings, so a task's pot reference can show where the pot stands. */

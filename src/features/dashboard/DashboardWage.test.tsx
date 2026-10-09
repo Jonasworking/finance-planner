@@ -42,7 +42,7 @@ const markWage = async () => {
 describe('DashboardPage – wage from the bank import', () => {
   it('assumes the default income while no employer is marked', async () => {
     renderPage()
-    expect(await screen.findByText(/bei A\$2\.000 Einkommen · noch 2 Tage/)).toBeInTheDocument()
+    expect(await screen.findByText('voraussichtlich · bei A$2.000 Einkommen')).toBeInTheDocument()
   })
 
   it('projects with the imported wage of the running week – and writes nothing', async () => {
@@ -50,8 +50,8 @@ describe('DashboardPage – wage from the bank import', () => {
     await screen.findByText(/bei A\$2\.000 Einkommen/)
     await markWage()
 
-    expect(await screen.findByText(/bei A\$1\.433 Lohn \(Do\.\) · noch 2 Tage/)).toBeInTheDocument()
-    expect(screen.getByText('A$1.432,60')).toBeInTheDocument()
+    expect(await screen.findByText('voraussichtlich · bei A$1.433 Lohn (Do.)')).toBeInTheDocument()
+    expect(screen.getByText('+A$1.432,60')).toBeInTheDocument()
     // display only: the week gets its income when it is closed
     expect(await db.weeks.get('2026-09-14')).toBeUndefined()
   })

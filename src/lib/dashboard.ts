@@ -1,5 +1,14 @@
+import { cumulativeSavings } from './analytics'
 import { addWeeksISO, daysBetween, weekEndOf, weekStartOf } from './dates'
-import type { Cents, ISODate } from './types'
+import { potBalances, type WeekSummary } from './savings'
+import {
+  isActive,
+  PRIMARY_POT_ID,
+  type Cents,
+  type ISODate,
+  type Pot,
+  type PotTransaction,
+} from './types'
 
 /** Where we are in the current Monday–Sunday week. */
 export function weekProgress(today: ISODate): { dayIndex: number; daysLeft: number } {
@@ -79,5 +88,78 @@ export function projectWeek(input: {
     isEstimate: input.incomeCents === null,
     wageDays: bank ? [...new Set(bank.credits.map((credit) => credit.date))].sort() : [],
     projectedSavedCents: incomeCents - input.spentCents - input.reservedCents,
+  }
+}
+
+/** How many closed weeks the home screen's savings curve looks back. */
+export const SAVINGS_TREND_WEEKS = 12
+
+export interface SavingsOverview {
+  /** Everything in the pots that are in use (not archived). */
+  totalCents: Cents
+  /** "Nur gespart" on its own … */
+  primaryCents: Cents
+  /** … and the other pots in use: how many there are and what they hold. */
+  otherPots: number
+  otherCents: Cents
+  /**
+   * What happened to the total since the last closed week ended: that week's saving plus every
+   * booking after its Sunday. Null until a week is closed.
+   */
+  change: { deltaCents: Cents; since: ISODate } | null
+  /**
+   * The total after each of the last closed weeks, oldest first, led by where it stood before
+   * them – so one closed week already makes a line. It ends at `totalCents`: the weeks' savings
+   * are counted back from today's total. Empty until a week is closed.
+   */
+  trend: { weekStart: ISODate; totalCents: Cents }[]
+}
+
+/** The savings card of the home screen: total, split, latest change and the curve. */
+export function savingsOverview(input: {
+  pots: readonly Pot[]
+  potTransactions: readonly PotTransaction[]
+  /** Summaries of the closed weeks, in any order (open ones are ignored). */
+  closedWeeks: readonly WeekSummary[]
+}): SavingsOverview {
+  const inUse = new Set(
+    input.pots.filter((pot) => isActive(pot) && !pot.archived).map((pot) => pot.id),
+  )
+  const bookings = input.potTransactions.filter((tx) => isActive(tx) && inUse.has(tx.potId))
+  const balances = potBalances(bookings)
+  const totalCents = bookings.reduce((sum, tx) => sum + tx.amountCents, 0)
+  const primaryCents = inUse.has(PRIMARY_POT_ID) ? (balances[PRIMARY_POT_ID] ?? 0) : 0
+
+  const closed = input.closedWeeks
+    .filter((week) => week.closed)
+    .sort((a, b) => a.weekStart.localeCompare(b.weekStart))
+  const recent = closed.slice(-SAVINGS_TREND_WEEKS)
+  const first = recent[0]
+  const last = recent[recent.length - 1]
+
+  let change: SavingsOverview['change'] = null
+  let trend: SavingsOverview['trend'] = []
+  if (first && last) {
+    const since = weekEndOf(last.weekStart)
+    change = {
+      since,
+      deltaCents: bookings
+        .filter((tx) => tx.date > since || (tx.type === 'auto-weekly' && tx.date === since))
+        .reduce((sum, tx) => sum + tx.amountCents, 0),
+    }
+    const before = totalCents - recent.reduce((sum, week) => sum + week.savedCents, 0)
+    trend = [
+      { weekStart: addWeeksISO(first.weekStart, -1), totalCents: before },
+      ...cumulativeSavings(recent, before),
+    ]
+  }
+
+  return {
+    totalCents,
+    primaryCents,
+    otherPots: inUse.size - (inUse.has(PRIMARY_POT_ID) ? 1 : 0),
+    otherCents: totalCents - primaryCents,
+    change,
+    trend,
   }
 }

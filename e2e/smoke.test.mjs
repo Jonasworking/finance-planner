@@ -31,6 +31,7 @@ import {
   stopSuite,
   swipe,
   swipeLeft,
+  touchSwipe,
   tapRow,
   typeInto,
   waitForAmount,
@@ -84,8 +85,9 @@ journey('onboarding leads to a dashboard that carries on day one', PHONE, async 
 
   await waitForText(page, 'Diese Woche')
   await waitForText(page, 'Erfasse deine erste Ausgabe')
-  await waitForText(page, 'Voraussichtlich gespart')
-  await waitForText(page, 'A$8.500,00') // opening balance landed in "Nur gespart"
+  await waitForText(page, 'voraussichtlich · bei A$2.000 Einkommen')
+  await waitForText(page, 'Gesamt gespart')
+  await waitForText(page, 'A$8.500') // opening balance landed in "Nur gespart"
   await waitForText(page, 'So läuft deine Woche') // explains itself instead of an empty list
   assert.equal(await has(page, 'Letzte Wochen'), false)
   await assertFitsViewport(page, 'dashboard on day one')
@@ -874,6 +876,71 @@ journey(
     session.problems.length = 0
   },
 )
+
+/** Whether the element is completely on screen, left to right. */
+const insideViewport = (page, selector) =>
+  page.$eval(selector, (el) => {
+    const rect = el.getBoundingClientRect()
+    return rect.left >= 0 && rect.right <= window.innerWidth
+  })
+
+journey('the home hero is swiped, remembers its card and leads on', PHONE, async (page) => {
+  await goto(page, '/')
+  await onboard(page)
+  await waitForText(page, 'Gesamt gespart')
+  const ring = '[aria-label="Wochenbudget verbraucht"]'
+  const toWeek = 'button[aria-label="Weiter zu Diese Woche"]'
+  const toSavings = 'button[aria-label="Weiter zu Gesamt gespart"]'
+
+  // starts with the savings; the week's ring waits beyond the right edge
+  await page.waitForSelector(toWeek)
+  assert.equal(await insideViewport(page, ring), false, 'the ring card only peeks in')
+  await assertFitsViewport(page, 'home hero, savings card')
+
+  // a real swipe brings the ring in, the indicator follows – and a swipe is not a tap
+  const savingsCard = await page.evaluateHandle(() =>
+    [...document.querySelectorAll('main a')].find((a) => a.textContent.includes('Gesamt gespart')),
+  )
+  await touchSwipe(page, savingsCard.asElement(), -220)
+  await page.waitForSelector(toSavings)
+  await page.waitForFunction(
+    (selector) => {
+      const rect = document.querySelector(selector).getBoundingClientRect()
+      return rect.left >= 0 && rect.right <= window.innerWidth
+    },
+    {},
+    ring,
+  )
+  assert.equal(await page.evaluate(() => location.pathname), '/', 'swiping must not open a card')
+  await assertFitsViewport(page, 'home hero, week card')
+
+  // a tap on the ring card leads to the budget
+  await clickSelector(page, ring)
+  await waitForText(page, 'Gilt ab dieser Woche')
+  assert.equal(await page.evaluate(() => location.pathname), '/budget')
+
+  // back home the card shown last is there again – also after a reload
+  await goto(page, '/')
+  await page.waitForSelector(toSavings)
+  assert.equal(await insideViewport(page, ring), true, 'the week card is remembered')
+  await page.reload({ waitUntil: 'networkidle0' })
+  await page.waitForSelector(toSavings)
+  assert.equal(await insideViewport(page, ring), true, 'the week card survives a reload')
+
+  // the switch below the cards goes back; the savings card leads to the pots
+  await clickSelector(page, toSavings)
+  await page.waitForSelector(toWeek)
+  await clickText(page, 'main a', 'Gesamt gespart')
+  await waitForText(page, 'Wofür sparst du?')
+  assert.equal(await page.evaluate(() => location.pathname), '/pots')
+
+  // the same widths in the light theme
+  await page.evaluate(() => localStorage.setItem('fp.theme', 'light'))
+  await goto(page, '/')
+  await page.waitForSelector(toWeek)
+  assert.equal(await page.evaluate(() => document.documentElement.dataset.theme), 'light')
+  await assertFitsViewport(page, 'home hero, light theme')
+})
 
 journey('desktop layout keeps every card inside the window', DESKTOP, async (page) => {
   await goto(page, '/')

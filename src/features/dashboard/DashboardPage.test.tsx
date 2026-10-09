@@ -53,8 +53,12 @@ describe('DashboardPage', () => {
     renderPage()
 
     expect(await screen.findByText('Erfasse deine erste Ausgabe')).toBeInTheDocument()
-    expect(screen.getByText('Voraussichtlich gespart')).toBeInTheDocument()
-    expect(screen.getByText(/bei A\$2\.000 Einkommen · noch 4 Tage/)).toBeInTheDocument()
+    expect(screen.getByText('voraussichtlich · bei A$2.000 Einkommen')).toBeInTheDocument()
+    expect(screen.getByText('+A$2.000,00')).toBeInTheDocument()
+    expect(screen.getByText('Noch 4 Tage')).toBeInTheDocument()
+    // nothing saved yet: the card says what will happen instead of drawing an empty curve
+    expect(screen.queryByRole('img', { name: /Sparverlauf/ })).not.toBeInTheDocument()
+    expect(screen.queryByText(/seit letztem Sonntag/)).not.toBeInTheDocument()
     expect(screen.getByRole('progressbar', { name: 'Wochenbudget verbraucht' })).toHaveAttribute(
       'aria-valuenow',
       '0',
@@ -67,12 +71,11 @@ describe('DashboardPage', () => {
     expect(screen.queryByText('Streak')).not.toBeInTheDocument()
     expect(screen.queryByRole('region', { name: 'Tasks' })).not.toBeInTheDocument()
     expect(screen.queryByRole('region', { name: 'Insights' })).not.toBeInTheDocument()
-    // The ring leads to the budget, "Nur gespart" to its pot:
-    expect(screen.getByRole('link', { name: 'Budget anpassen' })).toHaveAttribute('href', '/budget')
-    expect(screen.getByRole('link', { name: /Nur gespart/ })).toHaveAttribute(
-      'href',
-      '/pots/pot%3Aprimary',
-    )
+    // The savings card leads to the pots, the ring to the budget:
+    expect(screen.getByRole('link', { name: /Gesamt gespart/ })).toHaveAttribute('href', '/pots')
+    expect(
+      screen.getByRole('link', { name: /Wochenbudget verbraucht|Diese Woche/ }),
+    ).toHaveAttribute('href', '/budget')
 
     await user.click(screen.getByRole('button', { name: 'Ausgabe erfassen' }))
     expect(useUiStore.getState().quickAddOpen).toBe(true)
@@ -85,7 +88,7 @@ describe('DashboardPage', () => {
 
     expect(await screen.findByText('2 Wochen warten auf ihren Abschluss')).toBeInTheDocument()
     expect(screen.getByText(/Dein Startguthaben/)).toBeInTheDocument()
-    expect(screen.getByText('A$8.500,00')).toBeInTheDocument()
+    expect(screen.getByText('A$8.500')).toBeInTheDocument()
 
     await user.click(screen.getByRole('button', { name: 'Woche 7.–13. Sep. 2026 abschließen' }))
     expect(useUiStore.getState()).toMatchObject({
@@ -119,9 +122,7 @@ describe('DashboardPage', () => {
     renderPage()
 
     // 120 spent + 180 reserved of 400 → 75 %, 100 left, projection 2000 − 120 − 180.
-    expect(
-      await screen.findByText(/\+ A\$180,00 reserviert \(Miete, Fr\., 25\. Sep\.\)/),
-    ).toBeInTheDocument()
+    expect(await screen.findByText('von A$400 · + A$180 reserviert')).toBeInTheDocument()
     const ring = screen.getByRole('progressbar', { name: 'Wochenbudget verbraucht' })
     expect(ring).toHaveAttribute('aria-valuenow', '75')
     // read out as amounts, not only a percentage
@@ -129,7 +130,7 @@ describe('DashboardPage', () => {
       'aria-valuetext',
       'A$120 von A$400 ausgegeben, A$180 reserviert, A$100 übrig',
     )
-    expect(screen.getByText('A$1.700,00')).toBeInTheDocument()
+    expect(screen.getByText('+A$1.700,00')).toBeInTheDocument()
 
     expect(screen.getByText('Zuletzt ausgegeben')).toBeInTheDocument()
     expect(screen.getByText('Coles')).toBeInTheDocument()
@@ -139,7 +140,12 @@ describe('DashboardPage', () => {
 
     expect(screen.getByText('Letzte Wochen')).toBeInTheDocument()
     expect(screen.getByText(/über Budget · Sparquote 78 %/)).toBeInTheDocument()
-    expect(screen.getByText(/Zuletzt \+A\$1\.550,00/)).toBeInTheDocument()
+    // one closed week: the total, what it added and a first piece of the curve
+    expect(screen.getByText('A$1.550')).toBeInTheDocument()
+    expect(screen.getByText('+A$1.550 seit letztem Sonntag')).toBeInTheDocument()
+    expect(
+      screen.getByRole('img', { name: 'Sparverlauf: von A$0 auf A$1.550 in 1 Woche' }),
+    ).toBeInTheDocument()
     expect(screen.queryByText('So läuft deine Woche')).not.toBeInTheDocument()
     expect(screen.getByText('Alles erledigt')).toBeInTheDocument()
 

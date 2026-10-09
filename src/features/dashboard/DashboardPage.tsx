@@ -5,7 +5,7 @@ import { InsightCards, useDismissedInsights } from '@/features/insights'
 import { ReadinessCard } from '@/features/setup'
 import { TasksCard } from '@/features/tasks'
 import { resolveBudget, runningWeekBudget } from '@/lib/budget'
-import { nextStep, projectWeek, weekProgress } from '@/lib/dashboard'
+import { nextStep, projectWeek, savingsOverview, weekProgress } from '@/lib/dashboard'
 import { formatWeekRange, parseISODate, weekStartOf } from '@/lib/dates'
 import { groupByWeek } from '@/lib/expenses'
 import { dashboardRules, runInsights } from '@/lib/insights'
@@ -16,11 +16,13 @@ import { tasksForDashboard } from '@/lib/tasks'
 import { Page } from '@/shared/components/Page'
 import { useToday } from '@/shared/hooks/useToday'
 import { Skeleton } from '@/shared/ui/skeleton'
+import { HeroCarousel } from './components/HeroCarousel'
 import { NextStepCard } from './components/NextStepCard'
 import { RecentExpensesCard } from './components/RecentExpensesCard'
-import { SavingsCard } from './components/SavingsCard'
+import { SavingsHeroCard } from './components/SavingsHeroCard'
 import { StreakCard } from './components/StreakCard'
-import { WeekHero } from './components/WeekHero'
+import { WeekRingCard } from './components/WeekRingCard'
+import { WeekTiles } from './components/WeekTiles'
 import { WeeksCard } from './components/WeeksCard'
 
 const RECENT_EXPENSES = 4
@@ -78,6 +80,11 @@ export function DashboardPage() {
     .sort((a, b) => (a.id < b.id ? 1 : -1))
     .map((week) => summarize(week.id))
   const streak = computeStreak(closedWeeks, today)
+  const savings = savingsOverview({
+    pots: data.pots,
+    potTransactions: data.potTransactions,
+    closedWeeks,
+  })
 
   const pending = pendingWeeks(data.weeks, settings.trackingSince, today)
   const step = nextStep({
@@ -117,17 +124,37 @@ export function DashboardPage() {
     <Page title="Diese Woche" subtitle={formatWeekRange(currentWeek)}>
       {/* Until this device is ready for real data, that is the first thing on the home screen. */}
       <ReadinessCard variant="home" lastBackupAt={settings.lastBackupAt} className="mb-4" />
+      <div className="mb-4 flex flex-col gap-3 lg:gap-4">
+        <HeroCarousel
+          slides={[
+            {
+              id: 'savings',
+              label: 'Gesamt gespart',
+              content: <SavingsHeroCard overview={savings} today={today} />,
+            },
+            {
+              id: 'week',
+              label: 'Diese Woche',
+              content: (
+                <WeekRingCard
+                  summary={summary}
+                  usage={usage?.total ?? null}
+                  daysLeft={weekProgress(today).daysLeft}
+                />
+              ),
+            },
+          ]}
+        />
+        <WeekTiles
+          summary={summary}
+          limitCents={usage?.total.limitCents ?? null}
+          reservedCents={reserved.totalCents}
+          projection={projection}
+        />
+      </div>
       {/* minmax(0,…) + min-w-0: grid tracks must not grow to fit long non-wrapping rows */}
       <div className="grid grid-cols-[minmax(0,1fr)] gap-4 lg:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)] lg:items-start">
         <div className="flex min-w-0 flex-col gap-4">
-          <WeekHero
-            summary={summary}
-            usage={usage?.total ?? null}
-            projection={projection}
-            reserved={reserved}
-            daysLeft={weekProgress(today).daysLeft}
-            today={today}
-          />
           <NextStepCard step={step} today={today} />
           {data.inboxCount > 0 ? <InboxCard count={data.inboxCount} /> : null}
           {insights.length > 0 ? (
@@ -153,10 +180,6 @@ export function DashboardPage() {
           ) : null}
         </div>
         <div className="flex min-w-0 flex-col gap-4">
-          <SavingsCard
-            balanceCents={data.primaryBalanceCents}
-            lastClosed={closedWeeks[0] ?? null}
-          />
           {closedWeeks.length > 0 ? <StreakCard streak={streak} /> : null}
           <WeeksCard
             closedWeeks={closedWeeks.slice(0, RECENT_WEEKS)}

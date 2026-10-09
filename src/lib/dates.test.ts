@@ -198,6 +198,7 @@ describe('German labels', () => {
     expect(formatWeekTick('2026-12-28')).toBe('28.12.')
     expect(formatMonth('2026-09')).toBe('September 2026')
     expect(formatMonth('2026-03', 'short')).toBe('Mär 26')
+    expect(formatMonth('2026-10', 'name')).toBe('Okt')
     expect(() => formatMonth('2026-13')).toThrow(RangeError)
   })
 
