@@ -26,16 +26,15 @@
   - [x] **8c** – Wisch-Stapel & Händler-Regeln (Lernen, Auto-Zuordnung mit Vorschau, Regel-Seite) — freigegeben 2026-10-07, fertig 2026-10-07 (Branch `phase-8c-swipe-stack`), **abgenommen 2026-10-07 (am iPhone getestet, Wisch-Gefühl passt; Backup vorher gespeichert), in `main`**, Notizen unten
   - [x] **8d** – Lohn-Vorschlag beim Wochenabschluss, „Zurück in die Inbox", Ladefehler-Behandlung — freigegeben 2026-10-07, fertig 2026-10-07, Zusatz „Prognose rechnet mit dem Lohn“ 2026-10-08 (Branch `phase-8d-bank-income`), **abgenommen 2026-10-08 (am iPhone getestet; Backup vorher gespeichert), in `main`**, Notizen unten
 - [x] **v2 fertig (2026-10-08)** – Phasen 8a–8d abgenommen und in `main`; Production: https://jonas-finanzen.vercel.app
-- [ ] **Home-Hero** – Kopf des Home-Screens als wischbarer Hero (Variante C: „Gesamt gespart“ mit Sparverlauf · „Diese Woche“ mit Ring), zwei Kacheln darunter; nur Anzeige, kein Schema-Wechsel — beauftragt 2026-10-09, fertig 2026-10-09 (Branch `home-savings-hero`), **wartet auf Abnahme**, Notizen unten
+- [x] **Home-Hero** – Kopf des Home-Screens als wischbarer Hero (Variante C: „Gesamt gespart“ mit Sparverlauf · „Diese Woche“ mit Ring), zwei Kacheln darunter; nur Anzeige, kein Schema-Wechsel — beauftragt 2026-10-09, fertig 2026-10-09 (Branch `home-savings-hero`), **abgenommen 2026-10-09 (am iPhone getestet; Backup vorher gespeichert), in `main`**, Notizen unten
 
-## Session-Notiz – Stand 2026-10-08
+## Session-Notiz – Stand 2026-10-09
 
 > Einstieg für die nächste Session. Wird bei jedem Sessionende überschrieben, nicht fortgeschrieben – die dauerhaften Ergebnisse stehen in den Phasen-Notizen unten.
 
 **Wo wir stehen**
 
-- **v2 ist fertig.** Production (**https://jonas-finanzen.vercel.app**, `main`) enthält 8a–8d: Schema v2, CSV-Import, Inbox mit Wisch-Stapel, Händler-Regeln, Lohn-Vorschlag (Wochenabschluss und Prognose auf Home), „Erledigt“ mit „Zurück in die Inbox“, Ladefehler-Behandlung.
-- Smoke-Suite gegen Production am 2026-10-08: 17/17.
+- **v2 ist fertig**, dazu der **Home-Hero** (abgenommen 2026-10-09). Production (**https://jonas-finanzen.vercel.app**, `main`) enthält 8a–8d und den wischbaren Kopf des Home-Screens („Gesamt gespart“ mit Sparverlauf · „Diese Woche“ mit Ring).
 
 **Offen** (nicht blockierend)
 
@@ -278,7 +277,7 @@
 - **Karte 2 „Diese Woche“:** Ring mit Rest und reserviertem Bogen wie bisher, darunter „Noch n Tage“; die ganze Karte führt zum Budget.
 - **Karussell:** natives Scroll-Snap (kein Drag-Handler), nächste Karte lugt 40 px bis zum Bildschirmrand hervor. Der Indikator ist **ein** 44-px-Button („Weiter zu …“), der zur nächsten Karte wechselt – zwei einzelne Punkte wären als Touch-Ziele zu klein. Pfeiltasten links/rechts, ab `lg` beide Karten nebeneinander ohne Indikator. Gemerkt wird die Karte in `localStorage` `fp.homeHero` (fällt mit „Alle Daten löschen“ weg, nicht im Backup). Reduced Motion: Sprünge per Button/Taste ohne Animation; das Einrasten beim Wischen macht der Browser selbst.
 - **Kacheln:** „Ausgegeben A$X · von A$Y (+ A$Z reserviert)“ und „Diese Woche +A$Z · voraussichtlich · bei A$… Einkommen/Lohn (Do.)“ – dieselbe Rechnung wie bisher (`projectWeek`). **Weggefallen:** der Name des nächsten Dauerauftrags neben „reserviert“ (steht auf der Budget-Seite), dafür reichte die Kachelbreite nicht.
-- **„Nur gespart“-Karte entfällt.** Vorschlag umgesetzt, zur Abnahme: eine kleine Zeile „Nur gespart A$X · n Töpfe A$Y“ unten in Karte 1, **nur wenn andere Töpfe Geld enthalten** – sonst wäre sie eine Wiederholung der großen Zahl.
+- **„Nur gespart“-Karte entfällt.** Vorschlag umgesetzt und bei der Abnahme bestätigt (bleibt so): eine kleine Zeile „Nur gespart A$X · n Töpfe A$Y“ unten in Karte 1, **nur wenn andere Töpfe Geld enthalten** – sonst wäre sie eine Wiederholung der großen Zahl.
 - **Leere Zustände:** ohne abgeschlossene Woche zeigt Karte 1 den Stand und einen Hinweis statt einer Kurve (mit bzw. ohne Startguthaben); Summe 0 erscheint gedämpft statt grün, eine negative in Coral.
 - **Smoke-Suite:** `assertFitsViewport` nimmt Elemente in einer absichtlich seitlich scrollenden Reihe aus (die Reihe selbst wird gemessen); neuer Helfer `touchSwipe` – nur Touch-Events lassen den Browser nativ scrollen und einrasten, der Maus-Drag der anderen Journeys nicht.
 
