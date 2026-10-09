@@ -25,7 +25,8 @@ const prefersReducedMotion = () =>
   window.matchMedia('(prefers-reduced-motion: reduce)').matches
 
 /**
- * The head of the home screen: cards to swipe through, the next one peeking in from the right.
+ * The head of the home screen: cards to swipe through, one at a time and as wide as every other
+ * card – the switch below them is the only hint that there is more.
  * Native scroll snap instead of a drag handler – the browser tells a horizontal swipe from
  * scrolling the page. From `lg` on there is room for all cards next to each other.
  */
@@ -114,7 +115,7 @@ export function HeroCarousel({ slides }: HeroCarouselProps) {
         className={cn(
           // reaches to the screen edges (the page has a 16 px margin) and leaves room above and
           // below: a scroll container cuts off whatever leaves it, the cards' shadow included
-          '-mx-4 -my-4 flex snap-x snap-mandatory scroll-px-4 gap-3 overflow-x-auto overscroll-x-contain p-4',
+          '-mx-4 -my-4 flex snap-x snap-mandatory scroll-px-4 gap-8 overflow-x-auto overscroll-x-contain p-4',
           '[scrollbar-width:none] [&::-webkit-scrollbar]:hidden',
           'lg:m-0 lg:grid lg:snap-none lg:grid-cols-[repeat(2,minmax(0,1fr))] lg:gap-4 lg:overflow-visible lg:p-0',
         )}
@@ -122,9 +123,9 @@ export function HeroCarousel({ slides }: HeroCarouselProps) {
         {slides.map((slide, index) => (
           <div
             key={slide.id}
-            // 36 px less than the page column: 12 px gap, and 40 px of the next card up to the edge
+            // as wide as the page column; the 32 px gap keeps the neighbour (and its shadow) off screen
             className={cn(
-              'flex min-w-0 shrink-0 basis-[calc(100%-36px)] lg:basis-auto',
+              'flex min-w-0 shrink-0 basis-full lg:basis-auto',
               index === steps && index > 0 ? 'snap-end' : 'snap-start',
             )}
           >

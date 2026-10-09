@@ -892,9 +892,20 @@ journey('the home hero is swiped, remembers its card and leads on', PHONE, async
   const toWeek = 'button[aria-label="Weiter zu Diese Woche"]'
   const toSavings = 'button[aria-label="Weiter zu Gesamt gespart"]'
 
-  // starts with the savings; the week's ring waits beyond the right edge
+  // starts with the savings at full width; nothing of the week card shows yet
   await page.waitForSelector(toWeek)
-  assert.equal(await insideViewport(page, ring), false, 'the ring card only peeks in')
+  const cardEdges = () =>
+    page.evaluate(() =>
+      [...document.querySelectorAll('main a')]
+        .filter((a) => ['/pots', '/budget'].includes(a.getAttribute('href')))
+        .map((a) => {
+          const rect = a.getBoundingClientRect()
+          return [Math.round(rect.left), Math.round(rect.right)]
+        }),
+    )
+  const [savingsEdges, weekEdges] = await cardEdges()
+  assert.deepEqual(savingsEdges, [16, 374], 'the savings card spans the page column')
+  assert.equal(weekEdges[0] >= 390, true, 'the week card does not peek in')
   await assertFitsViewport(page, 'home hero, savings card')
 
   // a real swipe brings the ring in, the indicator follows – and a swipe is not a tap
@@ -912,6 +923,11 @@ journey('the home hero is swiped, remembers its card and leads on', PHONE, async
     ring,
   )
   assert.equal(await page.evaluate(() => location.pathname), '/', 'swiping must not open a card')
+  await page.waitForFunction(() => {
+    const week = document.querySelector('main a[href="/budget"]').getBoundingClientRect()
+    return Math.round(week.left) === 16 && Math.round(week.right) === 374
+  })
+  assert.equal((await cardEdges())[0][1] <= 0, true, 'the savings card is gone completely')
   await assertFitsViewport(page, 'home hero, week card')
 
   // a tap on the ring card leads to the budget

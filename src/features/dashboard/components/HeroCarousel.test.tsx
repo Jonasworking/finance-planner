@@ -7,8 +7,8 @@ const SLIDES = [
   { id: 'week', label: 'Diese Woche', content: <a href="/budget">Karte zwei</a> },
 ] as const
 
-// jsdom has no layout: a 358 px row whose two cards overflow by 266 px, like on a phone.
-const MAX_SCROLL = 266
+// jsdom has no layout: a row that scrolls by one phone screen from the first card to the second.
+const MAX_SCROLL = 390
 let scrollTo: ReturnType<typeof vi.fn>
 let reducedMotion = false
 
@@ -16,8 +16,8 @@ beforeEach(() => {
   localStorage.clear()
   reducedMotion = false
   scrollTo = vi.fn()
-  vi.spyOn(HTMLElement.prototype, 'scrollWidth', 'get').mockReturnValue(358 + MAX_SCROLL)
-  vi.spyOn(HTMLElement.prototype, 'clientWidth', 'get').mockReturnValue(358)
+  vi.spyOn(HTMLElement.prototype, 'scrollWidth', 'get').mockReturnValue(390 + MAX_SCROLL)
+  vi.spyOn(HTMLElement.prototype, 'clientWidth', 'get').mockReturnValue(390)
   HTMLElement.prototype.scrollTo = scrollTo as unknown as typeof HTMLElement.prototype.scrollTo
   vi.stubGlobal(
     'matchMedia',
@@ -108,7 +108,7 @@ describe('HeroCarousel', () => {
   })
 
   it('leaves the remembered card alone where nothing scrolls (cards side by side)', async () => {
-    vi.spyOn(HTMLElement.prototype, 'scrollWidth', 'get').mockReturnValue(358)
+    vi.spyOn(HTMLElement.prototype, 'scrollWidth', 'get').mockReturnValue(390)
     localStorage.setItem('fp.homeHero', 'week')
     const scroller = renderCarousel()
     await scrollBy(scroller, 0)
